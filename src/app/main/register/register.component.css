@@ -1,0 +1,414 @@
+/* Main card container adjustments */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.max-w-5xl {
+  max-width: 64rem;
+}
+
+/* Updated width ratios 60/40 */
+.w-\[60\%\] {
+  width: 60%;
+}
+
+.w-\[40\%\] {
+  width: 40%;
+}
+
+/* Image Slider Styles - ขนาดเล็กลงและจัดกลาง */
+.slider-container {
+  position: relative;
+  width: 100%;
+  height: 750px; /* ลดจาก 800px เป็น 600px */
+  max-width: 40rem; /* ลดจาก 35rem เป็น 28rem */
+  margin: 0 auto; /* จัดกลาง */
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.slider-wrapper {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+  will-change: transform;
+}
+
+.slider-slide {
+  min-width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.slider-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Slider Dots */
+.slider-dots {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.slider-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.slider-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.slider-dot.active {
+  background: white;
+  transform: scale(1.2);
+}
+
+/* Form Section Adjustments for 40% width */
+.w-\[40\%\] .p-8 {
+  padding: 2rem;
+}
+
+/* Responsive padding adjustments */
+.w-\[40\%\] h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.w-\[40\%\] .space-y-4 > * + * {
+  margin-top: 0.75rem;
+}
+
+/* Form styling */
+form {
+  max-height: none;
+}
+
+input,
+select {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Add specific styling for disabled select */
+select:disabled {
+  background-color: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+select option:disabled {
+  color: #9ca3af;
+}
+
+/* Style for select element */
+select {
+  color: #000000;
+  /* ปรับตำแหน่ง dropdown arrow */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center; /* ขยับจากขวา 8px เป็น 12px */
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  padding-right: 40px; /* เพิ่ม padding ด้านขวาเล็กน้อย */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Style for select when no value is selected */
+select option:first-child {
+  color: #9ca3af;
+}
+
+/* Hide placeholder in dropdown */
+select:focus option:first-child {
+  display: none;
+}
+
+/* Style for normal options */
+select option:not([value=""]) {
+  color: #000000;
+}
+
+/* English content styling */
+input[type="email"],
+input[type="tel"] {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Focus states */
+input:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Button styling */
+button {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Avatar styling */
+.avatar-container {
+  position: relative;
+}
+
+/* Edit icon positioning */
+.avatar-container .w-8.h-8 img {
+  position: relative;
+  left: 1.5px;
+  bottom: 1px;
+}
+
+/* Local icon styling */
+.filter.invert {
+  filter: invert(1);
+}
+
+/* Error states */
+.border-red-500 {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+/* Success states */
+.border-green-500 {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .flex {
+    flex-direction: column;
+  }
+
+  .w-\[60\%\],
+  .w-\[40\%\] {
+    width: 100%;
+  }
+
+  /* ซ่อน slider section ในมือถือ */
+  .w-\[60\%\] {
+    display: none;
+  }
+
+  .p-8 {
+    padding: 1.5rem;
+  }
+
+  /* Reset padding for mobile */
+  .w-\[40\%\] .p-8 {
+    padding: 1.5rem;
+  }
+
+  /* Prevent zoom on iOS */
+  input,
+  select,
+  button {
+    font-size: 16px;
+  }
+
+  .max-w-5xl {
+    max-width: 100%;
+    margin: 0.5rem;
+  }
+
+  /* เอาเส้นแบ่งออกในมือถือ */
+  .border-r {
+    border-right: none;
+  }
+}
+
+/* Medium screens - adjust proportions */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .w-\[60\%\] {
+    width: 55%;
+  }
+  
+  .w-\[40\%\] {
+    width: 45%;
+  }
+  
+  .w-\[40\%\] .p-8 {
+    padding: 1.5rem;
+  }
+
+  .slider-container {
+    height: 500px;
+    max-width: 24rem;
+  }
+}
+
+/* Animation enhancements */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Hover effects */
+.hover-lift:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+/* Form validation animation */
+.input-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Typography improvements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Noto Sans Thai', sans-serif;
+  font-weight: 700;
+}
+
+/* Language-specific line height adjustments */
+.font-thai {
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+.font-english {
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+/* Enhanced shadow */
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .border-gray-300 {
+    border-color: #000;
+    border-width: 2px;
+  }
+
+  .text-gray-600 {
+    color: #000;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .bg-gray-50 {
+    background-color: #111827;
+  }
+
+  .text-gray-900 {
+    color: #f9fafb;
+  }
+
+  .text-gray-600 {
+    color: #9ca3af;
+  }
+
+  .border-gray-300 {
+    border-color: #374151;
+  }
+
+  .bg-white {
+    background-color: #1f2937;
+  }
+}
+
+/* Print styles */
+@media print {
+  .slider-container {
+    display: none;
+  }
+
+  .w-\[60\%\],
+  .w-\[40\%\] {
+    width: 100%;
+  }
+
+  .shadow-xl {
+    box-shadow: none;
+  }
+}
+
+select:invalid {
+  color: #9ca3af;
+}
+
+select option {
+  color: #000;
+}

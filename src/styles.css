@@ -1,0 +1,31 @@
+/* ✅ ฟอนต์ต้องมาก่อนทุกอย่าง */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Thai:wght@100..900&display=swap');
+
+/* ✅ Tailwind Directives */
+@import "tailwindcss";
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* Font Family Definitions */
+.font-thai {
+  font-family: 'Noto Sans Thai', sans-serif;
+}
+
+.font-english {
+  font-family: 'Inter', sans-serif;
+}
+
+/* ปิด outline สีเขียวของ input valid และให้ border เป็นสีฟ้าเหมือน register */
+input:focus:valid {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: #3b82f6 !important; /* Tailwind blue-500 */
+}

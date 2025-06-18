@@ -1,0 +1,177 @@
+<!-- Main Background Container -->
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-thai">
+
+  <!-- Card Container -->
+  <div class="bg-white shadow-xl overflow-hidden max-w-7xl w-full flex">
+
+    <!-- Left Section 60% -->
+    <div class="w-[60%] relative p-6 flex items-center justify-center border-r border-gray-200">
+      <!-- Image Slider จะถูกจัดกลางแล้วใน CSS -->
+      <div class="slider-container">
+        <div class="slider-wrapper" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
+          <div *ngFor="let image of sliderImages" class="slider-slide">
+            <img [src]="image.src" [alt]="image.alt" class="w-full h-full object-cover">
+          </div>
+        </div>
+
+        <!-- Slider Dots -->
+        <div class="slider-dots">
+          <button *ngFor="let image of sliderImages; let i = index" class="slider-dot"
+            [class.active]="i === currentSlide" (click)="goToSlide(i)">
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Section - Registration Form -->
+    <div class="w-[40%] p-8 flex flex-col justify-center">
+
+      <!-- Header Section -->
+      <div class="text-center mb-6">
+        <!-- Avatar -->
+        <div
+          class="mx-auto w-25 h-25 bg-gradient-to-br from-orange-400 to-purple-600 rounded-full flex items-center justify-center mb-4 relative avatar-container">
+          <img *ngIf="photoURL; else defaultAvatar" [src]="photoURL" alt="Profile Avatar"
+            class="w-full h-full rounded-full object-cover cursor-pointer" (click)="onEditAvatar()">
+          <ng-template #defaultAvatar>
+            <img src="assets/icon/Rectangle 6.png" alt="Profile Avatar"
+              class="w-full h-full rounded-full object-cover cursor-pointer" (click)="onEditAvatar()">
+          </ng-template>
+          <!-- Edit Icon - กลับมาเป็นปุ่มในวงกลมเล็ก -->
+          <div
+            class="absolute -bottom-1 -right-1 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer"
+            (click)="onEditAvatar()">
+            <img src="assets/icon/editing.png" alt="Edit" class="w-4 h-4 filter invert object-contain" />
+            <input #fileInput type="file" accept="image/*" style="display:none" (change)="onFileSelected($event)">
+          </div>
+        </div>
+        
+        
+        <!-- Title -->
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ getPageTitle() }}</h1>
+        <p class="text-gray-500 text-base font-normal font-thai mb-2">
+          {{ getPageDescription() }}
+        </p>
+      </div>
+
+      <!-- Registration Form -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4">
+
+        <!-- Full Name -->
+        <div>
+          <input type="text" formControlName="fullName" placeholder="ชื่อ-นามสกุล"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+            [class.border-red-500]="hasError('fullName', 'required')">
+          <p *ngIf="hasError('fullName', 'required') && (registerForm.get('fullName')?.touched || registerForm.get('fullName')?.dirty)" class="mt-1 text-sm text-red-600">{{ getErrorMessage('fullName') }}</p>
+        </div>
+
+        <!-- Email -->
+        <div>
+          <input type="email" formControlName="email" placeholder="อีเมล"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
+            [class.border-red-500]="hasError('email', 'required') || hasError('email', 'email')">
+          <p *ngIf="getErrorMessage('email') && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)" class="mt-1 text-sm text-red-600">{{ getErrorMessage('email') }}</p>
+        </div>
+
+        <!-- Phone Number -->
+        <div>
+          <input type="tel" formControlName="phoneNumber" placeholder="เบอร์โทรศัพท์"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
+            [class.border-red-500]="hasError('phoneNumber', 'required')">
+          <p *ngIf="getErrorMessage('phoneNumber') && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)" class="mt-1 text-sm text-red-600">{{ getErrorMessage('phoneNumber') }}</p>
+        </div>
+
+        <!-- Dormitory Dropdown (เฉพาะสมาชิก) -->
+        <div *ngIf="userType === 'member'">
+          <select formControlName="dormitory" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50">
+            <option value="" disabled selected>เลือกหอพัก</option>
+            <option *ngFor="let dorm of dormList" [value]="dorm.name">{{ dorm.name }}</option>
+          </select>
+          <p *ngIf="hasError('dormitory', 'required') && (registerForm.get('dormitory')?.touched || registerForm.get('dormitory')?.dirty)" class="mt-1 text-sm text-red-600">กรุณาเลือกหอพัก</p>
+        </div>
+
+        <!-- Password -->
+        <div *ngIf="!registerForm.get('password')?.disabled">
+          <input type="password" formControlName="password" placeholder="รหัสผ่าน"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+            [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength')">
+          <p *ngIf="getErrorMessage('password') && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)" class="mt-1 text-sm text-red-600">{{ getErrorMessage('password') }}</p>
+        </div>
+
+        <!-- Confirm Password -->
+        <div *ngIf="!registerForm.get('confirmPassword')?.disabled">
+          <input type="password" formControlName="confirmPassword" placeholder="ยืนยันรหัสผ่าน"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+            [class.border-red-500]="hasError('confirmPassword', 'required') || registerForm.hasError('passwordMismatch')">
+          <p *ngIf="getErrorMessage('confirmPassword') && (registerForm.get('confirmPassword')?.touched || registerForm.get('confirmPassword')?.dirty)" class="mt-1 text-sm text-red-600">{{ getErrorMessage('confirmPassword') }}</p>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" [disabled]="isRegisterLoading || registerForm.invalid"
+          class="mb-1 mt-6 w-full bg-[#68ACFD] hover:bg-[#68ACFD] disabled:bg-gray-300 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+          [class.cursor-not-allowed]="isRegisterLoading || registerForm.invalid">
+          <svg *ngIf="isRegisterLoading" class="animate-spin h-5 w-5 text-white mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>สมัครสมาชิก</span>
+        </button>
+        <div *ngIf="errorMessage" class="text-red-600 text-sm mt-1 text-center">{{ errorMessage }}</div>
+
+        <!-- Username Display Section -->
+        <div *ngIf="receivedUsername" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center justify-center">
+            <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-green-800 font-medium">สมัครสมาชิกสำเร็จ!</span>
+          </div>
+          <div class="mt-2 text-center">
+            <span class="text-sm text-gray-600">Username ของคุณคือ: </span>
+            <span class="font-mono text-blue-600 font-semibold text-lg">{{ receivedUsername }}</span>
+          </div>
+          <div class="mt-2 text-xs text-gray-500 text-center">
+            ระบบจะสร้าง username อัตโนมัติจากอีเมลของคุณ
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="relative mt-1 mb-2">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-200"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500 font-thai">หรือ</span>
+          </div>
+        </div>
+
+        <!-- Google Button -->
+        <button type="button" (click)="connectWithGoogle()"
+          [disabled]="isGoogleLoading"
+          class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-english">
+          <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
+          <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'Connect with Google' }}</span>
+        </button>
+        <div *ngIf="errorMessageGoogle" class="text-red-600 text-sm mt-1 text-center">{{ errorMessageGoogle }}</div>
+
+      </form>
+
+      <!-- Footer -->
+      <div class="text-center mt-6">
+        <span class="text-gray-600 text-sm font-thai">เป็นสมาชิกอยู่แล้วใช่ไหม? </span>
+        <button (click)="onLogin()"
+          class="text-blue-500 hover:text-blue-600 font-semibold hover:underline transition duration-200 text-sm font-thai">
+          เข้าสู่ระบบ
+        </button>
+        <span class="text-gray-600 text-sm font-thai"> เลย!</span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,57 @@
+<div class="profile-container">
+  <div class="profile-card">
+    <h2>ข้อมูลโปรไฟล์</h2>
+    
+    <div *ngIf="currentUser; else loading" class="profile-info">
+      <div class="profile-section">
+        <h3>ข้อมูลพื้นฐาน</h3>
+        <div class="info-row">
+          <label>Username:</label>
+          <span class="username">{{ currentUser.username || 'ยังไม่มี username' }}</span>
+        </div>
+        <div class="info-row">
+          <label>อีเมล:</label>
+          <span>{{ currentUser.email }}</span>
+        </div>
+        <div class="info-row">
+          <label>ชื่อที่แสดง:</label>
+          <span>{{ currentUser.displayName || 'ยังไม่ได้ตั้งชื่อ' }}</span>
+        </div>
+        <div class="info-row">
+          <label>ประเภทผู้ใช้:</label>
+          <span class="user-type">{{ currentUser.memberType === 'owner' ? 'เจ้าของหอพัก' : 'ผู้เช่า' }}</span>
+        </div>
+      </div>
+
+      <div class="profile-section" *ngIf="currentUser.phoneNumber">
+        <h3>ข้อมูลติดต่อ</h3>
+        <div class="info-row">
+          <label>เบอร์โทรศัพท์:</label>
+          <span>{{ currentUser.phoneNumber }}</span>
+        </div>
+      </div>
+
+      <div class="profile-section" *ngIf="currentUser.memberType === 'owner' && currentUser.businessName">
+        <h3>ข้อมูลธุรกิจ</h3>
+        <div class="info-row">
+          <label>ชื่อธุรกิจ:</label>
+          <span>{{ currentUser.businessName }}</span>
+        </div>
+        <div class="info-row" *ngIf="currentUser.businessAddress">
+          <label>ที่อยู่ธุรกิจ:</label>
+          <span>{{ currentUser.businessAddress }}</span>
+        </div>
+        <div class="info-row" *ngIf="currentUser.businessRegistration">
+          <label>เลขทะเบียนธุรกิจ:</label>
+          <span>{{ currentUser.businessRegistration }}</span>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #loading>
+      <div class="loading">
+        <p>กำลังโหลดข้อมูล...</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

@@ -1,0 +1,9 @@
+/* Custom card hover shadow to match main */
+.card-owner {
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
+  transition: box-shadow 0.2s;
+}
+.card-owner:hover {
+  box-shadow: 0 8px 24px 0 rgba(52, 144, 220, 0.18), 0 1.5px 6px 0 rgba(0,0,0,0.10);
+  /* Emphasize lower shadow like main */
+}
