@@ -1,0 +1,54 @@
+<app-navbar></app-navbar>
+<div class="px-6 py-6 max-w-[1200px] mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-medium text-gray-800 font-thai">รายการผู้เช่า (?)</h1>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <input type="text" class="py-2 pl-3 pr-10 border border-gray-300 rounded-md w-72 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="ค้นหาผู้เช่า...">
+        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
+      </div>
+      <select class="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white">
+        <option>เรียงตามตัวเลข</option>
+      </select>
+    </div>
+  </div>
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="w-full border-collapse">
+      <thead class="bg-gray-400">
+        <tr>
+          <th class="text-center py-4 px-2 font-medium text-gray-600 text-sm border-b border-gray-200 font-thai">ชื่อผู้เช่า</th>
+          <th class="text-center py-4 px-2 font-medium text-gray-600 text-sm border-b border-gray-200 font-thai">หอพัก</th>
+          <th class="text-center py-4 px-2 font-medium text-gray-600 text-sm border-b border-gray-200 font-thai">เบอร์โทรศัพท์</th>
+          <th class="text-center py-4 px-2 font-medium text-gray-600 text-sm border-b border-gray-200 font-thai">อีเมล</th>
+          <th class="text-center py-4 px-2 font-medium text-gray-600 text-sm border-b border-gray-200 font-thai">สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-thai">สมชาย โอดี</td>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-thai">หอพักรววมกาก</td>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-english">0987654321</td>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-english">somchai&#64;email.com</td>
+          <td class="text-center py-4 px-2">
+            <div class="flex gap-1 justify-center">
+              <button class="px-2 py-1 text-xs rounded bg-green-100 border border-green-600 text-green-800 font-medium font-thai">ยืนยัน</button>
+              <button class="px-2 py-1 text-xs rounded bg-red-200 border border-red-600 text-red-700 font-medium font-thai">ปฏิเสธ</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-thai">สมหญิง รักเรียน</td>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-thai">หอพักรววมกาก</td>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-english">0987654321</td>
+          <td class="text-center py-4 px-2 text-gray-800 text-sm font-english">somying&#64;email.com</td>
+          <td class="text-center py-4 px-2">
+            <div class="flex flex-col items-center">
+              <button class="px-2 py-1 text-xs rounded bg-white border border-red-600 text-red-700 font-medium mt-1 font-thai">ยกเลิกการยืนยัน</button>
+            </div>
+          </td>
+        </tr>
+        <!-- ทำซ้ำแถวข้างบนตามต้องการ โดยใช้ Tailwind class เดิม -->
+      </tbody>
+    </table>
+  </div>
+</div> 

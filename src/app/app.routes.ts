@@ -11,6 +11,7 @@ import { DormAddComponent } from './main/dorm-add/dorm-add.component';
 import { DormCompareComponent } from './main/dorm-compare/dorm-compare.component';
 import { AdminComponent } from './main/admin/admin.component';
 import { OwnerGuard } from './guards/owner.guard';
+import { TenantListComponent } from './main/tenant-list/tenant-list.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'main', pathMatch: 'full' },
@@ -21,10 +22,11 @@ export const routes: Routes = [
   { path: 'dorm-list', component: DormListComponent },
   { path: 'dorm-detail', component: DormDetailComponent },
   { path: 'dorm-map', component: DormMapComponent },
+  
   { 
     path: 'owner', 
     component: OwnerComponent,
-    canActivate: [OwnerGuard]
+    // canActivate: [OwnerGuard]
   },
 
   // Route ที่ใช้ layout main
@@ -37,7 +39,11 @@ export const routes: Routes = [
       { path: 'profile', component: ProfileComponent },
       { path: 'dorm-add', component: DormAddComponent },
       { path: 'dorm-compare', component: DormCompareComponent },
-      { path: 'admin', component: AdminComponent }
+      { path: 'admin', component: AdminComponent },
     ]
+  },
+  {
+    path: 'main/tenant-list',
+    component: TenantListComponent
   }
 ];
