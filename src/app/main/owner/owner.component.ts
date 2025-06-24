@@ -24,6 +24,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
 export class OwnerComponent implements OnInit, OnDestroy {
   currentUser: UserProfile | null = null;
   private subscription: any;
+  uploadLoading = false;
+  uploadError: string | null = null;
 
   recommendedDorms = [
     {
@@ -96,5 +98,28 @@ export class OwnerComponent implements OnInit, OnDestroy {
   onDeleteDorm(dorm: any) {
     // TODO: implement delete logic
     alert('Delete dorm: ' + dorm.name);
+  }
+
+  // Trigger file input click
+  triggerFileInput(fileInput: HTMLInputElement) {
+    fileInput.click();
+  }
+
+  // Handle file input change
+  async onProfileImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0 || !this.currentUser) return;
+    const file = input.files[0];
+    this.uploadLoading = true;
+    this.uploadError = null;
+    try {
+      await this.authService.uploadOwnerImage(file, this.currentUser.uid);
+      // Success: imageUrl is updated in currentUser via BehaviorSubject
+    } catch (err: any) {
+      this.uploadError = err?.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ';
+    } finally {
+      this.uploadLoading = false;
+      input.value = '';
+    }
   }
 }

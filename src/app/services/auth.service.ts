@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, from, of, Subject } from 'rxjs'; // เพิ่ม Subject
 import { switchMap, tap, catchError, map, filter } from 'rxjs/operators';
-import { Auth, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, updateProfile, user, User } from '@angular/fire/auth';
+import { Auth, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, updateProfile, user, User, createUserWithEmailAndPassword } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 
 export interface UserProfile {
@@ -60,6 +60,11 @@ export class AuthService {
                                 }),
                                 map(rawBackendProfile => {
                                     console.log(`[AuthService] Raw Backend profile fetched:`, rawBackendProfile);
+                                    console.log(`[AuthService] 🔍 Photo URL from Database:`, {
+                                        photo_url: rawBackendProfile.photo_url,
+                                        photoURL: rawBackendProfile.photoURL,
+                                        finalPhotoURL: rawBackendProfile.photo_url || rawBackendProfile.photoURL || null
+                                    });
                                     const userProfile: UserProfile = {
                                         uid: rawBackendProfile.uid,
                                         email: rawBackendProfile.email,
@@ -76,6 +81,7 @@ export class AuthService {
                                         businessRegistration: rawBackendProfile.business_registration || null,
                                         residenceDormId: rawBackendProfile.residence_dorm_id || null
                                     };
+                                    console.log(`[AuthService] 📸 Final UserProfile photoURL:`, userProfile.photoURL);
                                     console.log(`[AuthService] Mapped UserProfile with username:`, userProfile);
                                     return userProfile;
                                 }),
@@ -166,6 +172,11 @@ export class AuthService {
             // Call backend
             const response = await this.http.post<any>(`${this.backendUrl}/auth/google-login`, { idToken, userType }).toPromise();
             console.log(`[AuthService] Raw Backend /auth/google-login response:`, response);
+            console.log(`[AuthService] 🔍 Google Login - Photo URL from Database:`, {
+                photo_url: response.photo_url,
+                photoURL: response.photoURL,
+                finalPhotoURL: response.photo_url || response.photoURL || null
+            });
 
             const userProfile: UserProfile = {
                 uid: response.uid,
@@ -183,6 +194,7 @@ export class AuthService {
                 businessRegistration: response.business_registration || null,
                 residenceDormId: response.residence_dorm_id || null
             };
+            console.log(`[AuthService] 📸 Google Login - Final UserProfile photoURL:`, userProfile.photoURL);
             console.log(`[AuthService] Mapped UserProfile from Google Login with username:`, userProfile);
             console.log(`[AuthService] Username from backend: "${response.username}"`);
             console.log(`[AuthService] Username in mapped profile: "${userProfile.username}"`);
@@ -217,6 +229,11 @@ export class AuthService {
                 throw new Error('Failed to fetch user profile after email login.');
             }
             console.log(`[AuthService] Raw Backend /auth/me response after email login:`, rawUserProfile);
+            console.log(`[AuthService] 🔍 Email Login - Photo URL from Database:`, {
+                photo_url: rawUserProfile.photo_url,
+                photoURL: rawUserProfile.photoURL,
+                finalPhotoURL: rawUserProfile.photo_url || rawUserProfile.photoURL || null
+            });
 
             const userProfile: UserProfile = {
                 uid: rawUserProfile.uid,
@@ -234,6 +251,7 @@ export class AuthService {
                 businessRegistration: rawUserProfile.business_registration || null,
                 residenceDormId: rawUserProfile.residence_dorm_id || null
             };
+            console.log(`[AuthService] 📸 Email Login - Final UserProfile photoURL:`, userProfile.photoURL);
             console.log(`[AuthService] Mapped UserProfile from email login with username:`, userProfile);
 
             // อัพเดท currentUserSubject ก่อน
@@ -280,23 +298,43 @@ export class AuthService {
         }
     }
 
-    async signUpWithEmail(email: string, password: string, memberType: 'member' | 'owner', fullName: string, phoneNumber: string, dormitory?: string, businessName?: string, businessAddress?: string, businessRegistration?: string): Promise<void> { // เปลี่ยน Promise<UserProfile> เป็น Promise<void> เพราะจะไปหน้า login แทน
-        console.log(`[AuthService] signUpWithEmail called for email: ${email}, type: ${memberType}`);
+    async signUpWithEmail(email: string, password: string, memberType: 'member' | 'owner', fullName: string, phoneNumber: string, dormitory?: string): Promise<void> { // เปลี่ยน Promise<UserProfile> เป็น Promise<void> เพราะจะไปหน้า login แทน
         try {
-            const payload = {
-                email,
-                password,
-                fullName,
-                memberType,
-                phoneNumber,
-                dormitory,
-                businessName,
-                businessAddress,
-                businessRegistration
+            console.log(`[AuthService] Starting email sign-up process for ${memberType} with email: ${email}`);
+
+            // สร้าง Firebase user ก่อน
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
+            const firebaseUser = userCredential.user;
+            console.log(`[AuthService] Firebase user created successfully with UID: ${firebaseUser.uid}`);
+
+            // อัปเดต displayName ใน Firebase
+            await updateProfile(firebaseUser, { displayName: fullName });
+            console.log(`[AuthService] Firebase profile updated with displayName: ${fullName}`);
+
+            // รับ ID Token จาก Firebase
+            const idToken = await firebaseUser.getIdToken();
+            console.log(`[AuthService] Got ID token for user: ${firebaseUser.uid}`);
+
+            // สร้าง payload สำหรับ backend (JSON format) - ใช้ camelCase ตามที่ Backend ต้องการ
+            const payload: any = {
+                email: firebaseUser.email,
+                fullName: fullName,
+                memberType: memberType,
+                phoneNumber: phoneNumber
             };
 
+            // เพิ่ม dormitory สำหรับ member เท่านั้น
+            if (memberType === 'member' && dormitory) {
+                payload.dormitory = dormitory;
+                console.log(`[AuthService] Adding dormitory for member: ${dormitory}`);
+            }
+
+            // สร้าง headers พร้อม Authorization
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
+
             console.log(`[AuthService] Sending registration data to backend:`, payload);
-            const rawResponse = await this.http.post<any>(`${this.backendUrl}/auth/register`, payload).toPromise();
+            console.log(`[AuthService] Authorization header: Bearer ${idToken.substring(0, 20)}...`);
+            const rawResponse = await this.http.post<any>(`${this.backendUrl}/auth/register`, payload, { headers }).toPromise();
 
             if (!rawResponse || !rawResponse.user) {
                 console.error('[AuthService] Backend response missing user data:', rawResponse);
@@ -304,18 +342,10 @@ export class AuthService {
             }
 
             console.log(`[AuthService] Raw Backend /auth/register response:`, rawResponse);
-
-            // *** สำคัญ: เมื่อสมัครสมาชิกแบบปกติสำเร็จ ให้ไปหน้า Login ทันที
-            console.log('[AuthService] Email Sign-Up successful. Redirecting to /login.');
-            this.router.navigate(['/login'], { queryParams: { type: memberType } });
-
-            // ไม่ต้อง signInWithEmailAndPassword ตรงนี้แล้ว เพราะจะให้ผู้ใช้ไปล็อกอินเองที่หน้า Login
-            // await signInWithEmailAndPassword(this.auth, email, password);
-            // console.log(`[AuthService] Successfully signed in user after backend registration.`);
-
-            // ไม่ต้อง return UserProfile ตรงนี้แล้ว
-            // const userProfile: UserProfile = { ... };
-            // return userProfile;
+            
+            // *** สำคัญ: เมื่อสมัครสมาชิกแบบปกติสำเร็จ ให้ไปหน้าแรกทันที
+            console.log('[AuthService] Email Sign-Up successful. Redirecting to home page.');
+            this.router.navigate(['/']);
 
         } catch (error: any) {
             console.error('[AuthService] Email Sign-Up error in service:', error);
@@ -323,8 +353,106 @@ export class AuthService {
         }
     }
 
+    /**
+     * Sign up with FormData including profile image
+     * @param formData FormData object containing all registration data and optional profile image
+     * @returns Promise<void>
+     */
+    async signUpWithFormData(formData: FormData): Promise<void> {
+        try {
+            console.log(`[AuthService] Starting FormData sign-up process`);
+            
+            // ดึงข้อมูลจาก FormData
+            const email = formData.get('email') as string;
+            const password = formData.get('password') as string;
+            const memberType = formData.get('memberType') as 'member' | 'owner';
+            const fullName = formData.get('fullName') as string;
+            const phoneNumber = formData.get('phoneNumber') as string;
+            const dormitory = formData.get('dormitory') as string; // เพิ่ม dormitory field
+            const profileImage = formData.get('profileImage') as File;
+            
+            // ตรวจสอบว่าข้อมูลจำเป็นครบหรือไม่
+            if (!email || !password || !memberType || !fullName || !phoneNumber) {
+                console.error('[AuthService] Missing required registration data');
+                throw new Error('Missing required registration data');
+            }
+            
+            console.log(`[AuthService] Starting registration for ${memberType} user: ${email}`);
+
+            // สร้าง Firebase user ก่อน
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
+            const firebaseUser = userCredential.user;
+            console.log(`[AuthService] Firebase user created: ${firebaseUser.uid}`);
+
+            // อัปเดต displayName ใน Firebase
+            await updateProfile(firebaseUser, { displayName: fullName });
+
+            // รับ ID Token จาก Firebase
+            const idToken = await firebaseUser.getIdToken();
+            console.log(`[AuthService] Got ID token for user: ${firebaseUser.uid}`);
+
+            // สร้าง FormData ใหม่สำหรับส่งไป backend พร้อมไฟล์รูปภาพ
+            const submitFormData = new FormData();
+            
+            // เพิ่มข้อมูลพื้นฐานตามที่ Backend คาดหวัง (camelCase)
+            submitFormData.append('email', firebaseUser.email || '');
+            submitFormData.append('fullName', fullName);
+            submitFormData.append('memberType', memberType);
+            submitFormData.append('phoneNumber', phoneNumber);
+            
+            // เพิ่ม dormitory สำหรับ member เท่านั้น
+            if (memberType === 'member' && dormitory) {
+                submitFormData.append('dormitory', dormitory);
+                console.log(`[AuthService] Adding dormitory for member: ${dormitory}`);
+            }
+            
+            // เพิ่มไฟล์รูปภาพถ้ามี
+            if (profileImage) {
+                submitFormData.append('profileImage', profileImage);
+                console.log('[AuthService] Profile image included in registration request:', {
+                    name: profileImage.name,
+                    size: profileImage.size,
+                    type: profileImage.type
+                });
+            } else {
+                console.log('[AuthService] No profile image provided in registration request');
+            }
+
+            // สร้าง headers พร้อม Authorization
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
+
+            console.log(`[AuthService] Sending registration data to backend`);
+            console.log(`[AuthService] Authorization header: Bearer ${idToken.substring(0, 20)}...`);
+            console.log(`[AuthService] FormData contents:`);
+            for (let [key, value] of submitFormData.entries()) {
+                if (key === 'profileImage') {
+                    console.log(`  ${key}: [File] ${(value as File).name} (${(value as File).size} bytes)`);
+                } else {
+                    console.log(`  ${key}: ${value}`);
+                }
+            }
+            
+            const rawResponse = await this.http.post<any>(`${this.backendUrl}/auth/register`, submitFormData, { headers }).toPromise();
+
+            if (!rawResponse || !rawResponse.user) {
+                console.error('[AuthService] Backend registration response is invalid');
+                throw new Error('Backend registration response is incomplete or invalid.');
+            }
+
+            console.log(`[AuthService] Backend registration successful`);
+            
+            // *** สำคัญ: เมื่อสมัครสมาชิกแบบปกติสำเร็จ ให้ไปหน้าแรกทันที
+            console.log('[AuthService] Registration completed, redirecting to home page');
+            this.router.navigate(['/']);
+
+        } catch (error: any) {
+            console.error('[AuthService] Registration error:', error);
+            throw error;
+        }
+    }
+
     // This function is called when a Google user needs to complete their profile (e.g., set memberType)
-    async completeUserProfile(phoneNumber: string, memberType: 'member' | 'owner', dormitory?: string, businessName?: string, businessAddress?: string, businessRegistration?: string): Promise<UserProfile> {
+    async completeUserProfile(phoneNumber: string, memberType: 'member' | 'owner', dormitory?: string): Promise<UserProfile> {
         const currentUser = this.auth.currentUser;
         if (!currentUser) {
             throw new Error('No user logged in to complete profile.');
@@ -333,22 +461,21 @@ export class AuthService {
         const idToken = await currentUser.getIdToken();
         const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
 
+        // สร้าง payload ตามที่ Backend คาดหวัง (camelCase)
         const payload: any = {
-            phoneNumber,
-            memberType
+            phoneNumber: phoneNumber,
+            memberType: memberType
         };
-        if (memberType === 'member') {
-            payload.residenceDormId = dormitory;
-        } else if (memberType === 'owner') {
-            payload.businessName = businessName;
-            payload.businessAddress = businessAddress;
-            payload.businessRegistration = businessRegistration;
+
+        // เพิ่ม dormitory สำหรับ member เท่านั้น
+        if (memberType === 'member' && dormitory) {
+            payload.dormitory = dormitory;
+            console.log(`[AuthService] Adding dormitory for member profile completion: ${dormitory}`);
         }
 
         try {
-            console.log('[AuthService] Sending complete profile data to backend:', payload);
+            console.log('[AuthService] Completing user profile with payload:', payload);
             const rawResponse = await this.http.put<any>(`${this.backendUrl}/auth/complete-profile`, payload, { headers }).toPromise();
-            console.log('[AuthService] Backend complete-profile response:', rawResponse);
 
             const userProfile: UserProfile = {
                 uid: rawResponse.uid,
@@ -366,24 +493,24 @@ export class AuthService {
                 businessRegistration: rawResponse.business_registration || null,
                 residenceDormId: rawResponse.residence_dorm_id || null
             };
-            console.log(`[AuthService] Mapped UserProfile after completeUserProfile with username:`, userProfile);
+            console.log(`[AuthService] User profile completed successfully`);
 
             // *** LOGIC FOR REDIRECT AFTER PROFILE COMPLETION (FOR GOOGLE USERS) ***
             if (userProfile.memberType === 'owner') {
-                console.log('[AuthService] Complete Profile: Owner, redirecting to /owner.');
+                console.log('[AuthService] Redirecting owner to dashboard');
                 this.router.navigate(['/owner']);
             } else if (userProfile.memberType === 'member') {
-                console.log('[AuthService] Complete Profile: Member, redirecting to /main/member/dashboard.');
+                console.log('[AuthService] Redirecting member to dashboard');
                 this.router.navigate(['/main/member/dashboard']);
             } else {
-                console.log('[AuthService] Complete Profile: Unknown memberType, redirecting to /.');
+                console.log('[AuthService] Unknown member type, redirecting to home');
                 this.router.navigate(['/']);
             }
 
             return userProfile;
 
         } catch (error: any) {
-            console.error('[AuthService] Complete profile error in service:', error);
+            console.error('[AuthService] Complete profile error:', error);
             throw error;
         }
     }
@@ -432,6 +559,35 @@ export class AuthService {
         else {
             console.log('[AuthService] Unknown state, redirecting to home.');
             this.router.navigate(['/']);
+        }
+    }
+
+    /**
+     * Upload owner profile image to backend and update user state (for existing users)
+     * @param file The image file to upload
+     * @param firebaseUid The user's firebase UID
+     * @returns Promise<string> The image URL returned from backend
+     */
+    async uploadOwnerImage(file: File, firebaseUid: string): Promise<string> {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('firebase_uid', firebaseUid);
+        try {
+            const response: any = await this.http.post(`${this.backendUrl}/owner/upload-image`, formData).toPromise();
+            if (response && response.imageUrl) {
+                // Update currentUserSubject with new photoURL
+                const current = this.currentUserSubject.value;
+                if (current) {
+                    const updated = { ...current, photoURL: response.imageUrl };
+                    this.currentUserSubject.next(updated);
+                }
+                return response.imageUrl;
+            } else {
+                throw new Error('No imageUrl returned from backend');
+            }
+        } catch (error) {
+            console.error('[AuthService] Error uploading owner image:', error);
+            throw error;
         }
     }
 }

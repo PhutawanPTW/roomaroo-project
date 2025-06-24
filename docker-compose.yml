@@ -26,5 +26,17 @@ services:
       - postgres
     restart: unless-stopped
 
+  frontend:
+    build: .
+    container_name: frontend
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
 volumes:
   postgres_data:

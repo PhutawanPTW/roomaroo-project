@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
@@ -8,13 +8,14 @@ import { AuthService, UserProfile } from '../../services/auth.service';
   selector: 'app-register',
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
-  imports: [ReactiveFormsModule, NgIf, NgFor, CommonModule],
+  imports: [ReactiveFormsModule, FormsModule, NgIf, NgFor, CommonModule],
 })
 export class RegisterComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('popupFileInput') popupFileInput!: ElementRef<HTMLInputElement>;
   registerForm: FormGroup;
   errorMessage: string | null = null;
-  userType: 'member' | 'owner' | 'general' = 'general'; // Default เป็น 'general' เพราะต้องเลือกหรือได้รับมาจาก Google
+  userType: 'member' | 'owner' | 'general' = 'general';
   currentSlide = 0;
   isLoading = false;
   private slideInterval: any;
@@ -26,6 +27,13 @@ export class RegisterComponent implements OnInit, OnDestroy {
   googleErrorTimeout: any = null;
   receivedUsername: string | null = null;
 
+  // Properties สำหรับป๊อปอัพเพิ่มรูปภาพ
+  showImagePopup = false;
+  selectedFile: File | null = null;
+  previewImage: string | null = null;
+  isImageLoading = false;
+  imageError = '';
+
   sliderImages = [
     { src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Modern Dormitory Building' },
     { src: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Dormitory Room Interior' },
@@ -33,7 +41,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     { src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Campus Dormitory View' },
   ];
 
-  dormList = [ // ควรดึงจาก Backend จริงๆ
+  dormList = [
     { id: 'dorm1', name: 'หอพักวีรวิชญ์' },
     { id: 'dorm2', name: 'หอพักเรือนร่มเย็น' },
     { id: 'dorm3', name: 'หอพักวีรวิชญ์ชาย' },
@@ -63,6 +71,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.startSlideshow();
+    document.addEventListener('keydown', this.handleKeydown.bind(this));
 
     this.route.queryParams.subscribe(params => {
       if (params['type']) {
@@ -72,7 +81,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     });
 
     const nav = this.router.getCurrentNavigation();
-    // State จะถูกส่งมาเมื่อมีการ redirect จาก AuthService (หลัง Google Sign-in)
     const state = nav?.extras.state as { fullName?: string, email?: string, photoURL?: string, userType?: 'member' | 'owner' | 'general', isFromGoogle?: boolean };
     if (state) {
       if (state.userType) {
@@ -83,25 +91,22 @@ export class RegisterComponent implements OnInit, OnDestroy {
       }
       if (state.email) {
         this.registerForm.get('email')?.setValue(state.email);
-        this.registerForm.get('email')?.disable(); // อีเมลจาก Google ไม่ควรแก้ไขได้
+        this.registerForm.get('email')?.disable();
       }
       if (state.photoURL) {
         this.photoURL = state.photoURL;
       }
       if (state.isFromGoogle) {
         this.isFromGoogle = true;
-        // รหัสผ่านไม่ต้องกรอกถ้ามาจาก Google
         this.registerForm.get('password')?.disable();
         this.registerForm.get('confirmPassword')?.disable();
       }
       this.updateFormValidation();
     }
 
-    // ตรวจสอบ currentUser จาก AuthService ถ้า profile สมบูรณ์แล้ว ให้ redirect ออกจากหน้านี้
     this.authService.currentUser$.subscribe(userProfile => {
       if (userProfile && !userProfile.needsProfileSetup) {
         const expectedDashboard = userProfile.memberType === 'owner' ? '/owner' : '/main/member/dashboard';
-        // redirect ถ้าไม่ได้อยู่ที่หน้าปลายทาง และไม่ได้อยู่ที่หน้า login/register อยู่แล้ว
         if (!this.router.url.startsWith(expectedDashboard) && !this.router.url.startsWith('/login') && !this.router.url.startsWith('/register')) {
           this.router.navigate([expectedDashboard]);
         }
@@ -113,15 +118,15 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (this.slideInterval) {
       clearInterval(this.slideInterval);
     }
+    document.removeEventListener('keydown', this.handleKeydown.bind(this));
   }
 
   private updateFormValidation() {
-    // businessFields ไม่ต้อง required ไม่ว่าจะเป็น owner หรือ member
     const businessFields = ['businessName', 'businessAddress', 'businessRegistration'];
     businessFields.forEach(field => {
       const control = this.registerForm.get(field);
       if (control) {
-          control.clearValidators();
+        control.clearValidators();
         control.updateValueAndValidity();
       }
     });
@@ -196,27 +201,23 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.isRegisterLoading = true;
     this.errorMessage = null;
 
-    // Validate if userType is 'general'
     if (this.userType === 'general') {
       this.errorMessage = 'กรุณาเลือกประเภทสมาชิก (เจ้าของหอพัก หรือ สมาชิก)';
       this.isRegisterLoading = false;
       return;
     }
 
-    // If not from Google, enable password fields for validation before submission
     if (!this.isFromGoogle) {
       this.registerForm.get('password')?.enable();
       this.registerForm.get('confirmPassword')?.enable();
     }
-    // Always enable email in case it was disabled (e.g., from Google flow)
     this.registerForm.get('email')?.enable();
-    this.registerForm.updateValueAndValidity(); // Update validity after enabling/disabling controls
+    this.registerForm.updateValueAndValidity();
 
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       this.isRegisterLoading = false;
       this.errorMessage = 'กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง';
-      // Disable email/password fields again if they were disabled for Google flow
       if (this.isFromGoogle) {
         this.registerForm.get('email')?.disable();
         this.registerForm.get('password')?.disable();
@@ -226,48 +227,98 @@ export class RegisterComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const formData = this.registerForm.getRawValue(); // Use getRawValue to get values from disabled controls too
+      const formData = this.registerForm.getRawValue();
+      console.log('[RegisterComponent] Starting registration process for:', {
+        email: formData.email,
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber,
+        userType: this.userType,
+        hasImage: !!(this.selectedFile || this.previewImage),
+        selectedFile: this.selectedFile ? {
+          name: this.selectedFile.name,
+          size: this.selectedFile.size,
+          type: this.selectedFile.type
+        } : null,
+        previewImage: this.previewImage
+      });
 
-        if (this.isFromGoogle) {
-        // สำหรับผู้ใช้ Google ที่ต้องกรอกข้อมูลเพิ่ม
+      if (this.isFromGoogle) {
         const userProfile = await this.authService.completeUserProfile(
-            formData.phoneNumber,
+          formData.phoneNumber,
           this.userType as 'member' | 'owner',
-            this.userType === 'member' ? formData.dormitory : undefined,
-            this.userType === 'owner' ? formData.businessName : undefined,
-            this.userType === 'owner' ? formData.businessAddress : undefined,
-            this.userType === 'owner' ? formData.businessRegistration : undefined
-          );
-        // เก็บ username ที่ได้รับจาก backend
+          this.userType === 'member' ? formData.dormitory : undefined
+        );
         this.receivedUsername = userProfile?.username || null;
-        console.log('[RegisterComponent] Received username from backend:', this.receivedUsername);
-        // authService.completeUserProfile จะจัดการ redirect เอง
+        console.log('[RegisterComponent] Google user profile completed successfully');
+      } else {
+        const submitFormData = new FormData();
+
+        if (formData.email) {
+          submitFormData.append('email', formData.email);
         } else {
-        // สำหรับการสมัครสมาชิกแบบปกติ (อีเมล/รหัสผ่าน)
-        await this.authService.signUpWithEmail(
-            formData.email,
-            formData.password,
-          this.userType as 'member' | 'owner',
-            formData.fullName,
-            formData.phoneNumber,
-          this.userType === 'member' ? formData.dormitory : undefined,
-          this.userType === 'owner' ? formData.businessName : undefined,
-          this.userType === 'owner' ? formData.businessAddress : undefined,
-          this.userType === 'owner' ? formData.businessRegistration : undefined
-          );
-        // signUpWithEmail ไม่ return UserProfile เพราะจะไปหน้า login แทน
-        // authService.signUpWithEmail จะจัดการ redirect ไปหน้า Login เอง
+          console.error('[RegisterComponent] Email is missing or undefined');
         }
-      } catch (error: any) {
-        this.errorMessage = this.authService.errorMessageHandler(error);
-      console.error('Registration/Complete Profile error:', error);
-      } finally {
+
+        if (formData.password) {
+          submitFormData.append('password', formData.password);
+        } else {
+          console.error('[RegisterComponent] Password is missing or undefined');
+        }
+
+        if (this.userType) {
+          submitFormData.append('memberType', this.userType);
+        } else {
+          console.error('[RegisterComponent] memberType is missing or undefined');
+        }
+
+        if (formData.fullName) {
+          submitFormData.append('fullName', formData.fullName);
+        } else {
+          console.error('[RegisterComponent] fullName is missing or undefined');
+        }
+
+        if (formData.phoneNumber) {
+          submitFormData.append('phoneNumber', formData.phoneNumber);
+        } else {
+          console.error('[RegisterComponent] phoneNumber is missing or undefined');
+        }
+
+        if (this.userType === 'member' && formData.dormitory) {
+          submitFormData.append('dormitory', formData.dormitory);
+          console.log('[RegisterComponent] Adding dormitory for member:', formData.dormitory);
+        }
+
+        if (this.selectedFile) {
+          submitFormData.append('profileImage', this.selectedFile);
+          console.log('[RegisterComponent] ✅ Profile image file added:', {
+            name: this.selectedFile.name,
+            size: this.selectedFile.size,
+            type: this.selectedFile.type
+          });
+        } else {
+          console.log('[RegisterComponent] ❌ No profile image file selected');
+          console.log('[RegisterComponent] Debug info:', {
+            photoURL: this.photoURL,
+            selectedFile: this.selectedFile,
+            previewImage: this.previewImage
+          });
+          if (this.photoURL && this.photoURL !== 'assets/icon/Rectangle 6.png') {
+            console.warn('[RegisterComponent] ⚠️ photoURL exists but no selectedFile - this might indicate an issue with image processing');
+          }
+        }
+
+        await this.authService.signUpWithFormData(submitFormData);
+        console.log('[RegisterComponent] Registration completed successfully');
+      }
+    } catch (error: any) {
+      this.errorMessage = this.authService.errorMessageHandler(error);
+      console.error('[RegisterComponent] Registration error:', error);
+    } finally {
       this.isRegisterLoading = false;
-      // Re-disable email/password fields if they were disabled for Google flow
-        if (this.isFromGoogle) {
-          this.registerForm.get('email')?.disable();
-          this.registerForm.get('password')?.disable();
-          this.registerForm.get('confirmPassword')?.disable();
+      if (this.isFromGoogle) {
+        this.registerForm.get('email')?.disable();
+        this.registerForm.get('password')?.disable();
+        this.registerForm.get('confirmPassword')?.disable();
       }
     }
   }
@@ -281,9 +332,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.isGoogleLoading = true;
     this.errorMessageGoogle = null;
     try {
-      // เรียกใช้ signInWithGoogle จาก AuthService ซึ่งจะจัดการเรื่อง redirect เอง
-      await this.authService.signInWithGoogle(this.userType === 'owner' ? 'owner' : 'member'); // ส่ง userType ที่เลือกไป
-      console.log('Google Sign-In successful (handled by AuthService)');
+      await this.authService.signInWithGoogle(this.userType === 'owner' ? 'owner' : 'member');
+      console.log('[RegisterComponent] Google sign-in initiated successfully');
     } catch (error: any) {
       if (error?.code === 'auth/popup-closed-by-user') {
         this.errorMessageGoogle = 'ยกเลิกการลงชื่อเข้าใช้ด้วย Google';
@@ -293,6 +343,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
         }, 3000);
       } else {
         this.errorMessageGoogle = this.authService.errorMessageHandler(error);
+        console.error('[RegisterComponent] Google sign-in error:', error);
         if (this.googleErrorTimeout) clearTimeout(this.googleErrorTimeout);
         this.googleErrorTimeout = setTimeout(() => {
           this.errorMessageGoogle = null;
@@ -307,7 +358,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-      alert('File selected: ' + file.name + ' (ยังไม่ได้อัปโหลดจริง)');
       const reader = new FileReader();
       reader.onload = () => {
         this.photoURL = reader.result as string;
@@ -317,9 +367,134 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   onEditAvatar(): void {
-    if (this.fileInput) {
-      this.fileInput.nativeElement.click();
+    this.showImagePopup = true;
+    this.resetImagePopup();
+  }
+
+  resetImagePopup(): void {
+    this.selectedFile = null;
+    this.previewImage = null;
+    this.isImageLoading = false;
+    this.imageError = '';
+  }
+
+  closeImagePopup(): void {
+    this.showImagePopup = false;
+  }
+
+  onFileSelectedFromPopup(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.imageError = 'กรุณาเลือกไฟล์รูปภาพเท่านั้น';
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        this.imageError = 'ขนาดไฟล์ต้องไม่เกิน 10MB';
+        return;
+      }
+
+      this.selectedFile = file;
+      this.imageError = '';
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.previewImage = e.target?.result as string;
+        this.isImageLoading = false;
+      };
+      reader.readAsDataURL(file);
     }
+  }
+
+  confirmImageSelection(): void {
+    if (this.selectedFile) {
+      this.uploadImageFromPopup(this.selectedFile);
+    } else {
+      console.warn('[RegisterComponent] No selectedFile - unexpected state');
+    }
+  }
+
+  async uploadImageFromPopup(file: File): Promise<void> {
+    try {
+      // Here you would typically upload to your storage service
+      // For now, we'll just set the photoURL to the preview
+      this.photoURL = this.previewImage;
+      this.closeImagePopup();
+      console.log('[RegisterComponent] Image uploaded successfully');
+    } catch (error) {
+      console.error('[RegisterComponent] Failed to upload image:', error);
+      this.imageError = 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ';
+    }
+  }
+
+  removeSelectedFile(): void {
+    this.selectedFile = null;
+    this.previewImage = null;
+    this.imageError = '';
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.currentTarget as HTMLElement;
+    target.classList.add('dragover');
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.currentTarget as HTMLElement;
+    target.classList.remove('dragover');
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.currentTarget as HTMLElement;
+    target.classList.remove('dragover');
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+
+      if (!file.type.startsWith('image/')) {
+        this.imageError = 'กรุณาเลือกไฟล์รูปภาพเท่านั้น';
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        this.imageError = 'ขนาดไฟล์ต้องไม่เกิน 10MB';
+        return;
+      }
+
+      this.selectedFile = file;
+      this.imageError = '';
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.previewImage = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  getFileType(file: File): string {
+    const extension = file.name.split('.').pop()?.toUpperCase();
+    return extension || 'Unknown';
   }
 
   goToSlide(index: number): void {
@@ -346,5 +521,21 @@ export class RegisterComponent implements OnInit, OnDestroy {
     return this.userType === 'owner'
       ? 'สร้างบัญชีเพื่อเริ่มต้นจัดการหอพักของคุณ'
       : 'สร้างบัญชีเพื่อเริ่มต้นค้นหาหอพักที่คุณต้องการ';
+  }
+
+  handleKeydown(event: KeyboardEvent): void {
+    if (this.showImagePopup) {
+      if (event.key === 'Escape') {
+        this.closeImagePopup();
+      } else if (event.key === 'Enter' && this.previewImage) {
+        this.confirmImageSelection();
+      }
+    } else {
+      if (event.key === 'ArrowRight') {
+        this.nextSlide();
+      } else if (event.key === 'ArrowLeft') {
+        this.prevSlide();
+      }
+    }
   }
 }

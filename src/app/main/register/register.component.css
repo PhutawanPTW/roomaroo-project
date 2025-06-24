@@ -251,28 +251,27 @@ button:disabled {
   .w-\[60\%\] {
     width: 55%;
   }
-  
+
   .w-\[40\%\] {
     width: 45%;
   }
-  
+
   .w-\[40\%\] .p-8 {
-    padding: 1.5rem;
+    padding: 1.75rem;
   }
 
   .slider-container {
-    height: 500px;
-    max-width: 24rem;
+    height: 600px;
+    max-width: 35rem;
   }
 }
 
-/* Animation enhancements */
+/* Animation for smooth transitions */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -280,7 +279,7 @@ button:disabled {
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.5s ease-out;
 }
 
 /* Hover effects */
@@ -403,12 +402,4 @@ h6 {
   .shadow-xl {
     box-shadow: none;
   }
-}
-
-select:invalid {
-  color: #9ca3af;
-}
-
-select option {
-  color: #000;
 }

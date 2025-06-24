@@ -31,6 +31,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
       (user: UserProfile | null) => { // <<< กำหนด Type ให้ชัดเจน
         this.currentUser = user;
         console.log('Current user updated in Navbar:', user);
+        if (user) {
+          console.log('🖼️ Navbar - User photoURL:', user.photoURL);
+          console.log('🖼️ Navbar - getUserPhotoURL() result:', this.getUserPhotoURL());
+        }
       }
     );
   }
@@ -88,7 +92,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   getUserPhotoURL(): string | null {
-    return this.currentUser?.photoURL || null;
+    const photoURL = this.currentUser?.photoURL || null;
+    console.log('🖼️ Navbar - getUserPhotoURL() called, returning:', photoURL);
+    return photoURL;
   }
 
   shouldShowPostDormButton(): boolean {
