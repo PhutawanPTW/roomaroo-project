@@ -1,1 +1,58 @@
-<p>admin works!</p>
+<div class="admin-container">
+  <aside class="sidebar">
+    <img src="assets/images/logo.png" alt="Roomaroo Logo" class="logo" />
+    <nav>
+      <ul>
+        <li class="font-thai" [class.active]="selectedTab === 'all'" (click)="setTab('all')">รายการหอพักทั้งหมด</li>
+        <li class="font-thai" [class.active]="selectedTab === 'pending'" (click)="setTab('pending')">รายการรอการอนุมัติ</li>
+      </ul>
+    </nav>
+  </aside>
+  <main class="main-content">
+    <header class="header">
+      <div></div>
+      <div class="profile">
+        <img src="assets/images/image-removebg-preview.png" alt="Admin Profile" class="profile-img" />
+        <div class="profile-info">
+          <span class="font-english">Admin1</span>
+          <span class="font-english uid">UID: 23545</span>
+        </div>
+      </div>
+    </header>
+    <section class="content">
+      <h2 class="font-thai">รายการหอพัก</h2>
+      <div class="table-responsive">
+        <table class="dorm-table">
+          <thead>
+            <tr>
+              <th class="font-thai">ชื่อหอพัก</th>
+              <th class="font-english">USER ID</th>
+              <th class="font-thai">เจ้าของหอพัก</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let dorm of dorms; let i = index" [class.alt-row]="i % 2 === 1">
+              <td class="font-thai">{{ dorm.name }}</td>
+              <td class="font-english">{{ dorm.userId }}</td>
+              <td class="font-thai">{{ dorm.owner }}</td>
+              <td>
+                <ng-container *ngIf="selectedTab === 'pending'; else editDeleteBtns">
+                  <button class="check-btn font-thai">ตรวจสอบ</button>
+                </ng-container>
+                <ng-template #editDeleteBtns>
+                  <button class="check-btn font-thai" style="background:#f59e42; margin-right:8px;">แก้ไข</button>
+                  <button class="check-btn font-thai" style="background:#ef4444;">ลบ</button>
+                </ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button *ngFor="let page of [1,2,3,4,5]" [class.active-page]="page === currentPage" class="page-btn font-english">{{ page }}</button>
+        <button class="page-btn font-english">Next</button>
+      </div>
+    </section>
+  </main>
+</div>

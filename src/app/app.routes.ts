@@ -45,5 +45,13 @@ export const routes: Routes = [
   {
     path: 'main/tenant-list',
     component: TenantListComponent
+  },
+  {
+    path: 'admin',
+    component: AdminComponent
+  },
+  {
+    path: 'dorm-list',
+    component: AdminComponent
   }
 ];
