@@ -1,1 +1,210 @@
-<p>dorm-detail works!</p>
+<app-navbar></app-navbar>
+<!-- Main Container -->
+<div class="dorm-detail-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="name-row">
+      <h2 class="dorm-name">{{ dormName }}</h2>
+    </div>
+    <div class="button-row">
+      <button class="favorite-btn" (click)="addToFavorites()">   
+        <img src="../../../assets/svg/Add.svg" alt="Add">
+        <h3 class="font-thai">เพิ่มเข้าเปรียบเทียบ</h3>
+      </button>
+      
+      <!-- Price Banner moved here -->
+      <div class="price-banner">
+        <h2>{{ dormPrice }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout -->
+  <div class="two-column-layout">
+    <!-- Left Column - Main Content -->
+    <div class="main-content-column">
+      <!-- Image Gallery Section -->
+      <div class="gallery-section">
+        <div class="main-image">
+          <button class="prev-btn" (click)="prevImage()">
+            <span>&lt;</span>
+          </button>
+          <img [src]="images[currentImageIndex]" alt="Dorm Image">
+          <button class="next-btn" (click)="nextImage()">
+            <span>&gt;</span>
+          </button>
+        </div>
+        <div class="thumbnail-container">
+          <div class="thumbnail" *ngFor="let image of images; let i = index" (click)="setCurrentImage(i)">
+            <img [src]="image" alt="Thumbnail">
+          </div>
+        </div>
+      </div>
+
+      <!-- Details Section -->
+      <div class="details-section">
+        <div class="details-card">
+          <div class="details-header">
+            <h3 class="section-title">{{ dormName }}</h3>
+            <div class="price-range">{{ priceRange }}</div>
+          </div>
+          
+          <div class="location">
+            <i class="location-icon"></i>
+            <span>{{ location }}</span>
+          </div>
+          
+          <div class="owner">
+            <span>โดย : {{ owner }}</span>
+          </div>
+          
+          <h4 class="subsection-title">ข้อมูลทั่วไป</h4>
+          <!-- Room Details -->
+          <div class="room-details">
+            <div class="detail-row">
+              <div class="detail-item">
+                <span class="detail-label">ค่าน้ำ:</span>
+                <span class="detail-value">{{ waterRate }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">ค่าไฟ:</span>
+                <span class="detail-value">{{ electricRate }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Dorm Description -->
+          <div class="description">
+            <h4 class="subsection-title">รายละเอียดหอพัก</h4>
+            <p>{{ description }}</p>
+          </div>
+          
+          <!-- Amenities -->
+          <div class="amenities-section">
+            <h4>สิ่งอำนวยความสะดวก</h4>
+            <div class="amenities-grid">
+              <div class="amenity-item" *ngFor="let amenity of amenities">
+                <input type="checkbox" [checked]="amenity.available" disabled>
+                <label>{{ amenity.name }}</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Location Section -->
+      <div class="map-section">
+        <div class="section-container">
+          <h3 class="map-title">ตำแหน่งที่พัก</h3>
+          <div class="map-container">
+            <!-- Using OpenStreetMap iframe -->
+            <iframe width="100%" height="400" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" 
+              src="https://www.openstreetmap.org/export/embed.html?bbox=-0.12%2C51.50%2C-0.11%2C51.51&amp;layer=mapnik&amp;marker=51.505%2C-0.115" 
+              style="border: none;">
+            </iframe>
+            
+            <!-- Map controls (these would typically be handled by the map service) -->
+            <div class="map-controls">
+              <button class="map-control-btn zoom-in" (click)="zoomIn()">+</button>
+              <button class="map-control-btn zoom-out" (click)="zoomOut()">−</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews Section -->
+      <div class="reviews-section">
+        <div class="section-container">
+          <div class="reviews-header">
+            <h3 class="reviews-title">ความคิดเห็นของผู้ใช้หอพัก</h3>
+            <div class="overall-rating">
+              <span class="rating-arrow up">↑</span>
+              <span class="rating-score">{{ overallRating }}</span>
+              <div class="rating-stars">
+                <span class="star" *ngFor="let i of [1,2,3,4,5]">★</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Comment Input -->
+          <div class="comment-input">
+            <div class="user-avatar">
+              <img src="../../../assets/images/image-removebg-preview.png" alt="User">
+            </div>
+            <input type="text" [(ngModel)]="newComment" placeholder="เขียนความคิดเห็น..." class="comment-field" (keyup.enter)="addComment(newComment)">
+          </div>
+          
+          <!-- Reviews List -->
+          <div class="reviews-list">
+            <!-- Review Item -->
+            <div class="review-item" *ngFor="let review of reviews">
+              <div class="user-avatar">
+                <img [src]="review.avatar" alt="User">
+              </div>
+              <div class="review-content">
+                <div class="review-header">
+                  <span class="username">{{ review.username }}</span>
+                  <span class="dorm-name">{{ review.comment }}</span>
+                </div>
+                <div class="review-rating">
+                  <span class="rating-arrow" [ngClass]="review.isPositive ? 'up' : 'down'">
+                    {{ review.isPositive ? '↑' : '↓' }}
+                  </span>
+                  <div class="rating-stars">
+                    <ng-container *ngFor="let i of [1,2,3,4,5]">
+                      <span class="star" *ngIf="i <= review.rating">★</span>
+                      <span class="empty-star" *ngIf="i > review.rating">☆</span>
+                    </ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- View All Button -->
+          <div class="view-all">
+            <button class="view-all-btn" (click)="viewAllComments()">ดูความคิดเห็นทั้งหมด</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Sidebar -->
+    <div class="sidebar-column">
+      <!-- Owner Info Section -->
+      <div class="owner-info">
+        <div class="profile-card">
+          <div class="profile-image">
+            <img [src]="ownerProfile.image" alt="Owner Profile">
+          </div>
+          <div class="profile-details">
+            <h3>{{ ownerProfile.name }}</h3>
+            <button class="contact-btn" (click)="contactOwner()">ติดต่อ</button>
+            <button class="line-btn">Line ID: {{ ownerProfile.lineId }}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Similar Properties Section -->
+      <div class="similar-properties">
+        <h3>หอพักที่คล้ายกัน</h3>
+        <div class="property-cards">
+          <!-- Property Cards -->
+          <div class="property-card" *ngFor="let property of similarProperties">
+            <img [src]="property.image" alt="Similar Property">
+            <div class="property-details">
+              <div class="property-price">{{ property.price }}</div>
+              <div class="property-name">{{ property.name }}</div>
+              <div class="property-location">{{ property.location }}</div>
+              <div class="property-date">{{ property.checkInDate }}</div>
+              <div class="property-rating">
+                <span class="rating-score">{{ property.rating }}</span>
+                <span class="rating-stars">★★★★★</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -53,5 +53,13 @@ export const routes: Routes = [
   {
     path: 'dorm-list',
     component: AdminComponent
+  },
+  {
+    path: 'dorm-compare',
+    component: DormCompareComponent
+  },
+  {
+    path: 'dorm-detail',
+    component: DormDetailComponent
   }
 ];
