@@ -59,16 +59,7 @@ export const routes: Routes = [
     path: 'admin',
     component: AdminComponent
   },
-  {
-    path: 'dorm-list',
-    component: AdminComponent
-  },
-  {
-    path: 'dorm-compare',
-    component: DormCompareComponent
-  },
-  {
-    path: 'dorm-detail',
-    component: DormDetailComponent
-  }
+
+  // Wildcard route - redirect to main instead of home to avoid loops
+  { path: '**', redirectTo: '/main' }
 ];
