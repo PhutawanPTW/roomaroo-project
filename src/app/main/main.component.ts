@@ -4,21 +4,26 @@ import { NavbarComponent } from './navbar/navbar.component';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
+import { AuthService, UserProfile } from '../services/auth.service';
+import { DormitoryService, Dorm } from '../services/dormitory.service';
 
-// Dormitory interface
-interface Dorm {
+// UI model used in template (all required)
+interface UIDorm {
+  id: number;
   image: string;
   price: string;
   name: string;
   location: string;
   date: string;
   rating: number;
+  hasDailyPrice?: boolean;
 }
 
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent],
+  imports: [CommonModule, HttpClientModule, NavbarComponent],
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.css'],
 })
@@ -47,89 +52,45 @@ export class MainComponent implements OnInit {
   currentSlide = 0;
   slideInterval: any;
 
-  recommendedDorms: Dorm[] = [
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักวีรวิชญ์',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '12 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน\n400 บาท/วัน',
-      name: 'หอพักเรือนร่มเย็น',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '8 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักวีรวิชญ์ชาย',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '15 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักหญิงเรือนร่มเย็น',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '3 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-  ];
+  recommendedDorms: UIDorm[] = [];
+  latestDorms: UIDorm[] = [];
 
-  latestDorms: Dorm[] = [
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักหญิงเรือนร่มเย็น',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '10 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักวีรวิชญ์',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '14 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน\n400 บาท/วัน',
-      name: 'หอพักเรือนร่มเย็น',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '6 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักวีรวิชญ์ชาย',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '1 พฤษภาคม 2024',
-      rating: 5.0,
-    },
-  ];
-
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService, private dormSvc: DormitoryService) { }
 
   ngOnInit() {
-    // กำหนดค่าเริ่มต้นเมื่อโหลดครั้งแรก
     this.currentRoute = this.router.url;
     this.startSlideshow();
 
-    // ติดตามการเปลี่ยนแปลงของ route
+    this.dormSvc.getRecommended().subscribe({
+      next: (res) => {
+        this.recommendedDorms = res.slice(0, 4).map(d => this.mapDormToUi(d));
+        this.loadImagesForList(this.recommendedDorms);
+      },
+      error: (err) => console.error('Error fetching recommended dorms:', err)
+    });
+
+    this.dormSvc.getLatest().subscribe({
+      next: (res) => {
+        this.latestDorms = res.slice(0, 4).map(d => this.mapDormToUi(d));
+        this.loadImagesForList(this.latestDorms);
+      },
+      error: (err) => console.error('Error fetching latest dorms:', err)
+    });
+
+    this.authService.currentUser$.subscribe((user: UserProfile | null) => {
+      if (user) {
+        if (user.memberType === 'owner') {
+          this.router.navigate(['/owner']);
+        } else if (user.memberType === 'member') {
+          this.router.navigate(['/main/member/dashboard']);
+        }
+      }
+    });
+
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.currentRoute = event.urlAfterRedirects;
-        console.log('Current route updated:', this.currentRoute);
       });
   }
 
@@ -152,21 +113,22 @@ export class MainComponent implements OnInit {
       this.currentSlide === 0 ? this.sliderImages.length - 1 : this.currentSlide - 1;
   }
 
-  getStars(rating: number): number[] {
-    return Array(Math.round(rating)).fill(0);
+  getStars(rating: number | undefined): number[] {
+    return Array(Math.round(rating ?? 0)).fill(0);
   }
 
-  // เมธอดใหม่สำหรับตรวจสอบหน้า authentication
   isAuthPage(): boolean {
-    // เช็คว่า URL ปัจจุบันเป็นหน้า login หรือ register หรือไม่
     return (
       this.currentRoute.includes('/login') ||
       this.currentRoute.includes('/register')
     );
   }
 
-  getPriceHtml(price: string): string {
-    return price.replace(/\n/g, '<br>');
+  // ปรับปรุง getPriceHtml ให้รองรับรูปแบบ "฿X,XXX/เดือน"
+  getPriceHtml(price: string | undefined): string {
+    // ไม่มี .replace() ในส่วนนี้แล้ว เพราะ mapDormToUi จะสร้าง string ที่สมบูรณ์แล้ว
+    // จะมีแค่การเปลี่ยน \n เป็น <br> เท่านั้น
+    return (price || '').replace(/\n/g, '<br>');
   }
 
   viewAllRecommended() {
@@ -177,8 +139,7 @@ export class MainComponent implements OnInit {
     this.router.navigate(['/dorm-list']);
   }
 
-  viewDormDetail(dorm: Dorm) {
-    // สมมติว่ามี id หรือ slug ใน dorm ในอนาคต สามารถส่ง param ได้
+  viewDormDetail(dorm: UIDorm) {
     this.router.navigate(['/dorm-detail']);
   }
 
@@ -188,5 +149,88 @@ export class MainComponent implements OnInit {
 
   onRegister() {
     this.router.navigate(['/register']);
+  }
+
+  private mapDormToUi(d: Dorm): UIDorm {
+    let priceStr: string | null = null; // เริ่มต้นเป็น null เพื่อจัดการ logic ได้ง่ายขึ้น
+    let hasDailyPrice = false;
+    
+    // ตรวจสอบ price_display ก่อนเสมอ
+    if (d.price_display) {
+      priceStr = d.price_display;
+      hasDailyPrice = priceStr.includes('\n') || priceStr.includes('วัน'); // ตรวจสอบว่ามีการขึ้นบรรทัดใหม่หรือคำว่า 'วัน'
+    } else {
+      // ถ้าไม่มี price_display ให้สร้าง string จากข้อมูลที่มี
+      let monthlyPriceText = '';
+      
+      if (d.min_price !== undefined && d.max_price !== undefined) {
+        if (d.min_price === d.max_price) {
+          monthlyPriceText = `฿${d.min_price.toLocaleString()}/เดือน`;
+        } else {
+          monthlyPriceText = `฿${d.min_price.toLocaleString()} - ฿${d.max_price.toLocaleString()}/เดือน`;
+        }
+      }
+      else if (d.monthly_price) {
+        monthlyPriceText = `฿${parseFloat(d.monthly_price).toLocaleString()}/เดือน`;
+      }
+      
+      if (d.daily_price) {
+        hasDailyPrice = true;
+        let dailyPriceText = `฿${parseFloat(d.daily_price).toLocaleString()}/วัน`;
+        if (monthlyPriceText) {
+          priceStr = `${monthlyPriceText}\n${dailyPriceText}`; // ใช้ \n เพื่อขึ้นบรรทัดใหม่
+        } else {
+          priceStr = dailyPriceText;
+        }
+      } else {
+        priceStr = monthlyPriceText;
+      }
+    }
+
+    // fallback image logic
+    let imageUrl = d.main_image_url || d.thumbnail_url;
+    if (!imageUrl) {
+      imageUrl = 'assets/images/photo.png';
+    }
+
+    // location display logic
+    let locationDisplay = '';
+    if (d.zone_name) {
+      locationDisplay = d.zone_name;
+    } else if (d.location_display) {
+      locationDisplay = d.location_display;
+    } else if (d.address) {
+      locationDisplay = d.address.length > 50 ? d.address.substring(0, 47) + '...' : d.address;
+    }
+
+    return {
+      id: d.dorm_id,
+      image: imageUrl,
+      price: priceStr || 'ราคาไม่ระบุ',
+      name: d.dorm_name,
+      location: locationDisplay,
+      date: d.updated_date ? new Date(d.updated_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '-',
+      rating: d.rating ?? 5,
+      hasDailyPrice: hasDailyPrice
+    };
+  }
+
+  private loadImagesForList(list: UIDorm[]): void {
+    list.forEach((card) => {
+      const fallbackImage = card.image;
+      this.dormSvc.getImages(card.id).subscribe({
+        next: imgs => {
+          if (imgs && imgs.length > 0) {
+            card.image = imgs[0].image_url;
+          } else {
+            card.image = fallbackImage;
+          }
+        },
+        error: (err) => {
+          console.error(`Error loading images for dorm ${card.id}:`, err);
+          card.image = fallbackImage;
+        }
+      });
+    });
   }
 }

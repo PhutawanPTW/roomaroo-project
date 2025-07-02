@@ -1,12 +1,14 @@
-<mat-toolbar class="bg-white text-black flex items-center py-3 navbar-shadow font-kanit" style="height: 70px; padding-left: 40px; padding-right: 40px;">
-  <!-- ซ้ายสุด: โลโก้ -->
-  <a class="flex items-center cursor-pointer" routerLink="/main">
-    <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo"
-      class="w-auto object-contain" style="height: 80px;" />
-    <span class="text-xl font-kanit flex items-center ml-2">
-      <span class="font-bold">Room</span><span class="font-normal">aroo</span>
-    </span>
-  </a>
+<mat-toolbar class="bg-white text-black navbar-shadow font-kanit fixed top-0 left-0 right-0 z-50" style="height: 60px;">
+  <!-- Content container with max-width -->
+  <div class="w-full max-w-7xl mx-auto px-4 flex items-center justify-between h-full">
+    <!-- ซ้ายสุด: โลโก้ -->
+    <a class="flex items-center cursor-pointer" routerLink="/main">
+      <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo" class="w-auto object-contain"
+        style="height: 60px;" />
+      <span class="text-xl font-kanit flex items-center ml-2">
+        <span class="font-bold">Room</span><span class="font-normal">aroo</span>
+      </span>
+    </a>
 
   <!-- กลาง: ปุ่มนำทาง -->
   <div class="flex items-center ml-4">
@@ -38,83 +40,104 @@
     </button>
   </div>
 
-  <!-- Spacer เพื่อดันปุ่มไปขวาสุด -->
-  <div class="flex-1"></div>
-
-  <!-- ขวาสุด: ปุ่ม action -->
-  <div class="flex items-center space-x-4">
-    <!-- ปุ่มลงประกาศหอพัก - แสดงเฉพาะเมื่อไม่ได้ล็อกอิน หรือ ล็อกอินเป็น owner -->
-    <button
-      *ngIf="shouldShowPostDormButton()"
-      class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-kanit font-normal px-4 py-2 rounded-lg cursor-pointer border-0 outline-none transition-colors duration-200 flex items-center"
-      (click)="onPostDormClick()">
-      ลงประกาศหอพัก
-    </button>
-    
-    <!-- ปุ่มเข้าสู่ระบบ - แสดงเฉพาะเมื่อยังไม่ได้ล็อกอิน -->
-    <div class="relative" *ngIf="!isLoggedIn()">
-      <button
-        class="bg-green-500 hover:bg-green-600 text-white text-sm font-kanit font-normal px-4 py-2 rounded-lg cursor-pointer border-0 outline-none transition-colors duration-200 flex items-center"
-        (click)="toggleLoginDropdown()"
-        [attr.aria-expanded]="loginDropdownOpen"
-        [attr.aria-haspopup]="true"
-        type="button">
-        เข้าสู่ระบบ
-        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
+      <button *ngIf="isLoggedIn() && getUserType() === 'owner'"
+        class="text-gray-600 text-base font-kanit font-normal px-3 py-2 flex items-center bg-transparent border-0 outline-none cursor-pointer hover:text-black"
+        routerLink="/main/tenant-list">
+        รายการผู้เช่า
       </button>
-      <ng-container *ngIf="loginDropdownOpen">
-        <!-- Backdrop for click outside -->
-        <div class="fixed inset-0 z-40" (click)="closeLoginDropdown()"></div>
-        <div class="origin-top-right absolute right-0 mt-2 w-44 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 animate-fade-in">
-          <div class="py-1">
-            <button (click)="onLoginTypeSelect('member')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 font-kanit">สมาชิก</button>
-            <button (click)="onLoginTypeSelect('owner')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 font-kanit">เจ้าของหอพัก</button>
+    </div>
+
+    <!-- Spacer เพื่อดันปุ่มไปขวาสุด -->
+    <div class="flex-1"></div>
+
+    <!-- ขวาสุด: ปุ่ม action -->
+    <div class="flex items-center space-x-4">
+      <!-- ปุ่มลงประกาศหอพัก - แสดงเฉพาะเมื่อไม่ได้ล็อกอิน หรือ ล็อกอินเป็น owner -->
+      <button *ngIf="shouldShowPostDormButton()"
+        class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-kanit font-normal px-4 py-2 rounded-lg cursor-pointer border-0 outline-none transition-colors duration-200 flex items-center"
+        (click)="onPostDormClick()">
+        ลงประกาศหอพัก
+      </button>
+
+      <!-- ปุ่มเข้าสู่ระบบ - แสดงเฉพาะเมื่อยังไม่ได้ล็อกอิน -->
+      <div class="relative" *ngIf="!isLoggedIn()">
+        <button
+          class="bg-green-500 hover:bg-green-600 text-white text-sm font-kanit font-normal px-4 py-2 rounded-lg cursor-pointer border-0 outline-none transition-colors duration-200 flex items-center"
+          (click)="toggleLoginDropdown()" [attr.aria-expanded]="loginDropdownOpen" [attr.aria-haspopup]="true"
+          type="button">
+          เข้าสู่ระบบ
+          <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <ng-container *ngIf="loginDropdownOpen">
+          <!-- Backdrop for click outside -->
+          <div class="fixed inset-0 z-40" (click)="closeLoginDropdown()"></div>
+          <div
+            class="origin-top-right absolute right-0 mt-2 w-44 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 animate-fade-in">
+            <div class="py-1">
+              <button (click)="onLoginTypeSelect('member')"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 font-kanit">สมาชิก</button>
+              <button (click)="onLoginTypeSelect('owner')"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 font-kanit">เจ้าของหอพัก</button>
+            </div>
           </div>
-        </div>
-      </ng-container>
-    </div>
+        </ng-container>
+      </div>
 
-    <!-- ข้อมูลผู้ใช้ที่ล็อกอินแล้ว -->
-    <div class="relative flex items-center space-x-2" *ngIf="isLoggedIn()">
-      <button
-        class="flex items-center space-x-2 bg-transparent border-0 outline-none cursor-pointer px-2 py-1"
-        (click)="toggleProfileDropdown()"
-        [attr.aria-expanded]="profileDropdownOpen"
-        [attr.aria-haspopup]="true"
-        type="button">
-        <img *ngIf="getUserPhotoURL()" [src]="getUserPhotoURL()" alt="avatar" class="w-8 h-8 rounded-full object-cover bg-blue-200" />
-        <span *ngIf="!getUserPhotoURL()" class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-white text-lg">
-          <i class="fa fa-user"></i>
-        </span>
-        <div class="flex flex-col items-start ml-2">
-          <span class="text-sm text-gray-800 font-kanit font-normal">{{ getUserDisplayName() }}</span>
-          <!-- <span *ngIf="getUserUsername()" class="text-xs text-blue-600 font-mono">{{ getUserUsername() }}</span> -->
-        </div>
-      </button>
-      <ng-container *ngIf="profileDropdownOpen">
-        <!-- Backdrop for click outside -->
-        <div class="fixed inset-0 z-40" (click)="closeProfileDropdown()"></div>
-        <div class="origin-top-right absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 z-50 animate-fade-in p-2 flex flex-col gap-1 border border-gray-100">
-          <button (click)="goToProfile()" class="flex items-center gap-2 text-base text-black hover:text-blue-600 font-kanit bg-transparent border-0 outline-none cursor-pointer px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-gray-100">
-            <span class="w-6 h-6 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-              </svg>
-            </span>
-            <span>แก้ไขโปรไฟล์</span>
-          </button>
-          <button (click)="onLogout()" class="flex items-center gap-2 text-base text-black hover:text-blue-600 font-kanit bg-transparent border-0 outline-none cursor-pointer px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-gray-100">
-            <span class="w-6 h-6 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 -rotate-90 mr-1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-            </span>
-            <span>ออกจากระบบ</span>
-          </button>
-        </div>
-      </ng-container>
+      <!-- ข้อมูลผู้ใช้ที่ล็อกอินแล้ว -->
+      <div class="relative flex items-center space-x-2" *ngIf="isLoggedIn()">
+        <button class="flex items-center space-x-2 bg-transparent border-0 outline-none cursor-pointer px-2 py-1"
+          (click)="toggleProfileDropdown()" [attr.aria-expanded]="profileDropdownOpen" [attr.aria-haspopup]="true"
+          type="button">
+          <img *ngIf="getUserPhotoURL()" [src]="getUserPhotoURL()" alt="avatar"
+            class="w-8 h-8 rounded-full object-cover bg-blue-200"
+            (load)="onPhotoLoad()" (error)="onPhotoError()" [hidden]="isPhotoLoading" />
+          <div *ngIf="!getUserPhotoURL()" class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-white font-bold text-lg">
+            <span>{{ (getUserDisplayName() || 'U').charAt(0) }}</span>
+          </div>
+          <div *ngIf="isPhotoLoading && getUserPhotoURL()" class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center">
+            <span class="loader"></span>
+          </div>
+          <div class="flex flex-col items-start ml-2">
+            <span class="text-sm text-gray-800 font-kanit font-normal">{{ getUserDisplayName() }}</span>
+          </div>
+        </button>
+        <ng-container *ngIf="profileDropdownOpen">
+          <!-- Backdrop for click outside -->
+          <div class="fixed inset-0 z-40" (click)="closeProfileDropdown()"></div>
+          <div
+            class="origin-top-right absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 z-50 animate-fade-in p-2 flex flex-col gap-1 border border-gray-100">
+            <button (click)="goToProfile()"
+              class="flex items-center gap-2 text-base text-black hover:text-blue-600 font-kanit bg-transparent border-0 outline-none cursor-pointer px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-gray-100">
+              <span class="w-6 h-6 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+              </span>
+              <span>แก้ไขโปรไฟล์</span>
+            </button>
+            <button (click)="onLogout()"
+              class="flex items-center gap-2 text-base text-black hover:text-blue-600 font-kanit bg-transparent border-0 outline-none cursor-pointer px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-gray-100">
+              <span class="w-6 h-6 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor" class="size-6 -rotate-90 mr-1">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              </span>
+              <span>ออกจากระบบ</span>
+            </button>
+          </div>
+        </ng-container>
+      </div>
     </div>
-  </div>
+    
+    
 </mat-toolbar>
+
+<!-- เพิ่ม spacer เพื่อป้องกันเนื้อหาเลื่อนไปอยู่ใต้ navbar -->
+<div style="height: 60px;"></div>

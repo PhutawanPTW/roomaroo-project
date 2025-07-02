@@ -1,1 +1,102 @@
-<p>dorm-list works!</p>
+<app-navbar></app-navbar>
+
+<!-- Search filters section -->
+<div class="search-container">
+  <div class="filters">
+    <div class="filter-dropdown">
+      <select class="form-select" [(ngModel)]="selectedZone" (change)="filterByZone(selectedZone)">
+        <option value="">โซน</option>
+        <option *ngFor="let zone of zones" [value]="zone">{{ zone }}</option>
+      </select>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn-price" (click)="togglePriceFilter($event)">
+        <span>ราคา</span>
+        <i class="fa fa-chevron-down"></i>
+      </button>
+      <div class="price-filter-popup" *ngIf="showPriceFilter" (clickOutside)="showPriceFilter = false">
+        <div class="price-inputs">
+          <div class="price-input-group">
+            <label>ราคาต่ำสุด</label>
+            <input type="number" [(ngModel)]="minPrice" placeholder="0" class="price-input" (click)="$event.stopPropagation()">
+          </div>
+          <div class="price-input-group">
+            <label>ราคาสูงสุด</label>
+            <input type="number" [(ngModel)]="maxPrice" placeholder="50000" class="price-input" (click)="$event.stopPropagation()">
+          </div>
+        </div>
+        <button class="apply-filter-btn" (click)="applyPriceFilter()">ค้นหา</button>
+      </div>
+    </div>
+    <div class="search-input">
+      <input type="text" class="form-control" placeholder="">
+      <button class="search-btn"><i class="fa fa-search"></i></button>
+    </div>
+    <div class="filter-btn">
+      <button><i class="fa fa-filter"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Results header -->
+<div class="results-header">
+  <h2>พบข้อมูลหอพัก <span class="dorm-count">({{filteredDorms.length}} ชื่อ)</span></h2>
+  <div class="dropdown">
+    <select class="form-select" [(ngModel)]="sortOrder" (change)="applySelectedSort()">
+      <option value="" disabled selected>เรียงตามราคา</option>
+      <option value="asc">ราคาต่ำสุด - สูงสุด</option>
+      <option value="desc">ราคาสูงสุด - ต่ำสุด</option>
+    </select>
+  </div>
+</div>
+
+<!-- Dorm grid -->
+<div class="dorm-grid">
+  <!-- Dorm card -->
+  <div class="dorm-card" *ngFor="let dorm of filteredDorms">
+    <div class="card-img">
+      <img [src]="dorm.image" [alt]="dorm.name">
+    </div>
+    <div class="card-body">
+      <div class="price">{{ dorm.price }}</div>
+      <div class="daily-price" *ngIf="dorm.dailyPrice">{{ dorm.dailyPrice }}</div>
+      <h3 class="dorm-name">{{ dorm.name }}</h3>
+      <div class="location">{{ dorm.location }}</div>
+      <div class="zone">
+        <i class="fa fa-map-marker"></i> โซน{{ dorm.zone }}
+      </div>
+      <div class="availability">{{ dorm.availability }}</div>
+      <div class="rating">
+        <div class="stars-container">
+          <span class="rating-value">{{ dorm.rating.toFixed(1) }}</span>
+          <div class="stars">
+            <i class="fa fa-star filled" *ngFor="let star of getStars(dorm.rating)"></i>
+          </div>
+        </div>
+        <button class="detail-btn">รายละเอียด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- No results message -->
+<div class="no-results" *ngIf="filteredDorms.length === 0">
+  <p>ไม่พบหอพักที่ตรงกับเงื่อนไข กรุณาปรับเกณฑ์การค้นหา</p>
+</div>
+
+<!-- Pagination -->
+<div class="pagination" *ngIf="filteredDorms.length > 0">
+  <ul class="page-list">
+    <li class="active"><a href="#">1</a></li>
+    <li><a href="#">2</a></li>
+    <li><a href="#">3</a></li>
+    <li><a href="#">4</a></li>
+    <li><a href="#">5</a></li>
+    <li><a href="#">6</a></li>
+    <li><a href="#">7</a></li>
+    <li><a href="#">8</a></li>
+    <li><a href="#">9</a></li>
+    <li><a href="#">10</a></li>
+    <li><a href="#" class="next">Next</a></li>
+  </ul>
+</div>
