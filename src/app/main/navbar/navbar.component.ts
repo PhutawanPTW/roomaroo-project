@@ -6,6 +6,8 @@ import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
+import { NavigationEnd } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
@@ -19,7 +21,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   loginDropdownOpen = false;
   profileDropdownOpen = false;
   currentUser: UserProfile | null = null;
-  private authSubscription: Subscription | undefined; // <<< เปลี่ยนตรงนี้
+  private authSubscription: Subscription | undefined;
+  isPhotoLoading = true;
+  userType: 'owner' | 'member' | null = null;
+  currentPath: string = '';
+  isOwner: boolean = false;
+  private userSub: Subscription | undefined;
+  private routerSub: Subscription | undefined;
 
   constructor(
     private router: Router,
@@ -28,21 +36,32 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.authSubscription = this.authService.currentUser$.subscribe(
-      (user: UserProfile | null) => { // <<< กำหนด Type ให้ชัดเจน
+      (user: UserProfile | null) => {
         this.currentUser = user;
-        console.log('Current user updated in Navbar:', user);
-        if (user) {
-          console.log('🖼️ Navbar - User photoURL:', user.photoURL);
-          console.log('🖼️ Navbar - getUserPhotoURL() result:', this.getUserPhotoURL());
-        }
+        this.userType = user?.memberType ?? null;
+        this.isOwner = user?.memberType === 'owner';
       }
     );
+    this.router.events.subscribe(() => {
+      this.currentPath = this.router.url;
+    });
+    this.currentPath = this.router.url;
+
+    // Listen to route changes to update menu if needed
+    this.routerSub = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        // Optionally, you can add logic here if you want to check path for more control
+        // For now, we rely on userType only
+      });
   }
 
   ngOnDestroy() {
-    if (this.authSubscription) { // <<< เช็คว่ามีค่าก่อน unsubscribe
+    if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
+    this.userSub?.unsubscribe();
+    this.routerSub?.unsubscribe();
   }
 
   toggleMenu() {
@@ -70,7 +89,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   onLoginTypeSelect(type: 'member' | 'owner') {
     console.log(`Selected login type: ${type} at ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}`);
     this.loginDropdownOpen = false;
-    this.router.navigate(['/login'], { queryParams: { type } });
+    this.router.navigate(['/login', type]);
   }
 
   isLoggedIn(): boolean {
@@ -93,7 +112,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   getUserPhotoURL(): string | null {
     const photoURL = this.currentUser?.photoURL || null;
-    console.log('🖼️ Navbar - getUserPhotoURL() called, returning:', photoURL);
     return photoURL;
   }
 
@@ -106,13 +124,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.isLoggedIn() && this.getUserType() === 'owner') {
       this.router.navigate(['/post-dorm']);
     } else {
-      this.router.navigate(['/login'], { queryParams: { type: 'owner' } });
+      this.router.navigate(['/login', 'owner']);
     }
   }
 
   async onLogout() {
     try {
-      await this.authService.signOut();
+      await this.authService.signOut('/main');
       console.log('Logout successful from Navbar');
     } catch (error: any) {
       console.error('Logout error from Navbar:', error);
@@ -124,5 +142,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
   goToProfile() {
     this.router.navigate(['/main/profile']);
     this.closeProfileDropdown();
+  }
+
+  onPhotoLoad() { this.isPhotoLoading = false; }
+  onPhotoError() { this.isPhotoLoading = false; }
+
+  shouldShowDormAndMapMenu(): boolean {
+    if (this.userType === 'owner' && !this.currentPath.startsWith('/main')) {
+      return false;
+    }
+    return true;
   }
 }

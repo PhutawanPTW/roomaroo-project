@@ -35,6 +35,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
       location: 'ใกล้มหาวิทยาลัย',
       date: '12 พฤษภาคม 2024',
       rating: 5.0,
+      verified: true
     },
     {
       image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
@@ -43,6 +44,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
       location: 'ใกล้มหาวิทยาลัย',
       date: '8 พฤษภาคม 2024',
       rating: 5.0,
+      verified: false
     },
     {
       image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
@@ -51,6 +53,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
       location: 'ใกล้มหาวิทยาลัย',
       date: '15 พฤษภาคม 2024',
       rating: 5.0,
+      verified: true
     },
   ];
 
