@@ -60,6 +60,11 @@ export const routes: Routes = [
     component: AdminComponent
   },
 
+  {
+    path: 'dorm-detail/:id',
+    loadComponent: () => import('./main/dorm-detail/dorm-detail.component').then(c => c.DormDetailComponent)
+  },
+
   // Wildcard route - redirect to main instead of home to avoid loops
   { path: '**', redirectTo: '/main' }
 ];

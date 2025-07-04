@@ -50,7 +50,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   showDormList = false;
   filteredDorms: ZoneDormitories[] = [];
   selectedDormName: string = '';
-
+  
   // Add sliderImages property
   sliderImages = [
     { src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Modern Dormitory Building' },
@@ -551,7 +551,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
         
         // ส่ง phoneNumber เฉพาะเมื่อมีค่า
         if (formData.phoneNumber) {
-          submitFormData.append('phoneNumber', formData.phoneNumber);
+        submitFormData.append('phoneNumber', formData.phoneNumber);
         }
         
         if (currentUserType === 'member' && formData.dormitory) {

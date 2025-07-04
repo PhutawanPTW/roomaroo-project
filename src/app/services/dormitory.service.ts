@@ -7,7 +7,7 @@ export interface Dorm {
   dorm_id: number;
   dorm_name: string;
   address: string;
-  dorm_description: string;
+  dorm_description?: string;  // Made optional to match DormDetail
   latitude: string | null;
   longitude?: string | null;
   
@@ -69,6 +69,39 @@ export interface RoomType {
   description?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface DormDetail extends Dorm {
+  manager_name: string;
+  manager_phone?: string;
+  primary_phone?: string; // Added field from API
+  manager_line?: string;
+  line_id?: string; // Added field from API
+  water_bill?: string;
+  water_rate?: string; // Added field from API
+  water_type?: string; // Added field from API
+  electric_bill?: string;
+  electricity_rate?: string; // Added field from API
+  electricity_type?: string; // Added field from API
+  description?: string;
+  dorm_description?: string; // Added field from API
+  images: { image_id?: number; dorm_id?: number; image_url: string; image_type?: string; is_primary?: boolean; upload_date?: string }[];
+  amenities: { 
+    dorm_amenity_id?: number; 
+    dorm_id?: number;
+    amenity_id?: number;
+    name: string; 
+    is_available: boolean;
+    amenity_name?: string; // Alternative field name
+  }[];
+}
+
+export interface Amenity {
+  amenity_id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  category?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -136,5 +169,26 @@ export class DormitoryService {
   /** Delete a room type */
   deleteRoomType(roomTypeId: number): Observable<any> {
     return this.http.delete(`${this.backendUrl}/dormitories/room-types/${roomTypeId}`);
+  }
+
+  /** Get all amenities from the database */
+  getAllAmenities(): Observable<Amenity[]> {
+    return this.http.get<Amenity[]>(`${this.backendUrl}/dormitories/amenities/all`).pipe(
+      tap(amenities => console.log('[DormitoryService] All amenities:', amenities)),
+      catchError(err => {
+        console.error('[DormitoryService] Error fetching all amenities:', err);
+        return of([]);
+      })
+    );
+  }
+
+  // ดึงรายการหอพักทั้งหมด
+  getAllDormitories(): Observable<Dorm[]> {
+    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories`);
+  }
+
+  // ดึงรายละเอียดหอพักตาม ID
+  getDormitoryById(dormId: number): Observable<DormDetail> {
+    return this.http.get<DormDetail>(`${this.backendUrl}/dormitories/${dormId}`);
   }
 } 

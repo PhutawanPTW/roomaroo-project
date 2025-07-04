@@ -1,12 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { NavbarComponent } from './navbar/navbar.component';
-import { Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import { filter } from 'rxjs/operators';
 import { AuthService, UserProfile } from '../services/auth.service';
 import { DormitoryService, Dorm } from '../services/dormitory.service';
+import { NavbarComponent } from './navbar/navbar.component';
 
 // UI model used in template (all required)
 interface UIDorm {
@@ -23,59 +21,54 @@ interface UIDorm {
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, NavbarComponent],
+  imports: [CommonModule, RouterModule, NavbarComponent],
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.css'],
 })
 export class MainComponent implements OnInit {
   currentRoute: string = '';
 
-  // Banner slider images
+  // Banner slider images - ใช้รูปภาพจากอินเทอร์เน็ต
   sliderImages = [
     {
       src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Modern Dormitory Building',
+      alt: 'Modern Dormitory Building'
     },
     {
       src: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Dormitory Room Interior',
+      alt: 'Dormitory Room Interior'
     },
     {
       src: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Student Common Area',
+      alt: 'Student Common Area'
     },
     {
       src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Campus Dormitory View',
-    },
+      alt: 'Campus Dormitory View'
+    }
   ];
   currentSlide = 0;
   slideInterval: any;
 
+  // Full lists
   recommendedDorms: UIDorm[] = [];
   latestDorms: UIDorm[] = [];
+  
+  // Displayed lists (limited to 4)
+  displayedRecommended: UIDorm[] = [];
+  displayedLatest: UIDorm[] = [];
 
-  constructor(private router: Router, private authService: AuthService, private dormSvc: DormitoryService) { }
+  constructor(private router: Router, private authService: AuthService, private dormSvc: DormitoryService) {
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.currentRoute = event.url;
+    });
+  }
 
   ngOnInit() {
-    this.currentRoute = this.router.url;
     this.startSlideshow();
-
-    this.dormSvc.getRecommended().subscribe({
-      next: (res) => {
-        this.recommendedDorms = res.slice(0, 4).map(d => this.mapDormToUi(d));
-        this.loadImagesForList(this.recommendedDorms);
-      },
-      error: (err) => console.error('Error fetching recommended dorms:', err)
-    });
-
-    this.dormSvc.getLatest().subscribe({
-      next: (res) => {
-        this.latestDorms = res.slice(0, 4).map(d => this.mapDormToUi(d));
-        this.loadImagesForList(this.latestDorms);
-      },
-      error: (err) => console.error('Error fetching latest dorms:', err)
-    });
+    this.loadDormitories();
 
     this.authService.currentUser$.subscribe((user: UserProfile | null) => {
       if (user) {
@@ -86,18 +79,34 @@ export class MainComponent implements OnInit {
         }
       }
     });
+  }
 
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
-        this.currentRoute = event.urlAfterRedirects;
-      });
+  private async loadDormitories() {
+    try {
+      // Load recommended dorms
+      const recommended = await this.dormSvc.getRecommended().toPromise();
+      if (recommended) {
+        this.recommendedDorms = recommended.map(d => this.mapDormToUi(d));
+        this.displayedRecommended = this.recommendedDorms.slice(0, 4); // Limit to 4 items
+        this.loadImagesForList(this.displayedRecommended);
+      }
+
+      // Load latest dorms
+      const latest = await this.dormSvc.getLatest().toPromise();
+      if (latest) {
+        this.latestDorms = latest.map(d => this.mapDormToUi(d));
+        this.displayedLatest = this.latestDorms.slice(0, 4); // Limit to 4 items
+        this.loadImagesForList(this.displayedLatest);
+      }
+    } catch (error) {
+      console.error('Error loading dormitories:', error);
+    }
   }
 
   startSlideshow(): void {
     this.slideInterval = setInterval(() => {
       this.nextSlide();
-    }, 5000);
+    }, 3000);
   }
 
   goToSlide(index: number): void {
@@ -109,38 +118,35 @@ export class MainComponent implements OnInit {
   }
 
   prevSlide(): void {
-    this.currentSlide =
-      this.currentSlide === 0 ? this.sliderImages.length - 1 : this.currentSlide - 1;
+    this.currentSlide = (this.currentSlide - 1 + this.sliderImages.length) % this.sliderImages.length;
   }
 
   getStars(rating: number | undefined): number[] {
-    return Array(Math.round(rating ?? 0)).fill(0);
+    // Always return 5 stars for mock data
+    return Array(5).fill(0);
   }
 
   isAuthPage(): boolean {
-    return (
-      this.currentRoute.includes('/login') ||
-      this.currentRoute.includes('/register')
-    );
+    return this.currentRoute.includes('login') ||
+      this.currentRoute.includes('register') ||
+      this.currentRoute.includes('owner');
   }
 
-  // ปรับปรุง getPriceHtml ให้รองรับรูปแบบ "฿X,XXX/เดือน"
   getPriceHtml(price: string | undefined): string {
-    // ไม่มี .replace() ในส่วนนี้แล้ว เพราะ mapDormToUi จะสร้าง string ที่สมบูรณ์แล้ว
-    // จะมีแค่การเปลี่ยน \n เป็น <br> เท่านั้น
-    return (price || '').replace(/\n/g, '<br>');
+    if (!price) return '';
+    return price.replace(/\n/g, '<br>');
   }
 
   viewAllRecommended() {
-    this.router.navigate(['/dorm-list']);
+    this.router.navigate(['/dorm-list'], { queryParams: { type: 'recommended' } });
   }
 
   viewAllLatest() {
-    this.router.navigate(['/dorm-list']);
+    this.router.navigate(['/dorm-list'], { queryParams: { type: 'latest' } });
   }
 
   viewDormDetail(dorm: UIDorm) {
-    this.router.navigate(['/dorm-detail']);
+    this.router.navigate(['/dorm-detail', dorm.id]);
   }
 
   onLogin() {
@@ -152,85 +158,49 @@ export class MainComponent implements OnInit {
   }
 
   private mapDormToUi(d: Dorm): UIDorm {
-    let priceStr: string | null = null; // เริ่มต้นเป็น null เพื่อจัดการ logic ได้ง่ายขึ้น
+    let priceDisplay = '';
     let hasDailyPrice = false;
-    
-    // ตรวจสอบ price_display ก่อนเสมอ
-    if (d.price_display) {
-      priceStr = d.price_display;
-      hasDailyPrice = priceStr.includes('\n') || priceStr.includes('วัน'); // ตรวจสอบว่ามีการขึ้นบรรทัดใหม่หรือคำว่า 'วัน'
-    } else {
-      // ถ้าไม่มี price_display ให้สร้าง string จากข้อมูลที่มี
-      let monthlyPriceText = '';
-      
-      if (d.min_price !== undefined && d.max_price !== undefined) {
-        if (d.min_price === d.max_price) {
-          monthlyPriceText = `฿${d.min_price.toLocaleString()}/เดือน`;
-        } else {
-          monthlyPriceText = `฿${d.min_price.toLocaleString()} - ฿${d.max_price.toLocaleString()}/เดือน`;
-        }
+
+    // Format price display
+    if (d.daily_price) {
+      priceDisplay = `${d.daily_price} บาท/วัน`;
+      hasDailyPrice = true;
+      if (d.monthly_price) {
+        priceDisplay += `\n${d.monthly_price} บาท/เดือน`;
       }
-      else if (d.monthly_price) {
-        monthlyPriceText = `฿${parseFloat(d.monthly_price).toLocaleString()}/เดือน`;
-      }
-      
-      if (d.daily_price) {
-        hasDailyPrice = true;
-        let dailyPriceText = `฿${parseFloat(d.daily_price).toLocaleString()}/วัน`;
-        if (monthlyPriceText) {
-          priceStr = `${monthlyPriceText}\n${dailyPriceText}`; // ใช้ \n เพื่อขึ้นบรรทัดใหม่
-        } else {
-          priceStr = dailyPriceText;
-        }
-      } else {
-        priceStr = monthlyPriceText;
-      }
+    } else if (d.monthly_price) {
+      priceDisplay = `${d.monthly_price} บาท/เดือน`;
+    } else if (d.min_price && d.max_price) {
+      priceDisplay = `${d.min_price.toLocaleString()} - ${d.max_price.toLocaleString()} บาท/เดือน`;
+    } else if (d.price_display) {
+      priceDisplay = d.price_display;
     }
 
-    // fallback image logic
-    let imageUrl = d.main_image_url || d.thumbnail_url;
-    if (!imageUrl) {
-      imageUrl = 'assets/images/photo.png';
-    }
-
-    // location display logic
-    let locationDisplay = '';
+    // Format location display
+    let locationDisplay = d.location_display || d.address || '';
     if (d.zone_name) {
-      locationDisplay = d.zone_name;
-    } else if (d.location_display) {
-      locationDisplay = d.location_display;
-    } else if (d.address) {
-      locationDisplay = d.address.length > 50 ? d.address.substring(0, 47) + '...' : d.address;
+      locationDisplay = locationDisplay ? `${locationDisplay} (${d.zone_name})` : d.zone_name;
     }
 
     return {
       id: d.dorm_id,
-      image: imageUrl,
-      price: priceStr || 'ราคาไม่ระบุ',
       name: d.dorm_name,
+      price: priceDisplay,
       location: locationDisplay,
-      date: d.updated_date ? new Date(d.updated_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '-',
-      rating: d.rating ?? 5,
-      hasDailyPrice: hasDailyPrice
+      image: d.main_image_url || d.thumbnail_url || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      date: d.updated_date ? new Date(d.updated_date).toLocaleDateString('th-TH') : '',
+      rating: 5.0, // Mock rating data (always 5.0)
+      hasDailyPrice
     };
   }
 
   private loadImagesForList(list: UIDorm[]): void {
-    list.forEach((card) => {
-      const fallbackImage = card.image;
-      this.dormSvc.getImages(card.id).subscribe({
-        next: imgs => {
-          if (imgs && imgs.length > 0) {
-            card.image = imgs[0].image_url;
-          } else {
-            card.image = fallbackImage;
-          }
-        },
-        error: (err) => {
-          console.error(`Error loading images for dorm ${card.id}:`, err);
-          card.image = fallbackImage;
-        }
-      });
+    // Preload images
+    list.forEach(dorm => {
+      if (dorm.image) {
+        const img = new Image();
+        img.src = dorm.image;
+      }
     });
   }
 }
