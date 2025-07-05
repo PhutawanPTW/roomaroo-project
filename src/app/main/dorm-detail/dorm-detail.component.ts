@@ -346,41 +346,12 @@ export class DormDetailComponent implements OnInit, OnDestroy {
     }
   
     try {
-      // สร้าง marker แบบง่าย ๆ ด้วยสีแดง
+      // Create a simple red marker
       this.marker = new Marker({ color: "#FF0000" })
-        .setLngLat([this.mapLongitude, this.mapLatitude]) // [lng, lat]
+        .setLngLat([this.mapLongitude, this.mapLatitude])
         .addTo(this.map);
   
       console.log('Marker added at:', [this.mapLongitude, this.mapLatitude]);
-  
-      // เพิ่ม popup (ถ้าต้องการ)
-      const popup = new maptilersdk.Popup({
-        offset: 25,
-        closeButton: false,
-        className: 'google-maps-popup'
-      });
-  
-      // แสดง popup เมื่อ hover
-      this.marker.getElement().addEventListener('mouseenter', () => {
-        const popupContent = `
-          <div class="bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
-            <h4 class="font-medium text-[#3c4043] mb-2">ตำแหน่งหอพัก</h4>
-            <div class="text-sm text-[#5f6368] space-y-1">
-              <p>ละติจูด: ${this.mapLatitude?.toFixed(6)}</p>
-              <p>ลองจิจูด: ${this.mapLongitude?.toFixed(6)}</p>
-            </div>
-          </div>
-        `;
-        
-        popup.setHTML(popupContent);
-        this.marker?.setPopup(popup);
-        popup.addTo(this.map!);
-      });
-  
-      this.marker.getElement().addEventListener('mouseleave', () => {
-        popup.remove();
-      });
-  
     } catch (error) {
       console.error('Error adding marker:', error);
     }
