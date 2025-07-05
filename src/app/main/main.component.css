@@ -93,5 +93,18 @@
 }
 
 .price-container {
-  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.price-monthly {
+  font-size: 1.125rem;
+  color: #4F5356;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.price-daily {
+  font-size: 0.875rem;
+  color: #6D6D6D;
 }
