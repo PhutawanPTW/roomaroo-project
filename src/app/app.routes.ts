@@ -15,8 +15,11 @@ import { AuthRedirectGuard } from './guards/auth-redirect.guard';
 import { OwnerGuard } from './guards/owner.guard';
 
 export const routes: Routes = [
-  // Redirect root path to main (let auth guards handle the rest)
+  // Redirect root path to main
   { path: '', redirectTo: '/main', pathMatch: 'full' },
+
+  // Add dorm-list as a top-level route
+  { path: 'dorm-list', component: DormListComponent },
 
   {
     path: 'login/:type',
@@ -45,7 +48,6 @@ export const routes: Routes = [
     component: MainComponent,
     children: [
       { path: '', component: DormListComponent },
-      { path: 'dorm-list', component: DormListComponent },
       { path: 'dorm-detail', component: DormDetailComponent },
       { path: 'dorm-map', component: DormMapComponent },
       { path: 'dorm-add', component: DormAddComponent },
@@ -65,6 +67,6 @@ export const routes: Routes = [
     loadComponent: () => import('./main/dorm-detail/dorm-detail.component').then(c => c.DormDetailComponent)
   },
 
-  // Wildcard route - redirect to main instead of home to avoid loops
+  // Wildcard route
   { path: '**', redirectTo: '/main' }
 ];
