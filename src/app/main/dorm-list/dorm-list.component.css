@@ -252,9 +252,10 @@
 }
 
 .daily-price {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 5px;
+  color: #4CAF50;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 .dorm-name {
@@ -380,4 +381,112 @@
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+
+.monthly-price {
+  color: #2196F3;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Filter Popup Styles */
+.filter-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 8px;
+}
+
+.filter-popup-header {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-popup-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  color: #666;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.filter-popup-content {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.filter-section {
+  margin-bottom: 24px;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.filter-popup-footer {
+  padding: 16px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reset-btn, .apply-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  flex: 1;
+}
+
+.reset-btn {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.apply-btn {
+  background-color: #2196F3;
+  color: white;
+}
+
+.reset-btn:hover {
+  background-color: #eee;
+}
+
+.apply-btn:hover {
+  background-color: #1976D2;
+}
+
+/* ปรับแต่ง filter button ให้มี position relative เพื่อให้ popup แสดงถูกตำแหน่ง */
+.filter-btn {
+  position: relative;
 }

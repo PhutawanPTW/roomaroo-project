@@ -3,6 +3,12 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
+export interface Zone {
+  zone_id: number;
+  zone_name: string;
+  description?: string;
+}
+
 export interface Dorm {
   dorm_id: number;
   dorm_name: string;
@@ -190,5 +196,16 @@ export class DormitoryService {
   // ดึงรายละเอียดหอพักตาม ID
   getDormitoryById(dormId: number): Observable<DormDetail> {
     return this.http.get<DormDetail>(`${this.backendUrl}/dormitories/${dormId}`);
+  }
+
+  /** Get all zones */
+  getAllZones(): Observable<Zone[]> {
+    return this.http.get<Zone[]>(`${this.backendUrl}/zones`).pipe(
+      tap(zones => console.log('[DormitoryService] All zones:', zones)),
+      catchError(err => {
+        console.error('[DormitoryService] Error fetching zones:', err);
+        return of([]);
+      })
+    );
   }
 } 

@@ -2,6 +2,8 @@ import { Component, Directive, ElementRef, EventEmitter, HostListener, Input, Ou
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { DormitoryService, Dorm as APIDorm, Zone } from '../../services/dormitory.service';
+import { RouterModule } from '@angular/router';
 
 // Click outside directive
 @Directive({
@@ -22,268 +24,167 @@ export class ClickOutsideDirective {
   }
 }
 
-interface Dorm {
-  id: number;
-  image: string;
-  price: string;
-  dailyPrice?: string;
-  name: string;
-  location: string;
-  availability: string;
-  rating: number;
-  numericPrice?: number; // For filtering purposes
-  zone: string; // Zone information
-}
-
 @Component({
   selector: 'app-dorm-list',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FormsModule, ClickOutsideDirective],
+  imports: [CommonModule, NavbarComponent, FormsModule, ClickOutsideDirective, RouterModule],
   templateUrl: './dorm-list.component.html',
   styleUrl: './dorm-list.component.css'
 })
 export class DormListComponent {
   // Filter variables
   showPriceFilter = false;
+  showFilterPopup = false;
   minPrice: number | null = null;
   maxPrice: number | null = null;
   selectedZone: string = '';
   sortOrder: string = '';
   
   // Zone options
-  zones: string[] = ['ขามเรียง', 'ท่าขอนยาง', 'ดอนนา', 'กู่แก้ว', 'หน้ามอ'];
+  zones: Zone[] = [];
 
   // All dorms and filtered dorms
-  dorms: Dorm[] = [
-    {
-      id: 1,
-      image: 'assets/images/dorms/dorm1.jpg',
-      price: '2,600 - 3,000 บาท/เดือน',
-      name: 'หอพักดวงจันทร์',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2800,
-      zone: 'ขามเรียง'
-    },
-    {
-      id: 2,
-      image: 'assets/images/dorms/dorm2.jpg',
-      price: '2,600 - 3,000 บาท/เดือน',
-      dailyPrice: '400 บาท/วัน',
-      name: 'หอพักรวมชาย',
-      location: 'วิทยาลัยสาธร',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2800,
-      zone: 'ท่าขอนยาง'
-    },
-    {
-      id: 3,
-      image: 'assets/images/dorms/dorm3.jpg',
-      price: '2,600 - 3,000 บาท/เดือน',
-      name: 'หอพักเปิดใหม่รวย',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 14 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2800,
-      zone: 'ดอนนา'
-    },
-    {
-      id: 4,
-      image: 'assets/images/dorms/dorm4.jpg',
-      price: '2,600 - 3,000 บาท/เดือน',
-      name: 'หอพักรวมหญิง',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2800,
-      zone: 'กู่แก้ว'
-    },
-    {
-      id: 5,
-      image: 'assets/images/dorms/dorm5.jpg',
-      price: '3,500 บาท/เดือน',
-      name: 'หอพัก The Ment',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 3500,
-      zone: 'หน้ามอ'
-    },
-    {
-      id: 6,
-      image: 'assets/images/dorms/dorm6.jpg',
-      price: '2,900 บาท/เดือน',
-      name: 'หอพัก อยู่ดี',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2900,
-      zone: 'ขามเรียง'
-    },
-    {
-      id: 7,
-      image: 'assets/images/dorms/dorm7.jpg',
-      price: '2,800 บาท/เดือน',
-      name: 'หอพัก บ้านเรา',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2800,
-      zone: 'ท่าขอนยาง'
-    },
-    {
-      id: 8,
-      image: 'assets/images/dorms/dorm8.jpg',
-      price: '2,600 บาท/เดือน',
-      name: 'หอพัก Lucky Cover',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2600,
-      zone: 'ดอนนา'
-    },
-    {
-      id: 9,
-      image: 'assets/images/dorms/dorm9.jpg',
-      price: '39,000 บาท/เดือน',
-      name: 'หอพักวันทรี',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 39000,
-      zone: 'กู่แก้ว'
-    },
-    {
-      id: 10,
-      image: 'assets/images/dorms/dorm10.jpg',
-      price: '2,700 บาท/เดือน',
-      name: 'หอพักสมบูรณ์',
-      location: 'โรงเรียนกรุงเทพ',
-      availability: 'วันเข้าพัก: 10 พฤศจิกายน 2024',
-      rating: 5.0,
-      numericPrice: 2700,
-      zone: 'หน้ามอ'
-    },
-    {
-      id: 11,
-      image: 'assets/images/dorms/dorm11.jpg',
-      price: '2,900 - 3,500 บาท/เดือน',
-      name: 'หอพักนิวไลฟ์',
-      location: 'จุฬาลงกรณ์มหาวิทยาลัย',
-      availability: 'วันเข้าพัก: 15 พฤศจิกายน 2024',
-      rating: 4.8,
-      numericPrice: 3200,
-      zone: 'ขามเรียง'
-    },
-    {
-      id: 12,
-      image: 'assets/images/dorms/dorm12.jpg',
-      price: '3,200 บาท/เดือน',
-      dailyPrice: '350 บาท/วัน',
-      name: 'หอพักสุขสบาย',
-      location: 'มหาวิทยาลัยธรรมศาสตร์',
-      availability: 'วันเข้าพัก: 12 พฤศจิกายน 2024',
-      rating: 4.5,
-      numericPrice: 3200,
-      zone: 'ท่าขอนยาง'
-    }
-  ];
+  dorms: APIDorm[] = [];
+  filteredDorms: APIDorm[] = [];
 
-  filteredDorms: Dorm[] = [];
-
-  constructor() {
-    this.filteredDorms = [...this.dorms];
+  constructor(private dormitoryService: DormitoryService) {
+    this.loadZones();
+    this.loadDormitories();
   }
 
-  getStars(rating: number): number[] {
-    return Array(Math.round(rating)).fill(0);
+  loadZones() {
+    this.dormitoryService.getAllZones().subscribe({
+      next: (zones) => {
+        this.zones = zones;
+      },
+      error: (error) => {
+        console.error('Error fetching zones:', error);
+      }
+    });
   }
 
-  togglePriceFilter(event: Event): void {
+  loadDormitories() {
+    this.dormitoryService.getAllDormitories().subscribe({
+      next: (dorms) => {
+        this.dorms = dorms;
+        this.filteredDorms = [...dorms];
+      },
+      error: (error) => {
+        console.error('Error fetching dormitories:', error);
+      }
+    });
+  }
+
+  getStars(rating: number | undefined): number[] {
+    const ratingValue = rating || 0;
+    return Array(Math.round(ratingValue)).fill(0);
+  }
+
+  togglePriceFilter(event: Event) {
     event.stopPropagation();
     this.showPriceFilter = !this.showPriceFilter;
   }
 
-  applyPriceFilter(): void {
+  applyPriceFilter() {
     this.applyFilters();
     this.showPriceFilter = false;
   }
 
-  filterByZone(zone: string): void {
+  filterByZone(zone: string) {
     this.selectedZone = zone;
     this.applyFilters();
   }
 
-  sortByPrice(order: string): void {
-    this.sortOrder = order;
-    
-    if (order === 'asc') {
-      this.filteredDorms.sort((a, b) => (a.numericPrice || 0) - (b.numericPrice || 0));
-    } else if (order === 'desc') {
-      this.filteredDorms.sort((a, b) => (b.numericPrice || 0) - (a.numericPrice || 0));
-    }
+  applySelectedSort() {
+    this.applyFilters();
   }
 
-  // Apply selected sort from dropdown
-  applySelectedSort(): void {
-    if (this.sortOrder === 'asc' || this.sortOrder === 'desc') {
-      this.sortByPrice(this.sortOrder);
-    }
+  // ฟังก์ชันสำหรับแปลงราคาให้เป็น number
+  getDormPrice(dorm: APIDorm): number {
+    // ใช้ monthly_price ก่อน ถ้าไม่มีให้ใช้ min_price
+    const price = dorm.monthly_price || dorm.min_price;
+    // แปลงเป็น number หรือ return 0 ถ้าไม่มีราคา
+    return typeof price === 'number' ? price : 0;
   }
 
-  // Apply both zone and price filters
-  applyFilters(): void {
-    this.filteredDorms = this.dorms.filter(dorm => {
-      // Apply zone filter if a zone is selected
-      if (this.selectedZone && dorm.zone !== this.selectedZone) {
-        return false;
-      }
-      
-      // Apply price filter if min or max price is set
-      const price = dorm.numericPrice || 0;
-      if (this.minPrice !== null && price < this.minPrice) {
-        return false;
-      }
-      if (this.maxPrice !== null && price > this.maxPrice) {
-        return false;
-      }
-      
+  // ฟังก์ชันสำหรับตรวจสอบว่าหอพักอยู่ในช่วงราคาที่กำหนดหรือไม่
+  isInPriceRange(dorm: APIDorm): boolean {
+    // ถ้าไม่ได้กำหนดช่วงราคา ให้แสดงทั้งหมด
+    if (this.minPrice === null && this.maxPrice === null) {
       return true;
-    });
-    
-    // Apply sorting after filtering if sort order is set
-    if (this.sortOrder === 'asc') {
-      this.filteredDorms.sort((a, b) => (a.numericPrice || 0) - (b.numericPrice || 0));
-    } else if (this.sortOrder === 'desc') {
-      this.filteredDorms.sort((a, b) => (b.numericPrice || 0) - (a.numericPrice || 0));
     }
+
+    // ดึงราคาจากหอพัก
+    const dormPrice = this.getDormPrice(dorm);
+
+    // ถ้ามีการกำหนดราคาต่ำสุด
+    if (this.minPrice !== null && dormPrice < this.minPrice) {
+      return false;
+    }
+
+    // ถ้ามีการกำหนดราคาสูงสุด
+    if (this.maxPrice !== null && dormPrice > this.maxPrice) {
+      return false;
+    }
+
+    return true;
+  }
+
+  applyFilters() {
+    let filtered = [...this.dorms];
+
+    // Filter by zone
+    if (this.selectedZone) {
+      filtered = filtered.filter(dorm => dorm.zone_name === this.selectedZone);
+    }
+
+    // Filter by price range
+    filtered = filtered.filter(dorm => this.isInPriceRange(dorm));
+
+    // Sort by price
+    if (this.sortOrder) {
+      filtered.sort((a, b) => {
+        const priceA = this.getDormPrice(a);
+        const priceB = this.getDormPrice(b);
+        return this.sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+      });
+    }
+
+    this.filteredDorms = filtered;
   }
 
   // Group dorms by zone
-  getDormsByZone(): Record<string, Dorm[]> {
-    const grouped: Record<string, Dorm[]> = {};
+  getDormsByZone(): Record<string, APIDorm[]> {
+    const grouped: Record<string, APIDorm[]> = {};
     
     // Initialize groups with all zones
     this.zones.forEach(zone => {
-      grouped[zone] = [];
+      grouped[zone.zone_name] = [];
     });
-    
-    // Add dorms to their respective zone groups
-    this.filteredDorms.forEach(dorm => {
-      if (grouped[dorm.zone]) {
-        grouped[dorm.zone].push(dorm);
+
+    // Group dorms by zone
+    this.dorms.forEach(dorm => {
+      if (dorm.zone_name && grouped[dorm.zone_name]) {
+        grouped[dorm.zone_name].push(dorm);
       }
     });
-    
+
     return grouped;
   }
 
-  // Get zones that have dorms after filtering
+  // Get active zones (zones that have dorms)
   getActiveZones(): string[] {
-    return this.zones.filter(zone => 
-      this.filteredDorms.some(dorm => dorm.zone === zone)
-    );
+    const grouped = this.getDormsByZone();
+    return Object.entries(grouped)
+      .filter(([_, dorms]) => dorms.length > 0)
+      .map(([zone]) => zone);
+  }
+
+  toggleFilterPopup(event: Event) {
+    event.stopPropagation();
+    this.showFilterPopup = !this.showFilterPopup;
+    if (this.showFilterPopup) {
+      this.showPriceFilter = false;
+    }
   }
 }
