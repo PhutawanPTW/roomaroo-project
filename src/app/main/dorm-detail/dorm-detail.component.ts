@@ -275,7 +275,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
         let lng = typeof detail.longitude === 'string' ? parseFloat(detail.longitude) : detail.longitude;
 
         if (!isNaN(lat) && !isNaN(lng)) {
-          console.log('Setting up map data with coordinates:', { lat, lng });
+          console.log('Setting up map with valid coordinates:', { lat, lng });
           this.mapLatitude = lat;
           this.mapLongitude = lng;
           this.showMap = true;
@@ -284,20 +284,24 @@ export class DormDetailComponent implements OnInit, OnDestroy {
           setTimeout(() => {
             const mapContainer = document.getElementById('map');
             if (mapContainer) {
-              console.log('Map container ready, initializing map...');
+              console.log('Map container found, dimensions:', {
+                width: mapContainer.offsetWidth,
+                height: mapContainer.offsetHeight,
+                visible: mapContainer.offsetParent !== null
+              });
               this.initializeMap();
             } else {
-              console.error('Map container not found in DOM');
+              console.error('Map container not found or not visible in DOM');
             }
           }, 100);
         } else {
-          console.error('Invalid coordinates:', { lat, lng });
+          console.error('Invalid coordinates after parsing:', { lat, lng });
         }
       } catch (error) {
-        console.error('Error setting up map:', error);
+        console.error('Error in setupMapData:', error);
       }
     } else {
-      console.error('No coordinates provided in detail:', { detail });
+      console.error('No coordinates in detail:', detail);
     }
   }
 

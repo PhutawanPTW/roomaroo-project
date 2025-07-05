@@ -2,10 +2,10 @@
 
 .map-container {
   width: 100%;
-  height: 400px;
+  height: 500px; /* Match the height in HTML */
   position: relative;
   z-index: 1;
-  background-color: #f3f4f6; /* Light gray background while loading */
+  background-color: #f3f4f6;
 }
 
 #map {
@@ -13,6 +13,16 @@
   height: 100%;
   position: relative;
   z-index: 1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Make sure the map container is visible */
+.map-section {
+  display: block;
+  width: 100%;
+  height: 500px;
+  margin-bottom: 1.5rem;
 }
 
 /* Google Maps style controls */

@@ -121,22 +121,27 @@
           <div class="mt-6">
             <h4 class="font-bold text-[#4F5356] mb-4">ค่าใช้จ่าย</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div *ngIf="dormDetail && dormDetail.water_bill" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div *ngIf="dormDetail?.water_rate" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div class="flex flex-col">
                   <span class="text-[#4F5356] font-medium mb-2">ค่าน้ำ</span>
                   <div class="font-bold text-[#4F5356] text-lg">
-                    {{ dormDetail.water_bill }}
+                    {{ dormDetail?.water_rate }}
                     <span class="text-sm text-[#4F5356]">บาท/ยูนิต</span>
+                  </div>
+                  <div class="text-sm text-[#4F5356] mt-1">
+                    ({{ dormDetail?.water_type }})
                   </div>
                 </div>
               </div>
-              <div *ngIf="dormDetail && dormDetail.electric_bill"
-                class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div *ngIf="dormDetail?.electricity_rate" class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                 <div class="flex flex-col">
                   <span class="text-[#4F5356] font-medium mb-2">ค่าไฟ</span>
                   <div class="font-bold text-[#4F5356] text-lg">
-                    {{ dormDetail.electric_bill }}
+                    {{ dormDetail?.electricity_rate }}
                     <span class="text-sm text-[#4F5356]">บาท/ยูนิต</span>
+                  </div>
+                  <div class="text-sm text-[#4F5356] mt-1">
+                    ({{ dormDetail?.electricity_type }})
                   </div>
                 </div>
               </div>
