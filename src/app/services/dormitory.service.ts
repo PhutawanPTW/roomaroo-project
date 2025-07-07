@@ -14,8 +14,8 @@ export interface Dorm {
   dorm_name: string;
   address: string;
   dorm_description?: string;  // Made optional to match DormDetail
-  latitude: string | null;
-  longitude?: string | null;
+  latitude: number | null;
+  longitude: number | null;
   
   // เพิ่ม zone_name ที่ backend ส่งมา
   zone_name?: string;
@@ -123,7 +123,6 @@ export class DormitoryService {
       params = params.set('limit', limit.toString());
     }
     return this.http.get<any>(`${this.backendUrl}/dormitories/recommended`, { params }).pipe(
-      tap(resp => console.log('[DormitoryService] recommended raw resp', resp)),
       map(resp => Array.isArray(resp) ? resp : (resp.dormitories ?? []))
     );
   }
@@ -135,15 +134,12 @@ export class DormitoryService {
       params = params.set('limit', limit.toString());
     }
     return this.http.get<any>(`${this.backendUrl}/dormitories/latest`, { params }).pipe(
-      tap(resp => console.log('[DormitoryService] latest raw resp', resp)),
       map(resp => Array.isArray(resp) ? resp : (resp.dormitories ?? []))
     );
   }
 
   getImages(dormId: number): Observable<DormImage[]> {
-    console.log(`[DormitoryService] Fetching images for dorm ID: ${dormId}`);
     return this.http.get<DormImage[]>(`${this.backendUrl}/dormitories/${dormId}/images`).pipe(
-      tap(imgs => console.log(`[DormitoryService] Images response for dorm ${dormId}:`, imgs)),
       catchError(err => {
         console.error(`[DormitoryService] Error fetching images for dorm ${dormId}:`, err);
         return of([]);
@@ -154,7 +150,6 @@ export class DormitoryService {
   /** Get room types for a specific dormitory */
   getRoomTypes(dormId: number): Observable<RoomType[]> {
     return this.http.get<RoomType[]>(`${this.backendUrl}/dormitories/${dormId}/room-types`).pipe(
-      tap(roomTypes => console.log(`[DormitoryService] Room types for dorm ${dormId}:`, roomTypes)),
       catchError(err => {
         console.error(`[DormitoryService] Error fetching room types for dorm ${dormId}:`, err);
         return of([]);
@@ -180,7 +175,6 @@ export class DormitoryService {
   /** Get all amenities from the database */
   getAllAmenities(): Observable<Amenity[]> {
     return this.http.get<Amenity[]>(`${this.backendUrl}/dormitories/amenities/all`).pipe(
-      tap(amenities => console.log('[DormitoryService] All amenities:', amenities)),
       catchError(err => {
         console.error('[DormitoryService] Error fetching all amenities:', err);
         return of([]);
@@ -195,13 +189,23 @@ export class DormitoryService {
 
   // ดึงรายละเอียดหอพักตาม ID
   getDormitoryById(dormId: number): Observable<DormDetail> {
-    return this.http.get<DormDetail>(`${this.backendUrl}/dormitories/${dormId}`);
+    return this.http.get<DormDetail>(`${this.backendUrl}/dormitories/${dormId}`).pipe(
+      map(dorm => {
+        // Convert coordinates to numbers
+        if (dorm.latitude) {
+          dorm.latitude = typeof dorm.latitude === 'string' ? parseFloat(dorm.latitude) : dorm.latitude;
+        }
+        if (dorm.longitude) {
+          dorm.longitude = typeof dorm.longitude === 'string' ? parseFloat(dorm.longitude) : dorm.longitude;
+        }
+        return dorm;
+      })
+    );
   }
 
   /** Get all zones */
   getAllZones(): Observable<Zone[]> {
     return this.http.get<Zone[]>(`${this.backendUrl}/zones`).pipe(
-      tap(zones => console.log('[DormitoryService] All zones:', zones)),
       catchError(err => {
         console.error('[DormitoryService] Error fetching zones:', err);
         return of([]);

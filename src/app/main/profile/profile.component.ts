@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-profile',
@@ -15,10 +16,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
   constructor(private authService: AuthService) {}
 
   ngOnInit() {
-    this.subscription = this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      console.log('[ProfileComponent] Current user updated:', user);
-    });
+    this.subscription = this.authService.currentUser$
+      .pipe(
+        filter((user): user is UserProfile | null => user !== undefined)
+      )
+      .subscribe(user => {
+        this.currentUser = user;
+      });
   }
 
   ngOnDestroy() {

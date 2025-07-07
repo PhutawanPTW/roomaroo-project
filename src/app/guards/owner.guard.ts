@@ -1,58 +1,50 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { CanActivate, Router, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { map, take, filter, timeout, catchError } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
+import { map, take, filter, catchError, switchMap, tap, first } from 'rxjs/operators';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class OwnerGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) { }
 
-  canActivate(): Observable<boolean> {
+  canActivate(): Observable<boolean | UrlTree> {
+    console.log('[OwnerGuard] Checking if user can access owner page');
+    
     return this.authService.currentUser$.pipe(
-      // รอจนกว่า auth state จะ settle (ไม่ใช่ loading state)
-      filter(user => user !== undefined), // รอจนกว่าจะได้ค่าที่แน่นอน (ไม่ใช่ undefined)
-      take(1),
-      timeout(10000), // เพิ่ม timeout เป็น 10 วินาที
+      // Wait until auth state is definitely determined (not undefined)
+      filter(user => user !== undefined),
+      // Add delay to ensure Firebase has time to restore the session
+      tap(user => console.log('[OwnerGuard] Auth state determined:', user ? 'User found' : 'No user')),
+      // Take only the first emission after auth is determined
+      first(),
+      // Map the user to a boolean or UrlTree
       map(user => {
-        console.log('[OwnerGuard] Checking user:', JSON.stringify(user));
-        console.log('[OwnerGuard] User memberType:', user?.memberType);
-        console.log('[OwnerGuard] User member_type:', (user as any)?.member_type);
-
-        // อนุญาตเฉพาะ owner - ไม่เช็ค needsProfileSetup
-        if (user && (user.memberType === 'owner' || (user as any)?.member_type === 'owner')) {
-          console.log('[OwnerGuard] Owner access granted');
+        if (!user) {
+          console.log('[OwnerGuard] No user found, redirecting to login');
+          return this.router.createUrlTree(
+            ['/login/owner'],
+            { queryParams: { error: 'access-denied', message: 'กรุณาเข้าสู่ระบบด้วยบัญชีเจ้าของหอพัก' } }
+          );
+        }
+        
+        if (user.memberType === 'owner') {
+          console.log('[OwnerGuard] User is owner, allowing access');
           return true;
         }
-
-        // ถ้าเป็น member ให้ redirect ไปหน้า main
-        if (user && (user.memberType === 'member' || (user as any)?.member_type === 'member')) {
-          console.log('[OwnerGuard] Member detected, redirecting to /main');
-          this.router.navigate(['/main']);
-          return false;
-        }
-
-        // ถ้าไม่มี user หรือไม่มี memberType ให้ redirect ไปหน้า login
-        console.log('[OwnerGuard] No valid user or memberType, redirecting to login');
-        this.router.navigate(['/login', 'owner'], { 
-          queryParams: { 
-            error: 'access-denied',
-            message: 'กรุณาเข้าสู่ระบบด้วยบัญชีเจ้าของหอพัก'
-          } 
-        });
-        return false;
+        
+        console.log('[OwnerGuard] User is not owner, redirecting');
+        return this.router.createUrlTree(
+          ['/login/owner'],
+          { queryParams: { error: 'access-denied', message: 'กรุณาเข้าสู่ระบบด้วยบัญชีเจ้าของหอพัก' } }
+        );
       }),
       catchError(error => {
-        console.error('[OwnerGuard] Error checking user access:', error);
-        this.router.navigate(['/login', 'owner'], { 
-          queryParams: { 
-            error: 'auth-error',
-            message: 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์'
-          } 
-        });
-        return of(false);
+        console.error('[OwnerGuard] Error in guard:', error);
+        return of(this.router.createUrlTree(
+          ['/login/owner'],
+          { queryParams: { error: 'auth-error', message: 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์' } }
+        ));
       })
     );
   }

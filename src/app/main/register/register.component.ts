@@ -99,21 +99,18 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe(paramMap => {
       // Prevent userType change during submission
       if (this.isSubmitting) {
-        console.log('[RegisterComponent] Ignoring paramMap change during submission');
         return;
       }
 
       const typeParam = paramMap.get('type');
       if (typeParam === 'owner' || typeParam === 'member') {
         this.userType = typeParam;
-        console.log('[RegisterComponent] User type set from path param:', this.userType);
       }
 
       // Read fromGoogle flag from query param
       const fromGoogle = this.route.snapshot.queryParamMap.get('fromGoogle');
       if (fromGoogle === 'true') {
         this.isFromGoogle = true;
-        console.log('[RegisterComponent] Google OAuth detected from query params');
       }
 
       // Update validators and end initializing
@@ -127,7 +124,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       const newIsFromGoogle = fromGoogleParam === 'true';
       if (newIsFromGoogle !== this.isFromGoogle) {
         this.isFromGoogle = newIsFromGoogle;
-        console.log('[RegisterComponent] queryParamMap detected isFromGoogle change:', this.isFromGoogle);
         this.updateFormValidation();
       }
     });
@@ -154,7 +150,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     };
   
     if (state && state.isFromGoogle) {
-      console.log('[RegisterComponent] Google OAuth state detected:', state);
       this.populateGoogleData(state);
     } else {
       // ตรวจสอบ history.state สำหรับกรณีที่ navigation state หายไป
@@ -167,7 +162,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       };
   
       if (historyState && historyState.isFromGoogle) {
-        console.log('[RegisterComponent] Google OAuth state detected from history:', historyState);
         this.populateGoogleData(historyState);
       }
     }
@@ -176,7 +170,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.authService.currentUser$.subscribe(userProfile => {
       // *** ป้องกันการ redirect ระหว่าง submit ***
       if (this.isSubmitting) {
-        console.log('[RegisterComponent] Ignoring currentUser$ change during submission');
         return;
       }
   
@@ -198,7 +191,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
         if (!this.router.url.startsWith(expectedDashboard) &&
           !this.router.url.startsWith('/login') &&
           !this.router.url.startsWith('/register')) {
-          console.log('[RegisterComponent] Auto-redirecting to dashboard:', expectedDashboard);
           this.router.navigate([expectedDashboard]);
         }
       } else if (userProfile && userProfile.needsProfileSetup && !this.isFromGoogle) {
@@ -215,7 +207,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
   
         // *** เฉพาะกรณีนี้เท่านั้นที่ navigate ไป register ***
         if (!this.router.url.startsWith('/register')) {
-          console.log('[RegisterComponent] User needs profile setup, staying on register page');
           this.router.navigate(['/register', userProfile.memberType || 'member']);
         }
       }
@@ -240,7 +231,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
           name: dorm.dorm_name
         }))
       ];
-      console.log('[RegisterComponent] Loaded dormitories:', this.dormList);
       
       // Group dormitories by zone
       this.updateGroupedDorms(dormitories);
@@ -248,8 +238,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       // Initialize filteredDorms with all loaded dormitories
       this.filteredDorms = [...this.groupedDorms];
     } catch (error) {
-      console.error('[RegisterComponent] Error loading dormitories:', error);
-      // คงค่า dormList เดิมไว้เป็น fallback หรือใช้ข้อมูลจำลองถ้าจำเป็น
     } finally {
       this.isLoadingDorms = false;
     }
@@ -283,8 +271,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       name: name,
       dormitories: data.dormitories
     }));
-    
-    console.log('[RegisterComponent] Grouped dormitories:', this.groupedDorms);
   }
 
   // เพิ่ม method สำหรับ populate ข้อมูล Google
@@ -296,15 +282,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       if (state.fullName) {
         this.registerForm.get('fullName')?.setValue(state.fullName);
-        console.log('[RegisterComponent] Auto-filled fullName:', state.fullName);
       }
       if (state.email) {
         this.registerForm.get('email')?.setValue(state.email);
-        console.log('[RegisterComponent] Auto-filled email:', state.email);
       }
       if (state.photoURL) {
         this.photoURL = state.photoURL;
-        console.log('[RegisterComponent] Auto-filled photoURL:', state.photoURL);
       }
       this.updateFormValidation();
       this.isInitializing = false; // ปิด initializing flag เมื่อเสร็จ
@@ -337,11 +320,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   private updateFormValidation() {
-    console.log('[RegisterComponent] updateFormValidation called with:', {
-      userType: this.userType,
-      isFromGoogle: this.isFromGoogle
-    });
-
     const businessFields = ['businessName', 'businessAddress', 'businessRegistration'];
     businessFields.forEach(field => {
       const control = this.registerForm.get(field);
@@ -385,7 +363,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       confirmPasswordControl?.disable();
       this.registerForm.get('email')?.disable();
       this.registerForm.get('fullName')?.disable();
-      console.log('[RegisterComponent] Password fields and basic fields disabled for Google OAuth');
     } else {
       passwordControl?.setValidators([Validators.required, Validators.minLength(6)]);
       passwordControl?.enable();
@@ -393,7 +370,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       confirmPasswordControl?.enable();
       this.registerForm.get('email')?.enable();
       this.registerForm.get('fullName')?.enable();
-      console.log('[RegisterComponent] Password fields and basic fields enabled for regular signup');
     }
 
     passwordControl?.updateValueAndValidity();
@@ -452,12 +428,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     this.isRegisterLoading = true;
     this.errorMessage = null;
-  
-    console.log('[RegisterComponent] onSubmit called with:', {
-      userType: this.userType,
-      isFromGoogle: this.isFromGoogle,
-      formValid: this.registerForm.valid
-    });
   
     if (this.userType === 'general') {
       this.errorMessage = 'กรุณาเลือกประเภทสมาชิก (เจ้าของหอพัก หรือ สมาชิก)';
@@ -838,7 +808,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
         ...zones.map(z => ({ id: z.zone_id.toString(), name: z.zone_name }))
       ];
     } catch (error) {
-      console.error('[RegisterComponent] Error loading zones:', error);
     }
   }
 

@@ -1,25 +1,73 @@
 // src/app/app.config.ts
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http'; // เพิ่มถ้าใช้ HttpClient
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes'; // ตรวจสอบว่า path ถูกต้อง
 import { environment } from '../environments/environment'; // import environment
+import { provideClientHydration } from '@angular/platform-browser';
+import { provideAnimations } from '@angular/platform-browser/animations';
+
+// Import the interceptor function
+import { authInterceptor } from './interceptors/auth.interceptor';
 
 // สำหรับ Firebase
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
-import { getAuth, provideAuth } from '@angular/fire/auth';
+import { provideFirebaseApp, initializeApp, getApp } from '@angular/fire/app';
+import { getAuth, provideAuth, browserLocalPersistence, initializeAuth, indexedDBLocalPersistence, browserPopupRedirectResolver } from '@angular/fire/auth';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
-// import { getStorage, provideStorage } from '@angular/fire/storage'; // ถ้าคุณใช้ Cloud Storage
+import { getStorage, provideStorage } from '@angular/fire/storage';
 // import { getDatabase, provideDatabase } from '@angular/fire/database'; // ถ้าคุณใช้ Realtime Database
+import { AuthService } from './services/auth.service';
+
+// Factory function to initialize auth state
+export function initializeAuthFactory(authService: AuthService) {
+  return () => new Promise<void>((resolve) => {
+    console.log('[APP_INITIALIZER] Waiting for auth state to be determined...');
+    
+    // Use the checkAuthState method to initialize auth state
+    authService.checkAuthState()
+      .then(() => {
+        console.log('[APP_INITIALIZER] Auth state initialized');
+        resolve();
+      })
+      .catch(error => {
+        console.error('[APP_INITIALIZER] Error initializing auth state:', error);
+        resolve(); // Resolve anyway to prevent app from hanging
+      });
+    
+    // Set a timeout to resolve anyway after 5 seconds to prevent hanging
+    setTimeout(() => {
+      console.log('[APP_INITIALIZER] Auth state timeout, proceeding anyway');
+      resolve();
+    }, 5000);
+  });
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes), // สำหรับจัดการ Routing
-    provideHttpClient(), // สำหรับ HttpClient ใน AuthService
+    provideClientHydration(),
+    provideAnimations(),
+    provideHttpClient(
+      withInterceptors([authInterceptor])
+    ), // สำหรับ HttpClient ใน AuthService และเพิ่ม AuthInterceptor
 
     // --- ตั้งค่า Firebase ---
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideAuth(() => getAuth()),
+    provideAuth(() => {
+      const app = getApp();
+      const auth = initializeAuth(app, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+        popupRedirectResolver: browserPopupRedirectResolver
+      });
+      return auth;
+    }),
     provideFirestore(() => getFirestore()),
+    provideStorage(() => getStorage()),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeAuthFactory,
+      deps: [AuthService],
+      multi: true
+    }
   ]
 };

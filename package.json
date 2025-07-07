@@ -22,7 +22,6 @@
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
     "@maptiler/sdk": "^3.5.0",
-    "@tailwindcss/postcss": "^4.1.8",
     "@types/mapbox-gl": "^3.4.1",
     "bcrypt": "^6.0.0",
     "bootstrap": "^5.3.3",
@@ -50,8 +49,8 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "postcss": "^8.5.4",
-    "tailwindcss": "^4.1.8",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.0",
     "typescript": "~5.7.2"
   }
 }

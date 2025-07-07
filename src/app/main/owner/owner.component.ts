@@ -6,6 +6,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
+import { filter } from 'rxjs/operators';
+import { RouterModule } from '@angular/router';
+
 
 @Component({
   selector: 'app-owner',
@@ -16,6 +20,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
     MatGridListModule,
     MatButtonModule,
     MatIconModule,
+    RouterModule,
     NavbarComponent
   ],
   templateUrl: './owner.component.html',
@@ -64,13 +69,53 @@ export class OwnerComponent implements OnInit, OnDestroy {
     { name: 'หอพัก E', price: '2,600 - 3,000 บาท/เดือน', image: 'assets/images/dorm8.jpg', rating: 5.0, updated: '10 พฤษภาคม 2024' }
   ];
 
-  constructor(private authService: AuthService) {}
+  myDorms: any[] = [];
+
+  constructor(private authService: AuthService, private ownerDormService: OwnerDormitoryService) { }
 
   ngOnInit() {
-    this.subscription = this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      console.log('[OwnerComponent] Current user updated:', user);
-    });
+    this.subscription = this.authService.currentUser$
+      .pipe(
+        filter((user): user is UserProfile | null => user !== undefined)
+      )
+      .subscribe(user => {
+        this.currentUser = user;
+        console.log('[OwnerComponent] Current user updated:', user);
+
+        if (user && (user as any).id) {
+          console.log('Current user:', user);
+
+          this.ownerDormService.getDormsByUserId((user as any).id).subscribe({
+            next: (data) => {
+              console.log('API response:', data);
+
+              // Handle different response formats
+              if (data) {
+                this.myDorms = Array.isArray(data) ? data : [data];
+              } else {
+                this.myDorms = [];
+              }
+
+              console.log('[OwnerComponent] My dorms:', this.myDorms);
+              this.myDorms.forEach((dorm, idx) => {
+                console.log(`[OwnerComponent] Dorm #${idx + 1}:`, dorm);
+              });
+            },
+            error: (err) => {
+              console.error('API error:', err);
+
+              // Show user-friendly error message
+              if (err.message.includes('API endpoint not found')) {
+                console.error('Backend API endpoint /api/dormitories/user/:userId not found');
+                // You might want to show a message to the user or use mock data
+                this.myDorms = []; // or use mock data for development
+              } else {
+                console.error('Other API error:', err.message);
+              }
+            }
+          });
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -89,8 +134,53 @@ export class OwnerComponent implements OnInit, OnDestroy {
     window.location.href = '/main/dorm-detail';
   }
 
-  getPriceHtml(price: string): string {
-    return price.replace(/\n/g, '<br>');
+  // Helper to format price string like main page
+  formatPriceString(dorm: any): string {
+    let priceDisplay = '';
+    if (dorm.min_price && dorm.max_price) {
+      priceDisplay = `${dorm.min_price.toLocaleString()} - ${dorm.max_price.toLocaleString()} บาท/เดือน`;
+    } else if (dorm.monthly_price) {
+      priceDisplay = `${dorm.monthly_price.toLocaleString()} บาท/เดือน`;
+    }
+    if (dorm.daily_price) {
+      priceDisplay += `\n${dorm.daily_price.toLocaleString()} บาท/วัน`;
+    }
+    return priceDisplay;
+  }
+
+  // Use the same getPriceHtml as main page (accepts price string)
+  getPriceHtml(price: string | undefined): string {
+    if (!price) return '';
+    const lines = price.split('\n');
+    let html = '';
+
+    // Process monthly price (first line)
+    if (lines[0]) {
+      // Check for price range format (e.g., "2,600 - 3,000 บาท/เดือน")
+      const monthlyRangeMatch = lines[0].match(/([\d,]+)\s*-\s*([\d,]+)\s*(บาท\/เดือน)/);
+      if (monthlyRangeMatch) {
+        const [_, start, end, unit] = monthlyRangeMatch;
+        html += `<div class="price-monthly"><span class="font-english">${start} - ${end}</span> <span class="font-thai unit">${unit}</span></div>`;
+      } else {
+        // Check for single price format (e.g., "2,600 บาท/เดือน")
+        const monthlySingleMatch = lines[0].match(/([\d,]+)\s*(บาท\/เดือน)/);
+        if (monthlySingleMatch) {
+          const [_, number, unit] = monthlySingleMatch;
+          html += `<div class="price-monthly"><span class="font-english">${number}</span> <span class="font-thai unit">${unit}</span></div>`;
+        }
+      }
+    }
+
+    // Process daily price (second line)
+    if (lines[1]) {
+      const dailyMatch = lines[1].match(/([\d,]+)\s*(บาท\/วัน)/);
+      if (dailyMatch) {
+        const [_, number, unit] = dailyMatch;
+        html += `<div class="price-daily"><span class="font-english">${number}</span> <span class="font-thai unit">${unit}</span></div>`;
+      }
+    }
+
+    return html;
   }
 
   onEditDorm(dorm: any) {

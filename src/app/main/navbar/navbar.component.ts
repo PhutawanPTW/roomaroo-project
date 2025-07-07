@@ -6,7 +6,7 @@ import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, take } from 'rxjs/operators';
 import { NavigationEnd } from '@angular/router';
 
 @Component({
@@ -28,6 +28,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isOwner: boolean = false;
   private userSub: Subscription | undefined;
   private routerSub: Subscription | undefined;
+  isLoading = true; // Add loading state
 
   constructor(
     private router: Router,
@@ -35,13 +36,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.authSubscription = this.authService.currentUser$.subscribe(
-      (user: UserProfile | null) => {
-        this.currentUser = user;
-        this.userType = user?.memberType ?? null;
-        this.isOwner = user?.memberType === 'owner';
-      }
-    );
+    this.authSubscription = this.authService.currentUser$
+      .pipe(
+        filter(user => user !== undefined) // Wait for a defined value (not undefined)
+      )
+      .subscribe(
+        (user: UserProfile | null) => {
+          this.currentUser = user;
+          this.userType = user?.memberType ?? null;
+          this.isOwner = user?.memberType === 'owner';
+          this.isLoading = false; // Set loading to false once we have a definitive answer
+        }
+      );
+      
     this.router.events.subscribe(() => {
       this.currentPath = this.router.url;
     });
@@ -87,7 +94,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   onLoginTypeSelect(type: 'member' | 'owner') {
-    console.log(`Selected login type: ${type} at ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}`);
     this.loginDropdownOpen = false;
     this.router.navigate(['/login', type]);
   }
@@ -122,7 +128,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   onPostDormClick() {
     if (this.isLoggedIn() && this.getUserType() === 'owner') {
-      this.router.navigate(['/post-dorm']);
+      this.router.navigate(['/owner/dorm-add']);
     } else {
       this.router.navigate(['/login', 'owner']);
     }
@@ -131,9 +137,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   async onLogout() {
     try {
       await this.authService.signOut('/main');
-      console.log('Logout successful from Navbar');
-    } catch (error: any) {
-      console.error('Logout error from Navbar:', error);
     } finally {
       this.closeProfileDropdown();
     }

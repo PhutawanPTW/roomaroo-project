@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -6,11 +6,6 @@ import { NavbarComponent } from "../navbar/navbar.component";
 import { DormitoryService, DormDetail, Dorm, Amenity } from '../../services/dormitory.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MapService } from '../../services/map.service';
-import * as maptilersdk from '@maptiler/sdk';
-import { Marker } from '@maptiler/sdk';
-
-// Initialize MapTiler SDK with API key
-maptilersdk.config.apiKey = 'Gpwk2Mpi9cl8hUkVrf6f';
 
 interface AmenityDisplay {
   amenity_id: number;
@@ -29,11 +24,11 @@ interface Review {
 interface SimilarProperty {
   id: number;
   name: string;
-  dailyPrice?: string;  // เพิ่มราคารายวัน
-  monthlyPrice?: string; // เพิ่มราคารายเดือน
-  price: string;  // เก็บไว้สำหรับ backward compatibility
+  dailyPrice?: string;
+  monthlyPrice?: string;
+  price: string;
   location: string;
-  zone?: string; // เพิ่ม zone field
+  zone?: string;
   image: string;
   rating: number;
   date: string;
@@ -46,9 +41,9 @@ interface SimilarProperty {
   templateUrl: './dorm-detail.component.html',
   styleUrls: ['./dorm-detail.component.css']
 })
-export class DormDetailComponent implements OnInit, OnDestroy {
+export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('map') mapContainer!: ElementRef;
-  
+
   dormId: number = 0;
   dormDetail: DormDetail | null = null;
 
@@ -67,7 +62,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
   owner: string = '';
   description: string = '';
   amenities: AmenityDisplay[] = [];
-  
+
   ownerProfile = {
     name: '',
     image: '../../../assets/images/image-removebg-preview.png',
@@ -78,9 +73,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
   showMap: boolean = false;
   mapLatitude: number | null = null;
   mapLongitude: number | null = null;
-  isSatelliteView: boolean = false;
-  private map: maptilersdk.Map | null = null;
-  private marker: maptilersdk.Marker | null = null;
+  private mapInitialized: boolean = false;
 
   // Reviews data (ยังไม่มีในระบบ)
   overallRating: number = 5.0;
@@ -103,7 +96,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
     private dormService: DormitoryService,
     private mapService: MapService,
     private sanitizer: DomSanitizer
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // รับ dormId จาก URL และโหลดข้อมูล
@@ -111,6 +104,8 @@ export class DormDetailComponent implements OnInit, OnDestroy {
       const id = params['id'];
       if (id && !isNaN(+id) && +id > 0) {
         this.dormId = +id;
+        this.mapService.destroyMap();
+        this.mapInitialized = false;
         this.loadDormitoryDetail();
         this.loadSimilarDormitories();
       } else {
@@ -123,13 +118,24 @@ export class DormDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    // ตรวจสอบการเปลี่ยนแปลงของ route สำหรับ hot reload
+    this.route.params.subscribe(() => {
+      // ทำลายแมพเก่าเมื่อ route เปลี่ยน
+      setTimeout(() => {
+        this.mapService.destroyMap();
+        this.mapInitialized = false;
+      }, 100);
+    });
+
+    // ลองโหลดแผนที่หลังจาก View พร้อม
+    this.tryInitializeMap();
+  }
+
   ngOnDestroy(): void {
-    if (this.marker) {
-      this.marker.remove();
-    }
-    if (this.map) {
-      this.map.remove();
-    }
+    // ใช้ MapService ในการ destroy map
+    this.mapService.destroyMap();
+    this.mapInitialized = false;
   }
 
   private async loadDormitoryDetail() {
@@ -139,10 +145,10 @@ export class DormDetailComponent implements OnInit, OnDestroy {
 
       // โหลด amenities ทั้งหมดก่อน
       const allAmenities = await this.dormService.getAllAmenities().toPromise();
-      
+
       // โหลดข้อมูลหอพัก
       const detail = await this.dormService.getDormitoryById(this.dormId).toPromise();
-      
+
       if (!detail) {
         throw new Error('ไม่พบข้อมูลหอพัก');
       }
@@ -151,7 +157,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
       this.dormDetail = detail;
       this.dormName = detail.dorm_name;
       this.location = detail.address;
-      
+
       // จัดการรูปภาพ
       if (detail.images && detail.images.length > 0) {
         this.images = detail.images.map(img => img.image_url);
@@ -173,6 +179,12 @@ export class DormDetailComponent implements OnInit, OnDestroy {
       this.setupMapData(detail);
 
       this.isLoading = false;
+
+      // ลองโหลดแผนที่อีกครั้งหลังจากข้อมูลโหลดเสร็จ
+      setTimeout(() => {
+        this.tryInitializeMap();
+      }, 100);
+
     } catch (error: any) {
       console.error('Error loading dormitory detail:', error);
       this.error = error.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลหอพัก';
@@ -189,11 +201,11 @@ export class DormDetailComponent implements OnInit, OnDestroy {
 
   private processAmenities(allAmenities: Amenity[], dormAmenities: any[]): AmenityDisplay[] {
     // สร้าง Set ของ amenity_id ที่หอพักมี
-    const dormAmenityIds = new Set(dormAmenities.map(da => 
+    const dormAmenityIds = new Set(dormAmenities.map(da =>
       // ตรวจสอบว่ามี amenity_id หรือไม่ ถ้าไม่มีให้ใช้ id แทน
       da.amenity_id || da.id
     ));
-    
+
     // สร้างรายการสิ่งอำนวยความสะดวกทั้งหมดพร้อมสถานะ
     return allAmenities.map(amenity => ({
       amenity_id: amenity.amenity_id,
@@ -209,7 +221,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
       if (dorms) {
         // กรองออกหอพักปัจจุบัน
         const filteredDorms = dorms.filter(d => d.dorm_id !== this.dormId);
-        
+
         // แปลงข้อมูลให้ตรงกับ interface SimilarProperty
         this.similarProperties = filteredDorms.map(d => this.mapDormToSimilarProperty(d));
       }
@@ -222,20 +234,20 @@ export class DormDetailComponent implements OnInit, OnDestroy {
     let priceDisplay = '';
     let dailyPrice: string | undefined;
     let monthlyPrice: string | undefined;
-    
+
     // จัดการแสดงราคา
     if (dorm.daily_price) {
       dailyPrice = `${dorm.daily_price} บาท/วัน`;
       priceDisplay = dailyPrice;
     }
-    
+
     if (dorm.monthly_price) {
       monthlyPrice = `${dorm.monthly_price} บาท/เดือน`;
       if (!priceDisplay) {
         priceDisplay = monthlyPrice;
       }
     }
-    
+
     if (dorm.min_price && dorm.max_price) {
       monthlyPrice = `${dorm.min_price.toLocaleString()} - ${dorm.max_price.toLocaleString()} บาท/เดือน`;
       if (!priceDisplay) {
@@ -244,11 +256,11 @@ export class DormDetailComponent implements OnInit, OnDestroy {
     } else if (dorm.price_display && !dailyPrice && !monthlyPrice) {
       priceDisplay = dorm.price_display;
     }
-  
+
     // จัดการแสดงที่ตั้ง - แยกโซนออกมา
     let locationDisplay = dorm.location_display || dorm.address || '';
     let zoneDisplay = dorm.zone_name || '';
-  
+
     return {
       id: dorm.dorm_id,
       name: dorm.dorm_name,
@@ -256,18 +268,18 @@ export class DormDetailComponent implements OnInit, OnDestroy {
       monthlyPrice: monthlyPrice,
       price: priceDisplay,
       location: locationDisplay,
-      zone: zoneDisplay, // เพิ่ม zone แยกต่างหาก
+      zone: zoneDisplay,
       image: dorm.main_image_url || dorm.thumbnail_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
       rating: 5.0,
       date: dorm.updated_date ? `อัพเดทล่าสุด ${new Date(dorm.updated_date).toLocaleDateString('th-TH')}` : '',
     };
   }
+
   // เพิ่ม method สำหรับการนำทางไปยังหอพักที่คล้ายกัน
   viewSimilarDorm(id: number) {
     this.router.navigate(['/dorm-detail', id.toString()]);
   }
 
-  // ตั้งค่าข้อมูลแผนที่
   private setupMapData(detail: DormDetail): void {
     if (detail.latitude && detail.longitude) {
       try {
@@ -279,21 +291,6 @@ export class DormDetailComponent implements OnInit, OnDestroy {
           this.mapLatitude = lat;
           this.mapLongitude = lng;
           this.showMap = true;
-
-          // Initialize map after a short delay to ensure DOM is ready
-          setTimeout(() => {
-            const mapContainer = document.getElementById('map');
-            if (mapContainer) {
-              console.log('Map container found, dimensions:', {
-                width: mapContainer.offsetWidth,
-                height: mapContainer.offsetHeight,
-                visible: mapContainer.offsetParent !== null
-              });
-              this.initializeMap();
-            } else {
-              console.error('Map container not found or not visible in DOM');
-            }
-          }, 100);
         } else {
           console.error('Invalid coordinates after parsing:', { lat, lng });
         }
@@ -305,98 +302,53 @@ export class DormDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private initializeMap(): void {
-    if (!this.mapLatitude || !this.mapLongitude) {
-      console.error('Map coordinates not available:', { lat: this.mapLatitude, lng: this.mapLongitude });
+  // ฟังก์ชันใหม่สำหรับการลองโหลดแผนที่
+  private tryInitializeMap(): void {
+    if (this.mapInitialized || !this.showMap || !this.mapLatitude || !this.mapLongitude) {
       return;
     }
 
-    try {
-      console.log('Initializing map with coordinates:', { lat: this.mapLatitude, lng: this.mapLongitude });
-      
-      // Initialize map with longitude first, then latitude
-      this.map = new maptilersdk.Map({
-        container: 'map',
-        style: maptilersdk.MapStyle.STREETS,
-        center: [this.mapLongitude, this.mapLatitude], // [lng, lat] order
-        zoom: 15,
-        pitch: 0,
-        bearing: 0
-      });
-
-      // Wait for map to load before adding marker and controls
-      this.map.on('load', () => {
-        console.log('Map loaded, adding marker...');
-        this.addMarker();
-        this.addMapControls();
-      });
-
-      // Add zoom controls
-      this.map.addControl(new maptilersdk.NavigationControl({
-        showCompass: false,
-        showZoom: false,
-        visualizePitch: false
-      }), 'bottom-right');
-
-    } catch (error) {
-      console.error('Error initializing map:', error);
-    }
-  }
-
-  private addMarker(): void {
-    if (!this.map || !this.mapLatitude || !this.mapLongitude) {
-      console.error('Cannot add marker, map or coordinates not ready');
-      return;
-    }
-  
-    try {
-      // Create a simple red marker
-      this.marker = new Marker({ color: "#FF0000" })
-        .setLngLat([this.mapLongitude, this.mapLatitude])
-        .addTo(this.map);
-  
-      console.log('Marker added at:', [this.mapLongitude, this.mapLatitude]);
-    } catch (error) {
-      console.error('Error adding marker:', error);
-    }
-  }
-
-  private addMapControls(): void {
-    if (!this.map) return;
-
-    // Add navigation control
-    const nav = new maptilersdk.NavigationControl({
-      showCompass: true,
-      visualizePitch: true
-    });
-    this.map.addControl(nav, 'bottom-right');
-  }
-
-  toggleMapStyle(): void {
-    this.isSatelliteView = !this.isSatelliteView;
-    if (this.map) {
-      const style = this.isSatelliteView ? 
-        'https://api.maptiler.com/maps/hybrid/style.json?key=Gpwk2Mpi9cl8hUkVrf6f' : 
-        maptilersdk.MapStyle.STREETS;
-      
-      const center = this.map.getCenter();
-      const zoom = this.map.getZoom();
-      
-      this.map.setStyle(style);
-      
-      this.map.once('style.load', () => {
-        this.map?.setCenter(center);
-        this.map?.setZoom(zoom);
-        if (this.mapLatitude && this.mapLongitude) {
-          // ลบ marker เก่าก่อน
-          if (this.marker) {
-            this.marker.remove();
+    const mapContainer = document.getElementById('map');
+    if (mapContainer && this.dormDetail) {
+      console.log('Map container found, initializing with MapService...');
+      try {
+        this.mapService.initializeMap(
+          'map', 
+          this.mapLatitude, 
+          this.mapLongitude, 
+          this.dormName, 
+          this.location, 
+          this.dormDetail
+        );
+        this.mapInitialized = true;
+        console.log('Map initialized successfully');
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        // ลองอีกครั้งหลังจาก 1 วินาที
+        setTimeout(() => {
+          if (!this.mapInitialized) {
+            this.tryInitializeMap();
           }
-          // สร้าง marker ใหม่
-          this.addMarker();
+        }, 1000);
+      }
+    } else {
+      console.log('Map container not ready, retrying...');
+      // ลองอีกครั้งหลังจาก 200ms
+      setTimeout(() => {
+        if (!this.mapInitialized) {
+          this.tryInitializeMap();
         }
-      });
+      }, 200);
     }
+  }
+
+  // Zoom controls - ใช้ MapService
+  zoomIn(): void {
+    this.mapService.zoomIn();
+  }
+
+  zoomOut(): void {
+    this.mapService.zoomOut();
   }
 
   // Image gallery methods
@@ -442,7 +394,7 @@ export class DormDetailComponent implements OnInit, OnDestroy {
       this.newComment = '';
     }
   }
-  
+
   viewAllComments(): void {
     alert('ขออภัย ระบบรีวิวยังไม่เปิดให้ใช้งาน');
   }
@@ -455,25 +407,12 @@ export class DormDetailComponent implements OnInit, OnDestroy {
   // เพิ่ม method สำหรับปุ่มดูเพิ่มเติม
   viewMoreSimilarDorms() {
     // นำทางไปยังหน้า dorm-list พร้อม query parameter เพื่อแสดงหอพักแนะนำ
-    this.router.navigate(['/main/dorm-list'], { 
-      queryParams: { 
+    this.router.navigate(['/main/dorm-list'], {
+      queryParams: {
         type: 'recommended',
         from: 'dorm-detail',
         currentDormId: this.dormId
-      } 
+      }
     });
-  }
-
-  // Zoom functions
-  zoomIn(): void {
-    if (this.map) {
-      this.map.zoomIn();
-    }
-  }
-
-  zoomOut(): void {
-    if (this.map) {
-      this.map.zoomOut();
-    }
   }
 }

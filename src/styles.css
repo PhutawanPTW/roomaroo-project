@@ -1,8 +1,10 @@
 /* ✅ ฟอนต์ต้องมาก่อนทุกอย่าง */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Thai:wght@100..900&display=swap');
 
-/* ✅ Tailwind Directives */
-@import "tailwindcss";
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html,
 body {
@@ -11,7 +13,7 @@ body {
 
 body {
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: 'Noto Sans Thai', 'Inter', sans-serif;
 }
 
 /* Font Family Definitions */

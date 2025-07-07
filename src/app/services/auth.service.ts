@@ -8,6 +8,7 @@ import { NgZone } from '@angular/core';
 
 export interface UserProfile {
     uid: string;
+    id: number;
     email: string;
     username: string;
     displayName: string | null;
@@ -46,7 +47,7 @@ export interface ZoneOption {
 })
 export class AuthService {
     private backendUrl = 'http://localhost:3000/api';
-    public currentUser$ = new BehaviorSubject<UserProfile | null>(null);
+    public currentUser$ = new BehaviorSubject<UserProfile | null | undefined>(undefined);
     
     // Define user types to avoid TypeScript errors
     private readonly USER_TYPE_OWNER: 'owner' = 'owner';
@@ -61,39 +62,35 @@ export class AuthService {
     // เพิ่ม flag เพื่อป้องกันการ redirect เมื่อมี error
     private skipAuthStateChange = false;
 
+    // เพิ่ม flag เพื่อติดตามสถานะการ refresh token
+    private isRefreshingToken = false;
+    private tokenRefreshPromise: Promise<string> | null = null;
+
     constructor(
         private http: HttpClient,
         private auth: Auth,
         private router: Router
     ) {
-        console.log('[AuthService] Constructor: Initializing auth state listener.');
-
         onAuthStateChanged(this.auth, async (user) => {
             if (this.isGoogleRegistrationFlow) {
-                console.log('[AuthService] Skipping profile fetch - in Google registration flow');
                 return;
             }
 
             // *** เพิ่มการ skip เมื่อกำลัง registration ***
             if (this.isRegistrationInProgress) {
-                console.log('[AuthService] Skipping profile fetch - registration in progress');
                 return;
             }
 
             if (this.skipAuthStateChange) {
-                console.log('[AuthService] Skipping auth state change due to skipAuthStateChange flag');
                 this.skipAuthStateChange = false;
                 return;
             }
 
             if (user) {
-                console.log('[AuthService] Firebase user detected, fetching profile...');
                 try {
                     const profile = await this.fetchUserProfile(user);
                     this.currentUser$.next(profile);
-                    console.log('[AuthService] User profile loaded:', profile);
                 } catch (error) {
-                    console.error('[AuthService] Error fetching user profile:', error);
                     this.currentUser$.next(null);
                 }
             } else {
@@ -102,13 +99,62 @@ export class AuthService {
         });
     }
 
+    // เพิ่ม method สำหรับ refresh token
+    async refreshToken(forceRefresh = false): Promise<string> {
+        const currentUser = this.auth.currentUser;
+        
+        if (!currentUser) {
+            return Promise.reject('No authenticated user');
+        }
+
+        // ถ้ากำลัง refresh token อยู่แล้ว ให้รอ promise เดิม
+        if (this.isRefreshingToken && this.tokenRefreshPromise) {
+            return this.tokenRefreshPromise;
+        }
+
+        // สร้าง promise ใหม่สำหรับ refresh token
+        this.isRefreshingToken = true;
+        this.tokenRefreshPromise = new Promise<string>((resolve, reject) => {
+            try {
+                currentUser.getIdToken(forceRefresh)
+                    .then(token => {
+                        resolve(token);
+                    })
+                    .catch(error => {
+                        reject(error);
+                    })
+                    .finally(() => {
+                        this.isRefreshingToken = false;
+                        this.tokenRefreshPromise = null;
+                    });
+            } catch (error) {
+                this.isRefreshingToken = false;
+                this.tokenRefreshPromise = null;
+                reject(error);
+            }
+        });
+
+        return this.tokenRefreshPromise;
+    }
+
+    // เพิ่ม method สำหรับตรวจสอบสถานะ token
+    async verifyToken(): Promise<boolean> {
+        try {
+            const token = await this.refreshToken(false);
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+            
+            const response = await this.http.get<{valid: boolean}>(`${this.backendUrl}/auth/verify-token`, { headers }).toPromise();
+            return response?.valid || false;
+        } catch (error) {
+            return false;
+        }
+    }
+
     async signUpWithFormData(formData: FormData): Promise<UserProfile> {
         // *** เซ็ต flag ป้องกัน race condition ***
         this.isRegistrationInProgress = true;
 
         try {
-            console.log(`[AuthService] Starting FormData sign-up process`);
-
             const email = formData.get('email') as string;
             const password = formData.get('password') as string;
             // อ่านค่า memberType จากฟอร์ม (path param ถูกส่งมาเป็น memberType)
@@ -119,27 +165,21 @@ export class AuthService {
             const dormitoryId = formData.get('dormitoryId') as string;
             const profileImage = formData.get('profileImage') as File;
 
-            console.log(`[AuthService] Form data userType: '${userType}', type: ${typeof userType}`);
             // ปรับปรุงการตรวจสอบข้อมูล: owner ไม่จำเป็นต้องมี phoneNumber
             const requiredFields = userType === 'owner' 
                 ? [email, password, userType, fullName]
                 : [email, password, userType, fullName, phoneNumber];
                 
             if (requiredFields.some(field => !field)) {
-                console.error('[AuthService] Missing required registration data');
                 throw new Error('Missing required registration data');
             }
 
-            console.log(`[AuthService] Starting registration for ${userType} user: ${email}`);
-
             const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
             const firebaseUser = userCredential.user;
-            console.log(`[AuthService] Firebase user created: ${firebaseUser.uid}`);
 
             await updateProfile(firebaseUser, { displayName: fullName });
 
             const idToken = await firebaseUser.getIdToken();
-            console.log(`[AuthService] Got ID token for user: ${firebaseUser.uid}`);
 
             const submitFormData = new FormData();
             submitFormData.append('email', firebaseUser.email || '');
@@ -155,32 +195,23 @@ export class AuthService {
             // แก้ไข: ใช้ dormitoryId แทน dormitory
             if (userType === 'member' && dormitoryId) {
                 submitFormData.append('dormitoryId', dormitoryId);
-                console.log(`[AuthService] Adding dormitory ID for member: ${dormitoryId}`);
             }
 
             if (profileImage) {
                 submitFormData.append('profileImage', profileImage);
-                console.log('[AuthService] Profile image included in registration request:', {
-                    name: profileImage.name,
-                    size: profileImage.size,
-                    type: profileImage.type
-                });
             }
 
             const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
 
-            console.log(`[AuthService] Sending registration data to backend`);
             const rawResponse = await this.http.post<any>(`${this.backendUrl}/auth/register`, submitFormData, { headers }).toPromise();
 
             if (!rawResponse || !rawResponse.user) {
-                console.error('[AuthService] Backend registration response is invalid');
                 throw new Error('Backend registration response is incomplete or invalid.');
             }
 
-            console.log(`[AuthService] Backend registration successful:`, JSON.stringify(rawResponse));
-
             const userProfile: UserProfile = {
                 uid: rawResponse.user.uid,
+                id: rawResponse.user.id,
                 email: rawResponse.user.email,
                 username: rawResponse.user.username || '',
                 displayName: rawResponse.user.displayName || rawResponse.user.display_name || null,
@@ -198,29 +229,20 @@ export class AuthService {
 
             // อัปเดต currentUser$
             this.currentUser$.next(userProfile);
-            console.log('[AuthService] Updated currentUser$ with:', userProfile);
 
             // รอสักครู่เพื่อให้ currentUser$ ได้รับการอัปเดต
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            console.log('[AuthService] Registration completed - returning userProfile to component');
-
             // Add safeguard: if backend returned success but memberType ≠ requested type → block login
             if (!userProfile.needsProfileSetup && userProfile.memberType !== userType) {
-                console.warn(`[AuthService] User type mismatch Google login. Expected ${userType} got ${userProfile.memberType}`);
-
-                // ensure clean state
                 await this.signOut(null);
 
-                // Throw standardized message; backend 409 should normally handle this,
-                // but this code is a second line of defence.
                 const thaiRole = userProfile.memberType === 'owner' ? 'เจ้าของหอพัก' : 'สมาชิก';
                 throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
             }
 
             return userProfile;
         } catch (error: any) {
-            console.error('[AuthService] Registration error:', error);
             throw error;
         } finally {
             // *** รีเซ็ต flag เมื่อเสร็จสิ้น ***
@@ -235,12 +257,9 @@ export class AuthService {
 
         const currentUser = this.auth.currentUser;
         if (!currentUser) {
-            console.error('[AuthService] No Firebase user found for profile completion');
             this.router.navigate(['/main']);
             throw new Error('ไม่พบผู้ใช้ที่ล็อกอินในระบบ กรุณาทำรายการใหม่อีกครั้ง');
         }
-
-        console.log('[AuthService] Completing profile for user:', currentUser.uid);
 
         try {
             const idToken = await currentUser.getIdToken();
@@ -258,12 +277,12 @@ export class AuthService {
             if (userType === 'member' && dormitoryId) {
                 payload.dormitoryId = dormitoryId;
             }
-            console.log('[AuthService] Payload for completeUserProfile:', payload);
 
             const rawResponse = await this.http.put<any>(`${this.backendUrl}/auth/me`, payload, { headers }).toPromise();
 
             const userProfile: UserProfile = {
                 uid: rawResponse.uid,
+                id: rawResponse.id,
                 email: rawResponse.email,
                 username: rawResponse.username || '',
                 displayName: rawResponse.display_name || rawResponse.displayName || null,
@@ -278,14 +297,11 @@ export class AuthService {
 
             this.currentUser$.next(userProfile);
 
-            console.log(`[AuthService] completeUserProfile finished - userProfile returned`);
-
             return userProfile;
         } catch (error: any) {
             try {
                 await signOut(this.auth);
             } catch (signOutError) {
-                console.error('[AuthService] Error signing out after profile completion error:', signOutError);
             }
             throw error;
         } finally {
@@ -295,7 +311,6 @@ export class AuthService {
     }
 
     async signInWithGoogle(userType: 'member' | 'owner'): Promise<UserProfile> {
-        console.log(`[AuthService] Starting Google OAuth for ${userType}`);
         this.isGoogleRegistrationFlow = true;
     
         try {
@@ -311,8 +326,6 @@ export class AuthService {
             if (!user) {
                 throw new Error('Google authentication failed');
             }
-    
-            console.log(`[AuthService] Google sign-in successful for user: ${user.email}`);
     
             const idToken = await user.getIdToken();
             const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
@@ -337,6 +350,7 @@ export class AuthService {
     
             const userProfile: UserProfile = {
                 uid: rawUser.uid || user.uid,
+                id: rawUser.id,
                 email: rawUser.email || user.email || '',
                 username: rawUser.username || '',
                 displayName: rawUser.displayName || rawUser.display_name || user.displayName || null,
@@ -351,7 +365,6 @@ export class AuthService {
             this.currentUser$.next(userProfile);
     
             if (userProfile.needsProfileSetup) {
-                console.log('[AuthService] Profile setup required, redirecting to register');
                 this.router.navigate(['/register', userType], {
                     queryParams: { fromGoogle: 'true' },
                     state: {
@@ -372,13 +385,8 @@ export class AuthService {
     
             // Add safeguard: if backend returned success but memberType ≠ requested type → block login
             if (!userProfile.needsProfileSetup && userProfile.memberType !== userType) {
-                console.warn(`[AuthService] User type mismatch Google login. Expected ${userType} got ${userProfile.memberType}`);
-
-                // ensure clean state
                 await this.signOut(null);
 
-                // Throw standardized message; backend 409 should normally handle this,
-                // but this code is a second line of defence.
                 const thaiRole = userProfile.memberType === 'owner' ? 'เจ้าของหอพัก' : 'สมาชิก';
                 throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
             }
@@ -386,13 +394,11 @@ export class AuthService {
             return userProfile;
     
         } catch (error: any) {
-            console.error('[AuthService] Google sign-in error:', error);
             this.isGoogleRegistrationFlow = false;
     
             try {
                 await signOut(this.auth);
             } catch (signOutError) {
-                console.error('[AuthService] Error signing out after Google auth error:', signOutError);
             }
     
             throw error;
@@ -402,17 +408,12 @@ export class AuthService {
     // แก้ไข signUpWithEmail method ให้รองรับ dormitoryId และไม่บังคับ phoneNumber สำหรับ owner
     async signUpWithEmail(email: string, password: string, memberType: 'member' | 'owner', fullName: string, phoneNumber: string | undefined, dormitoryId?: number): Promise<void> {
         try {
-            console.log(`[AuthService] Starting email sign-up process for ${memberType} with email: ${email}`);
-
             const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
             const firebaseUser = userCredential.user;
-            console.log(`[AuthService] Firebase user created successfully with UID: ${firebaseUser.uid}`);
 
             await updateProfile(firebaseUser, { displayName: fullName });
-            console.log(`[AuthService] Firebase profile updated with displayName: ${fullName}`);
 
             const idToken = await firebaseUser.getIdToken();
-            console.log(`[AuthService] Got ID token for user: ${firebaseUser.uid}`);
 
             const payload: any = {
                 email: firebaseUser.email,
@@ -428,21 +429,15 @@ export class AuthService {
             // ส่ง dormitoryId เฉพาะเมื่อเป็น member และมีค่า
             if (memberType === 'member' && dormitoryId) {
                 payload.dormitoryId = dormitoryId;
-                console.log(`[AuthService] Adding dormitory ID for member: ${dormitoryId}`);
             }
 
             const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
 
-            console.log(`[AuthService] Sending registration data to backend:`, payload);
             const rawResponse = await this.http.post<any>(`${this.backendUrl}/auth/register`, payload, { headers }).toPromise();
 
             if (!rawResponse || !rawResponse.user) {
-                console.error('[AuthService] Backend response missing user data:', rawResponse);
                 throw new Error('Backend registration response is incomplete or invalid.');
             }
-
-            console.log(`[AuthService] Raw Backend /auth/register response:`, rawResponse);
-            console.log('[AuthService] Email Sign-Up successful. Redirecting to appropriate dashboard.');
 
             const isOwner = (rawResponse.user.memberType as string) === 'owner' || 
                            (rawResponse.user.member_type as string) === 'owner';
@@ -453,31 +448,22 @@ export class AuthService {
                 this.router.navigate(['/main']);
             }
         } catch (error: any) {
-            console.error('[AuthService] Email Sign-Up error in service:', error);
             throw error;
         }
     }
 
     async signOut(redirectTo: string | null = null): Promise<void> {
-        console.log('[AuthService] signOut called.');
-        try {
-            this.isGoogleRegistrationFlow = false;
-            this.skipAuthStateChange = false;
+        this.isGoogleRegistrationFlow = false;
+        this.skipAuthStateChange = false;
 
-            await signOut(this.auth);
+        await signOut(this.auth);
 
-            console.log('[AuthService] Firebase signOut successful.');
+        // Clear cached user state
+        this.currentUser$.next(null);
 
-            // Clear cached user state
-            this.currentUser$.next(null);
-
-            if (redirectTo) {
-                // Use Angular router navigation rather than forcing a full reload
-                this.router.navigate([redirectTo]);
-            }
-        } catch (error) {
-            console.error('[AuthService] Sign out error:', error);
-            throw error;
+        if (redirectTo) {
+            // Use Angular router navigation rather than forcing a full reload
+            this.router.navigate([redirectTo]);
         }
     }
 
@@ -498,7 +484,6 @@ export class AuthService {
                 throw new Error('No imageUrl returned from backend');
             }
         } catch (error) {
-            console.error('[AuthService] Error uploading owner image:', error);
             throw error;
         }
     }
@@ -513,7 +498,6 @@ export class AuthService {
             const response = await this.http.get<DormitoryOption[]>(url).toPromise();
             return response || [];
         } catch (error) {
-            console.error('[AuthService] Error fetching dormitory options:', error);
             throw error;
         }
     }
@@ -538,7 +522,6 @@ export class AuthService {
             const profile = await this.fetchUserProfile(currentUser);
             this.currentUser$.next(profile);
         } catch (error) {
-            console.error('[AuthService] Error selecting dormitory:', error);
             throw error;
         }
     }
@@ -549,15 +532,11 @@ export class AuthService {
             const idToken = await firebaseUser.getIdToken();
             const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
 
-            console.log(`[AuthService] Fetching user profile with UID: ${firebaseUser.uid}`);
             const rawResponse = await this.http.get<any>(`${this.backendUrl}/auth/me`, { headers }).toPromise();
 
             if (!rawResponse) {
-                console.error('[AuthService] Backend /auth/me response is empty');
                 throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
             }
-
-            console.log('[AuthService] Raw backend /auth/me response:', rawResponse);
 
             // *** แก้ไข: ให้ priority กับ snake_case จาก backend ***
             const memberType = rawResponse.member_type || rawResponse.memberType || null;
@@ -565,10 +544,9 @@ export class AuthService {
                 ? rawResponse.needs_profile_setup
                 : (rawResponse.needsProfileSetup || false);
 
-            console.log('[AuthService] Parsed memberType:', memberType, 'needsProfileSetup:', needsProfileSetup);
-
             const userProfile: UserProfile = {
                 uid: firebaseUser.uid,
+                id: rawResponse.id,
                 email: firebaseUser.email || '',
                 username: rawResponse.username || '',
                 displayName: rawResponse.display_name || rawResponse.displayName || firebaseUser.displayName || null,
@@ -583,10 +561,8 @@ export class AuthService {
                 provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'password',
             };
 
-            console.log('[AuthService] Final userProfile:', userProfile);
             return userProfile;
         } catch (error: any) {
-            console.error('[AuthService] Error in fetchUserProfile:', error);
             throw error;
         }
     }
@@ -594,22 +570,16 @@ export class AuthService {
     // Add signInWithEmail method
     async signInWithEmail(email: string, password: string, expectedUserType: 'member' | 'owner'): Promise<UserProfile> {
         try {
-            console.log(`[AuthService] Attempting to sign in with email: ${email}`);
-
             // ป้องกัน onAuthStateChanged ดึง profileก่อนจะตรวจสอบประเภทผู้ใช้
             this.skipAuthStateChange = true;
 
             const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
             const user = userCredential.user;
 
-            console.log(`[AuthService] Firebase authentication successful for UID: ${user.uid}`);
-
             const userProfile = await this.fetchUserProfile(user);
-            console.log('[AuthService] User profile fetched:', userProfile);
 
             // Safeguard against account-type mismatch (backend /auth/me cannot know expected type)
             if (userProfile.memberType !== expectedUserType) {
-                console.warn(`[AuthService] MemberType mismatch. Expected ${expectedUserType} got ${userProfile.memberType}`);
                 await this.signOut(null);
                 const thaiRole = userProfile.memberType === 'owner' ? 'เจ้าของหอพัก' : 'สมาชิก';
                 throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
@@ -620,7 +590,6 @@ export class AuthService {
 
             return userProfile;
         } catch (error: any) {
-            console.error('[AuthService] Email sign-in error:', error);
             throw error;
         } finally {
             // ปลดล็อกให้ onAuthStateChanged กลับมาทำงานตามปกติ
@@ -630,8 +599,6 @@ export class AuthService {
 
     // Add errorMessageHandler method
     errorMessageHandler(error: any): string {
-        console.error('[AuthService] Error being handled:', error);
-
         // Firebase authentication errors
         if (error.code) {
             switch (error.code) {
@@ -723,8 +690,26 @@ export class AuthService {
             const response = await this.http.get<ZoneOption[]>(`${this.backendUrl}/zones`).toPromise();
             return response || [];
         } catch (error) {
-            console.error('[AuthService] Error fetching zone options:', error);
             throw error;
+        }
+    }
+
+    // เพิ่มเมธอด checkAuthState เพื่อตรวจสอบสถานะการเข้าสู่ระบบเมื่อแอปเริ่มทำงาน
+    async checkAuthState(): Promise<UserProfile | null> {
+        const currentUser = this.auth.currentUser;
+        if (!currentUser) {
+            return null;
+        }
+        
+        try {
+            await this.refreshToken(true);
+            
+            const userProfile = await this.fetchUserProfile(currentUser);
+            this.currentUser$.next(userProfile);
+            return userProfile;
+        } catch (error) {
+            this.currentUser$.next(null);
+            return null;
         }
     }
 }
