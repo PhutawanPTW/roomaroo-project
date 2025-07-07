@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { NavbarComponent } from "../navbar/navbar.component";
 import { DOCUMENT } from '@angular/common';
+import { MapService } from '../../services/map.service';
+import * as maptilersdk from '@maptiler/sdk';
 
 // Import for leaflet if available
 declare const L: any;
@@ -26,13 +28,13 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
   currentStep = 1;
   totalSteps = 4;
   maxReachedStep = 1; // Tracks the furthest step the user has reached
-  map: any;
-  previewMap: any;
-  marker: any;
-  previewMarker: any;
+  map: maptilersdk.Map | null = null;
+  previewMap: maptilersdk.Map | null = null;
+  marker: maptilersdk.Marker | null = null;
+  previewMarker: maptilersdk.Marker | null = null;
   defaultLocation = { lat: 13.7563, lng: 100.5018 }; // Bangkok default
   private googleMapsLoaded = false;
-  private leafletLoaded = false;
+  private mapTilerLoaded = true; // MapTiler SDK is already imported
   private GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY'; // Replace with your actual API key
   selectedImages: any[] = [];
   imagePreviewUrls: string[] = [];
@@ -66,19 +68,24 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private renderer: Renderer2,
-    @Inject(DOCUMENT) private document: Document
+    @Inject(DOCUMENT) private document: Document,
+    private mapService: MapService
   ) {
     this.initForm();
   }
 
   ngAfterViewInit() {
-    this.loadLeafletScript();
+    // Initialize maps after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      this.initLocationMap();
+    }, 300);
   }
 
   ngOnDestroy() {
-    if (this.leafletMap) {
-      this.leafletMap.remove();
-      this.leafletMap = null;
+    // Clean up maps
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
     }
     if (this.previewMap) {
       this.previewMap.remove();
@@ -239,84 +246,44 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     this.amenities[index].checked = !currentValue;
   }
 
-  loadLeafletScript() {
-    // Check if Leaflet CSS is loaded
-    if (!document.getElementById('leaflet-css')) {
-      const link = this.renderer.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-      link.crossOrigin = '';
-      link.id = 'leaflet-css';
-      this.renderer.appendChild(document.head, link);
-    }
-    // Check if Leaflet JS is loaded
-    if (typeof L !== 'undefined') {
-      this.leafletLoaded = true;
-      this.initLeafletMap();
-      this.initPreviewMap();
-      return;
-    }
-    const script = this.renderer.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-    script.crossOrigin = '';
-    script.defer = true;
-    script.async = true;
-    script.onload = () => {
-      this.leafletLoaded = true;
-      this.initLeafletMap();
-      this.initPreviewMap();
-    };
-    this.renderer.appendChild(document.body, script);
-  }
-
-  initLeafletMap() {
-    setTimeout(() => {
+  initLocationMap() {
+    const mapElement = document.getElementById('location-map');
+    if (!mapElement) return;
+    
+    // Get current location from form or use default
+    const location = this.dormForm.get('location');
+    const lat = location?.get('latitude')?.value || this.defaultLocation.lat;
+    const lng = location?.get('longitude')?.value || this.defaultLocation.lng;
+    
+    // Use MapService to initialize the map
+    this.mapService.initializeMap('location-map', lat, lng);
+    
+    // Add click event to map
+    document.getElementById('location-map')?.addEventListener('click', (e) => {
+      // Get clicked coordinates and update form
       const mapElement = document.getElementById('location-map');
-      if (!mapElement || !this.leafletLoaded) return;
-      // Get current location from form or use default
-      const location = this.dormForm.get('location');
-      const lat = location?.get('latitude')?.value || this.defaultLocation.lat;
-      const lng = location?.get('longitude')?.value || this.defaultLocation.lng;
-      if (this.leafletMap) {
-        this.leafletMap.remove();
+      if (!mapElement) return;
+      
+      // Get map bounds
+      const rect = mapElement.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Convert pixel coordinates to geo coordinates
+      const lngLat = this.map?.unproject([x, y]);
+      if (lngLat) {
+        this.dormForm.patchValue({
+          location: {
+            latitude: lngLat.lat,
+            longitude: lngLat.lng,
+            address: location?.get('address')?.value || ''
+          }
+        });
       }
-      this.leafletMap = L.map(mapElement).setView([lat, lng], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(this.leafletMap);
-      this.leafletMarker = L.marker([lat, lng], { draggable: true }).addTo(this.leafletMap);
-      // Drag event
-      this.leafletMarker.on('dragend', (e: any) => {
-        const pos = e.target.getLatLng();
-        this.dormForm.patchValue({
-          location: {
-            latitude: pos.lat,
-            longitude: pos.lng,
-            address: location?.get('address')?.value || ''
-          }
-        });
-      });
-      // Click event
-      this.leafletMap.on('click', (e: any) => {
-        this.leafletMarker.setLatLng(e.latlng);
-        this.dormForm.patchValue({
-          location: {
-            latitude: e.latlng.lat,
-            longitude: e.latlng.lng,
-            address: location?.get('address')?.value || ''
-          }
-        });
-      });
-      this.leafletMap.invalidateSize();
-    }, 500);
+    });
   }
   
   initPreviewMap() {
-    if (!this.leafletLoaded) return;
-    
     const mapElement = document.getElementById('preview-map');
     if (!mapElement) return;
     
@@ -325,21 +292,21 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     const lat = location?.get('latitude')?.value || this.defaultLocation.lat;
     const lng = location?.get('longitude')?.value || this.defaultLocation.lng;
     
-    if (this.previewMap) {
-      this.previewMap.remove();
+    // Use MapService to initialize the preview map
+    this.mapService.initializeMap('preview-map', lat, lng);
+  }
+
+  zoomIn(): void {
+    if (this.map) {
+      const currentZoom = this.map.getZoom();
+      this.map.setZoom(currentZoom + 1);
     }
-    
-    this.previewMap = L.map(mapElement).setView([lat, lng], 15);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(this.previewMap);
-    
-    this.previewMarker = L.marker([lat, lng], {
-      draggable: false
-    }).addTo(this.previewMap);
-    
-    // Update map when step changes to ensure it renders properly
-    this.previewMap.invalidateSize();
+  }
+
+  zoomOut(): void {
+    if (this.map) {
+      const currentZoom = this.map.getZoom();
+      this.map.setZoom(Math.max(currentZoom - 1, 1));
+    }
   }
 }

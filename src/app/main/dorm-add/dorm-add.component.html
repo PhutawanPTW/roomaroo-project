@@ -224,7 +224,31 @@
         <h3 class="text-lg font-medium text-gray-800 mb-5 pb-2 border-b border-gray-200">ระบุตำแหน่งที่พัก</h3>
         
         <div class="w-full h-80 rounded-lg overflow-hidden border border-gray-200 mb-4 map-container relative">
+          <!-- MapTiler Map -->
           <div id="location-map" class="w-full h-full"></div>
+           
+          <!-- Map Controls -->
+          <div class="absolute bottom-6 right-6 flex flex-col gap-2">
+            <!-- Zoom Controls -->
+            <div class="flex flex-col gap-2 bg-white/80 rounded-lg border border-gray-200/50 shadow-md backdrop-blur-sm overflow-hidden">
+              <button (click)="zoomIn()"
+                class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 border-b border-gray-200/50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20"
+                  fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                    clip-rule="evenodd" />
+                </svg>
+              </button>
+              <button (click)="zoomOut()"
+                class="w-10 h-10 flex items-center justify-center hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20"
+                  fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
         
         <div class="grid grid-cols-1 gap-4">
@@ -320,8 +344,31 @@
               <div>{{ dormForm.get('location.address')?.value || 'ถนนมหาวิทยาลัยมหาสารคาม ตำบล เดอะ:' }}</div>
             </div>
             
-            <div class="w-full h-60 rounded-lg overflow-hidden border border-gray-200">
+            <div class="w-full h-60 rounded-lg overflow-hidden border border-gray-200 relative">
               <div id="preview-map" class="w-full h-full"></div>
+               
+              <!-- Map Controls -->
+              <div class="absolute bottom-6 right-6 flex flex-col gap-2">
+                <!-- Zoom Controls -->
+                <div class="flex flex-col gap-2 bg-white/80 rounded-lg border border-gray-200/50 shadow-md backdrop-blur-sm overflow-hidden">
+                  <button (click)="zoomIn()"
+                    class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 border-b border-gray-200/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20"
+                      fill="currentColor">
+                      <path fill-rule="evenodd"
+                        d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                        clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <button (click)="zoomOut()"
+                    class="w-10 h-10 flex items-center justify-center hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20"
+                      fill="currentColor">
+                      <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           
