@@ -3,7 +3,18 @@
     <h2>ข้อมูลโปรไฟล์</h2>
     
     <div *ngIf="currentUser; else loading" class="profile-info">
-      <div class="profile-section">
+      <!-- แสดงรูปโปรไฟล์เมื่อไม่ได้แก้ไข -->
+      <div class="profile-section" *ngIf="!isEditing">
+        <div class="profile-image-display">
+          <img *ngIf="currentUser.photoURL" [src]="currentUser.photoURL" alt="รูปโปรไฟล์" class="profile-image-large">
+          <div *ngIf="!currentUser.photoURL" class="profile-image-placeholder">
+            <span>{{ (currentUser.displayName || currentUser.email || 'U').charAt(0) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- แสดงข้อมูลโปรไฟล์ -->
+      <div class="profile-section" *ngIf="!isEditing">
         <h3>ข้อมูลพื้นฐาน</h3>
         <div class="info-row">
           <label>Username:</label>
@@ -21,17 +32,13 @@
           <label>ประเภทผู้ใช้:</label>
           <span class="user-type">{{ currentUser.memberType === 'owner' ? 'เจ้าของหอพัก' : 'ผู้เช่า' }}</span>
         </div>
-      </div>
-
-      <div class="profile-section" *ngIf="currentUser.phoneNumber">
-        <h3>ข้อมูลติดต่อ</h3>
-        <div class="info-row">
+        <div class="info-row" *ngIf="currentUser.phoneNumber">
           <label>เบอร์โทรศัพท์:</label>
           <span>{{ currentUser.phoneNumber }}</span>
         </div>
       </div>
 
-      <div class="profile-section" *ngIf="currentUser.memberType === 'owner' && currentUser.businessName">
+      <div class="profile-section" *ngIf="!isEditing && currentUser.memberType === 'owner' && currentUser.businessName">
         <h3>ข้อมูลธุรกิจ</h3>
         <div class="info-row">
           <label>ชื่อธุรกิจ:</label>
@@ -45,6 +52,123 @@
           <label>เลขทะเบียนธุรกิจ:</label>
           <span>{{ currentUser.businessRegistration }}</span>
         </div>
+      </div>
+
+      <!-- ฟอร์มแก้ไขโปรไฟล์ -->
+      <div class="profile-section" *ngIf="isEditing">
+        <h3>แก้ไขข้อมูลโปรไฟล์</h3>
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <!-- รูปโปรไฟล์ -->
+          <div class="form-group">
+            <label>รูปโปรไฟล์:</label>
+            <div class="profile-image-edit">
+              <div class="current-image" *ngIf="currentUser.photoURL">
+                <img [src]="currentUser.photoURL" alt="รูปโปรไฟล์" class="profile-image-medium">
+              </div>
+              <div class="upload-section">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  (change)="onFileSelected($event)"
+                  id="profileImage"
+                  class="file-input"
+                >
+                <label for="profileImage" class="file-label">
+                  เลือกไฟล์รูปภาพ
+                </label>
+                <div class="upload-help">
+                  <small>รองรับไฟล์ JPG, PNG, GIF ขนาดไม่เกิน 5MB</small>
+                  <br>
+                  <small class="upload-note">หมายเหตุ: หาก backend ไม่รองรับการอัปโหลดรูป จะใช้รูปจำลองแทน</small>
+                </div>
+                <div *ngIf="selectedFile" class="selected-file">
+                  ไฟล์ที่เลือก: {{ selectedFile.name }}
+                  <br>
+                  <small class="file-info">ขนาด: {{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</small>
+                  <br>
+                  <button type="button" (click)="testImageUpload()" class="btn btn-upload" style="margin-top: 0.5rem;">
+                    ทดสอบอัปโหลดรูป
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="displayName">ชื่อที่แสดง:</label>
+            <input 
+              type="text" 
+              id="displayName" 
+              formControlName="displayName"
+              placeholder="กรอกชื่อที่ต้องการแสดง"
+              class="form-control"
+            >
+            <div class="error-message" *ngIf="profileForm.get('displayName')?.invalid && profileForm.get('displayName')?.touched">
+              <span *ngIf="profileForm.get('displayName')?.errors?.['required']">กรุณากรอกชื่อที่แสดง</span>
+              <span *ngIf="profileForm.get('displayName')?.errors?.['minlength']">ชื่อต้องมีอย่างน้อย 2 ตัวอักษร</span>
+              <span *ngIf="profileForm.get('displayName')?.errors?.['maxlength']">ชื่อต้องไม่เกิน 50 ตัวอักษร</span>
+            </div>
+            <div class="form-help">
+              ชื่อที่แสดงจะถูกบันทึกในฐานข้อมูลของเรา (ไม่เปลี่ยนแปลงใน Firebase Authentication)
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="phoneNumber">เบอร์โทรศัพท์:</label>
+            <input 
+              type="tel" 
+              id="phoneNumber" 
+              formControlName="phoneNumber"
+              placeholder="กรอกเบอร์โทรศัพท์ 10 หลัก"
+              class="form-control"
+            >
+            <div class="error-message" *ngIf="profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched">
+              <span *ngIf="profileForm.get('phoneNumber')?.errors?.['required']">กรุณากรอกเบอร์โทรศัพท์</span>
+              <span *ngIf="profileForm.get('phoneNumber')?.errors?.['pattern']">กรุณากรอกเบอร์โทรศัพท์ 10 หลัก</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="userType">ประเภทผู้ใช้:</label>
+            <select id="userType" formControlName="userType" class="form-control" (change)="onUserTypeChange()">
+              <option value="member">ผู้เช่า</option>
+              <option value="owner">เจ้าของหอพัก</option>
+            </select>
+          </div>
+
+          <div class="form-group" *ngIf="profileForm.get('userType')?.value === 'member'">
+            <label for="dormitoryId">เลือกหอพัก:</label>
+            <select id="dormitoryId" formControlName="dormitoryId" class="form-control">
+              <option value="">เลือกหอพัก</option>
+              <option *ngFor="let dorm of dormitoryOptions" [value]="dorm.dorm_id">
+                {{ dorm.dorm_name }} - {{ dorm.address }} ({{ dorm.monthly_price }} บาท/เดือน)
+              </option>
+            </select>
+            <div class="error-message" *ngIf="profileForm.get('dormitoryId')?.invalid && profileForm.get('dormitoryId')?.touched">
+              กรุณาเลือกหอพัก
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" [disabled]="profileForm.invalid || isUpdating" class="btn btn-primary">
+              <span *ngIf="isUpdating">
+                <span *ngIf="selectedFile">กำลังอัปโหลดรูป...</span>
+                <span *ngIf="!selectedFile">กำลังบันทึก...</span>
+              </span>
+              <span *ngIf="!isUpdating">บันทึก</span>
+            </button>
+            <button type="button" (click)="cancelEditing()" class="btn btn-secondary">
+              ยกเลิก
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ปุ่มแก้ไข -->
+      <div class="action-buttons" *ngIf="!isEditing">
+        <button (click)="startEditing()" class="btn btn-edit">
+          แก้ไขโปรไฟล์
+        </button>
       </div>
     </div>
 

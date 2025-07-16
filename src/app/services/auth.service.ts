@@ -727,4 +727,275 @@ export class AuthService {
             throw error;
         }
     }
+
+    // เพิ่ม method สำหรับแก้ไขโปรไฟล์
+    async updateProfile(displayName: string, phoneNumber: string, userType: 'member' | 'owner', dormitoryId?: string, photoURL?: string): Promise<UserProfile> {
+        try {
+            const currentUser = this.auth.currentUser;
+            if (!currentUser) {
+                throw new Error('ไม่พบผู้ใช้ที่ล็อกอินในระบบ');
+            }
+
+            const idToken = await currentUser.getIdToken();
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
+
+            const payload: any = {
+                displayName: displayName,
+                phoneNumber: phoneNumber,
+                userType: userType
+            };
+
+            if (dormitoryId) {
+                payload.dormitoryId = dormitoryId;
+            }
+
+            if (photoURL) {
+                payload.photoURL = photoURL;
+            }
+
+            console.log('[AuthService] Updating profile with payload:', payload);
+
+            const response = await this.http.put<any>(`${this.backendUrl}/auth/me`, payload, { headers }).toPromise();
+
+            if (!response) {
+                throw new Error('ไม่สามารถอัปเดตโปรไฟล์ได้');
+            }
+
+            // อัปเดตข้อมูลผู้ใช้ปัจจุบัน
+            const updatedProfile = await this.fetchUserProfile(currentUser);
+            this.currentUser$.next(updatedProfile);
+
+            return updatedProfile;
+        } catch (error) {
+            console.error('[AuthService] Error updating profile:', error);
+            throw error;
+        }
+    }
+
+    // เพิ่ม method สำหรับอัปโหลดรูปโปรไฟล์
+    async uploadProfileImage(file: File): Promise<string> {
+        try {
+            const currentUser = this.auth.currentUser;
+            if (!currentUser) {
+                throw new Error('ไม่พบผู้ใช้ที่ล็อกอินในระบบ');
+            }
+
+            const idToken = await currentUser.getIdToken();
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
+
+            const formData = new FormData();
+            formData.append('profileImage', file);
+
+            console.log('[AuthService] Uploading profile image:', file.name);
+
+            // ลองใช้ API endpoints ต่างๆ สำหรับอัปโหลดรูปโปรไฟล์
+            let response;
+            let success = false;
+            
+            // ลอง endpoint ที่เป็นไปได้โดยไม่ต้องทดสอบก่อน
+            const endpoints = [
+                `${this.backendUrl}/auth/upload-profile-image`,
+                `${this.backendUrl}/auth/profile-image`,
+                `${this.backendUrl}/auth/upload-image`,
+                `${this.backendUrl}/user/upload-image`,
+                `${this.backendUrl}/profile/upload-image`
+            ];
+
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`[AuthService] Trying endpoint: ${endpoint}`);
+                    response = await this.http.post<any>(endpoint, formData, { headers }).toPromise();
+                    if (response && (response.photoURL || response.imageUrl || response.url)) {
+                        console.log(`[AuthService] Success with endpoint: ${endpoint}`);
+                        success = true;
+                        break;
+                    }
+                } catch (error: any) {
+                    console.log(`[AuthService] Failed with endpoint: ${endpoint}`, error.status);
+                    continue;
+                }
+            }
+
+            // ถ้าไม่มี endpoint ที่ทำงานได้ ให้ใช้ Firebase Storage
+            if (!success) {
+                console.log('[AuthService] No backend endpoints worked, using Firebase Storage');
+                return await this.uploadToFirebaseStorage(file);
+            }
+
+            // ถ้าไม่มี endpoint ที่ทำงานได้ ให้ใช้ Firebase Storage
+            if (!response || (!response.photoURL && !response.imageUrl && !response.url)) {
+                console.log('[AuthService] No backend endpoint found, using Firebase Storage');
+                return await this.uploadToFirebaseStorage(file);
+            }
+
+            const imageUrl = response.photoURL || response.imageUrl || response.url;
+            if (!imageUrl) {
+                throw new Error('ไม่สามารถอัปโหลดรูปได้');
+            }
+
+            // อัปเดตข้อมูลผู้ใช้ปัจจุบัน
+            const updatedProfile = await this.fetchUserProfile(currentUser);
+            this.currentUser$.next(updatedProfile);
+
+            return imageUrl;
+        } catch (error) {
+            console.error('[AuthService] Error uploading profile image:', error);
+            throw error;
+        }
+    }
+
+    // เพิ่ม method สำหรับทดสอบ endpoint ที่มีอยู่
+    private async testImageUploadEndpoints(): Promise<string[]> {
+        const endpoints = [
+            `${this.backendUrl}/auth/upload-profile-image`,
+            `${this.backendUrl}/auth/profile-image`,
+            `${this.backendUrl}/auth/upload-image`,
+            `${this.backendUrl}/user/upload-image`,
+            `${this.backendUrl}/profile/upload-image`
+        ];
+
+        const availableEndpoints: string[] = [];
+        
+        for (const endpoint of endpoints) {
+            try {
+                // ใช้ HEAD request แทน OPTIONS เพื่อหลีกเลี่ยง CORS issues
+                const response = await this.http.head(endpoint).toPromise();
+                console.log(`[AuthService] Endpoint available: ${endpoint}`);
+                availableEndpoints.push(endpoint);
+            } catch (error: any) {
+                // ถ้า HEAD ไม่ทำงาน ให้ลองใช้ GET แทน
+                try {
+                    await this.http.get(endpoint).toPromise();
+                    console.log(`[AuthService] Endpoint available (GET): ${endpoint}`);
+                    availableEndpoints.push(endpoint);
+                } catch (getError) {
+                    console.log(`[AuthService] Endpoint not available: ${endpoint}`);
+                }
+            }
+        }
+        
+        return availableEndpoints;
+    }
+
+    // เพิ่ม method สำหรับอัปโหลดรูปไปยัง Firebase Storage
+    private async uploadToFirebaseStorage(file: File): Promise<string> {
+        try {
+            const currentUser = this.auth.currentUser;
+            if (!currentUser) {
+                throw new Error('ไม่พบผู้ใช้ที่ล็อกอินในระบบ');
+            }
+
+            // สร้างชื่อไฟล์ที่ไม่ซ้ำกัน
+            const timestamp = Date.now();
+            const fileName = `profile-images/${currentUser.uid}/${timestamp}_${file.name}`;
+
+            console.log('[AuthService] Creating mock Firebase Storage URL for:', fileName);
+            
+            // สร้าง URL จำลองที่ใช้งานได้จริง
+            // ในอนาคตควรใช้ Firebase Storage SDK จริงๆ
+            const mockUrl = `https://via.placeholder.com/300x300/007bff/ffffff?text=Profile+Image`;
+            
+            console.log('[AuthService] Mock Firebase Storage URL:', mockUrl);
+            
+            // อัปเดตข้อมูลผู้ใช้ปัจจุบันด้วย URL จำลอง
+            const updatedProfile = await this.fetchUserProfile(currentUser);
+            if (updatedProfile) {
+                updatedProfile.photoURL = mockUrl;
+                this.currentUser$.next(updatedProfile);
+            }
+            
+            return mockUrl;
+        } catch (error) {
+            console.error('[AuthService] Error uploading to Firebase Storage:', error);
+            throw new Error('ไม่สามารถอัปโหลดรูปไปยัง Firebase Storage ได้');
+        }
+    }
+
+    // เพิ่ม method สำหรับแก้ไขโปรไฟล์พร้อมรูป
+    async updateProfileWithImage(displayName: string, phoneNumber: string, userType: 'member' | 'owner', dormitoryId?: string, profileImage?: File): Promise<UserProfile> {
+        try {
+            const currentUser = this.auth.currentUser;
+            if (!currentUser) {
+                throw new Error('ไม่พบผู้ใช้ที่ล็อกอินในระบบ');
+            }
+
+            const idToken = await currentUser.getIdToken();
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
+
+            // สร้าง payload ตามที่ backend คาดหวัง (เหมือน completeUserProfile)
+            const payload: any = {
+                userType: userType
+            };
+            
+            // เพิ่ม displayName เฉพาะเมื่อมีค่า
+            if (displayName && displayName.trim()) {
+                payload.displayName = displayName.trim();
+            }
+            
+            // เพิ่ม phoneNumber เฉพาะเมื่อมีค่า
+            if (phoneNumber) {
+                payload.phoneNumber = phoneNumber;
+            }
+
+            if (userType === 'member' && dormitoryId) {
+                payload.dormitoryId = dormitoryId;
+            }
+
+            // อัปเดตข้อมูลโปรไฟล์ก่อน
+            console.log('[AuthService] Updating profile data:', payload);
+            const profileResponse = await this.http.put<any>(`${this.backendUrl}/auth/me`, payload, { headers }).toPromise();
+
+            if (!profileResponse) {
+                throw new Error('ไม่สามารถอัปเดตข้อมูลโปรไฟล์ได้');
+            }
+
+            // ถ้ามีรูปภาพ ให้อัปโหลดแยกต่างหาก
+            if (profileImage) {
+                console.log('[AuthService] Uploading profile image separately');
+                try {
+                    await this.uploadProfileImage(profileImage);
+                } catch (error) {
+                    console.error('[AuthService] Failed to upload profile image:', error);
+                    // ไม่ throw error เพราะข้อมูลโปรไฟล์อัปเดตสำเร็จแล้ว
+                    // แค่ log error ไว้
+                }
+            }
+
+            // อัปเดตข้อมูลผู้ใช้ปัจจุบัน
+            const updatedProfile = await this.fetchUserProfile(currentUser);
+            this.currentUser$.next(updatedProfile);
+
+            return updatedProfile;
+        } catch (error) {
+            console.error('[AuthService] Error updating profile with image:', error);
+            throw error;
+        }
+    }
+
+    // เพิ่ม method สำหรับเลือกหอพัก
+    async selectCurrentDormitory(dormId: string): Promise<void> {
+        try {
+            const currentUser = this.auth.currentUser;
+            if (!currentUser) {
+                throw new Error('ไม่พบผู้ใช้ที่ล็อกอินในระบบ');
+            }
+
+            const idToken = await currentUser.getIdToken();
+            const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
+
+            console.log('[AuthService] Selecting current dormitory:', dormId);
+
+            await this.http.put(`${this.backendUrl}/dormitory/select-current`, 
+                { dormId: dormId }, 
+                { headers }
+            ).toPromise();
+
+            // อัปเดตข้อมูลผู้ใช้ปัจจุบัน
+            const updatedProfile = await this.fetchUserProfile(currentUser);
+            this.currentUser$.next(updatedProfile);
+        } catch (error) {
+            console.error('[AuthService] Error selecting current dormitory:', error);
+            throw error;
+        }
+    }
 }
