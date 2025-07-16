@@ -98,8 +98,8 @@
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors" 
               formControlName="name"
               placeholder="กรอกชื่อหอพัก">
-          </div>
-          
+        </div>
+        
           <div>
             <label for="type" class="block mb-2 text-sm font-medium text-gray-700">ประเภท *</label>
             <select 
@@ -110,7 +110,7 @@
               <option value="หอพักชาย">หอพักชาย</option>
               <option value="หอพักหญิง">หอพักหญิง</option>
               <option value="หอพักรวม">หอพักรวม</option>
-            </select>
+          </select>
           </div>
         </div>
         
@@ -334,7 +334,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- ระบุตำแหน่งที่พัก -->
       <div formGroupName="location">
         <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">ระบุตำแหน่งที่พัก</h3>
@@ -395,7 +395,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- รูปภาพหอพัก -->
       <div>
         <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">รูปภาพหอพัก</h3>
@@ -422,7 +422,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- สิ่งอำนวยความสะดวก -->
       <div>
         <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">สิ่งอำนวยความสะดวก</h3>
@@ -440,7 +440,7 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Step 2: ตัวอย่างหอพัก -->
     <div *ngIf="currentStep === 2">
       <!-- Image Gallery -->
@@ -468,77 +468,77 @@
           <!-- Location -->
           <div class="flex items-center text-gray-600 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
             <span>{{ dormForm.get('location.address')?.value || 'ถนนมหาวิทยาลัยมหาสารคาม ตำบล เมือง อำเภอ เมือง จังหวัด มหาสารคาม' }}</span>
           </div>
-
+          
           <!-- Owner -->
           <div class="text-gray-700 mb-6">โดย : ชานเรือง</div>
         </div>
-
+          
         <!-- Content -->
         <div class="p-6">
           <!-- General Info -->
           <div class="mb-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">ข้อมูลทั่วไป</h3>
-            
+          
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div class="flex justify-between">
-                <span class="text-gray-600">ค่าน้ำ:</span>
+            <div class="flex justify-between">
+              <span class="text-gray-600">ค่าน้ำ:</span>
                 <span class="font-medium">{{ dormForm.get('utilities.water.pricePerUnit')?.value || '25' }} บาท/หน่วย</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">ค่าไฟ:</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">ค่าไฟ:</span>
                 <span class="font-medium">{{ dormForm.get('utilities.electricity.pricePerUnit')?.value || '8' }} บาท/หน่วย</span>
               </div>
             </div>
           </div>
-
+          
           <!-- Description -->
           <div class="mb-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">รายละเอียดหอพัก</h3>
             <p class="text-gray-600 leading-relaxed">
-              {{ dormForm.get('generalInfo.description')?.value || 'หอพัก (ที่พักพิง) เป็นวิถีใหม่ที่สะท้อนความบ้าน ให้สัมผัสรูปแบบที่สบาย เย็น มาจากภายใน จัดแสงแสดสี หรือรูปแบบที่จัดตกแต่งมุมมุ่งสร้างสภาพแวดล้อมที่บรรยากาศผ่อนคลาย ที่ได้อยู่ในห้องเป็นโอกาสที่ได้พักผ่อน บริการและสร้างความรู้สึกถึงความสบายที่ได้ปรับรอบไว้ทุกคนที่เข้าพักจะได้รู้สึกผ่อนคลายและปลอดภัย' }}
+            {{ dormForm.get('generalInfo.description')?.value || 'หอพัก (ที่พักพิง) เป็นวิถีใหม่ที่สะท้อนความบ้าน ให้สัมผัสรูปแบบที่สบาย เย็น มาจากภายใน จัดแสงแสดสี หรือรูปแบบที่จัดตกแต่งมุมมุ่งสร้างสภาพแวดล้อมที่บรรยากาศผ่อนคลาย ที่ได้อยู่ในห้องเป็นโอกาสที่ได้พักผ่อน บริการและสร้างความรู้สึกถึงความสบายที่ได้ปรับรอบไว้ทุกคนที่เข้าพักจะได้รู้สึกผ่อนคลายและปลอดภัย' }}
             </p>
           </div>
-
+          
           <!-- Room Types Table -->
           <div class="mb-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">ประเภทหอพัก</h3>
             <div class="overflow-x-auto">
               <table class="w-full border-collapse border border-gray-200">
-                <thead class="bg-gray-100">
-                  <tr>
+              <thead class="bg-gray-100">
+                <tr>
                     <th class="py-3 px-4 text-left border border-gray-200 font-medium">ประเภท</th>
                     <th class="py-3 px-4 text-left border border-gray-200 font-medium">ราคาเดือน</th>
                     <th class="py-3 px-4 text-left border border-gray-200 font-medium">ราย/วัน</th>
                     <th class="py-3 px-4 text-left border border-gray-200 font-medium">สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody>
+                </tr>
+              </thead>
+              <tbody>
                   <tr class="border border-gray-200">
                     <td class="py-3 px-4 border border-gray-200">ห้องพัดลม</td>
                     <td class="py-3 px-4 border border-gray-200">-</td>
                     <td class="py-3 px-4 border border-gray-200">300</td>
                     <td class="py-3 px-4 border border-gray-200">
                       <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">ว่าง</span>
-                    </td>
-                  </tr>
+                  </td>
+                </tr>
                   <tr class="border border-gray-200">
                     <td class="py-3 px-4 border border-gray-200">ห้องแอร์</td>
                     <td class="py-3 px-4 border border-gray-200">3000</td>
                     <td class="py-3 px-4 border border-gray-200">-</td>
                     <td class="py-3 px-4 border border-gray-200">
                       <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">ว่าง</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
             </div>
           </div>
-
+          
           <!-- Amenities -->
           <div>
             <h3 class="text-lg font-semibold text-gray-800 mb-4">สิ่งอำนวยความสะดวก</h3>
@@ -551,8 +551,8 @@
                   [class.border]="!amenity.checked"
                   [class.border-gray-300]="!amenity.checked">
                   <svg *ngIf="amenity.checked" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                  </svg>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
                 </div>
                 <span class="text-sm text-gray-700">{{ amenity.name }}</span>
               </div>
@@ -561,51 +561,51 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Step 3: ข้อมูลติดต่อ -->
     <div *ngIf="currentStep === 3" formGroupName="contactInfo">
       <h3 class="text-xl font-semibold text-gray-800 mb-8 pb-3 border-b border-gray-200">ข้อมูลติดต่อ</h3>
 
       <div class="space-y-6 max-w-2xl">
-        <!-- Facebook -->
+      <!-- Facebook -->
         <div>
           <label for="facebook" class="block mb-2 text-sm font-medium text-gray-700">ชื่อผู้ติดต่อ</label>
-          <input 
-            type="text" 
-            id="facebook" 
-            formControlName="facebook"
+        <input 
+          type="text" 
+          id="facebook" 
+          formControlName="facebook"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
             placeholder="กรอกชื่อผู้ติดต่อ">
-        </div>
+      </div>
 
         <!-- Email -->
         <div>
           <label for="email" class="block mb-2 text-sm font-medium text-gray-700">อีเมล</label>
-          <input 
+        <input 
             type="email" 
             id="email" 
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
             placeholder="กรอกอีเมล">
-        </div>
+      </div>
 
         <!-- Phone Numbers -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="phone1" class="block mb-2 text-sm font-medium text-gray-700">เบอร์ติดต่อ *</label>
-            <input 
-              type="tel" 
-              id="phone1" 
-              formControlName="phone1"
+        <input 
+          type="tel" 
+          id="phone1" 
+          formControlName="phone1"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
               placeholder="กรอกเบอร์โทรศัพท์">
-          </div>
+      </div>
 
           <div>
             <label for="phone2" class="block mb-2 text-sm font-medium text-gray-700">เบอร์ติดต่อ (สำรอง)</label>
-            <input 
-              type="tel" 
-              id="phone2" 
-              formControlName="phone2"
+        <input 
+          type="tel" 
+          id="phone2" 
+          formControlName="phone2"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
               placeholder="กรอกเบอร์โทรศัพท์สำรอง">
           </div>
@@ -623,7 +623,7 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Step 4: สำเร็จ -->
     <div *ngIf="currentStep === 4" class="text-center py-16">
       <div class="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
@@ -640,7 +640,7 @@
         กลับสู่หน้าหลัก
       </button>
     </div>
-
+    
     <!-- Navigation Buttons -->
     <div *ngIf="currentStep < 4" class="flex justify-center gap-4 mt-12 pt-8 border-t border-gray-200">
       <button 

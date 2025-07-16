@@ -6,6 +6,8 @@ import { NavbarComponent } from "../navbar/navbar.component";
 import { DormitoryService, DormDetail, Dorm, Amenity } from '../../services/dormitory.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MapService } from '../../services/map.service';
+import { AuthService } from '../../services/auth.service';
+import { SentimentService } from '../../services/sentiment.service';
 
 interface AmenityDisplay {
   amenity_id: number;
@@ -19,6 +21,7 @@ interface Review {
   comment: string;
   rating: number;
   isPositive: boolean;
+  date: Date;
 }
 
 interface SimilarProperty {
@@ -33,6 +36,8 @@ interface SimilarProperty {
   rating: number;
   date: string;
 }
+
+type SentimentType = 'positive' | 'negative' | 'neutral';
 
 @Component({
   selector: 'app-dorm-detail',
@@ -75,7 +80,14 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   mapLongitude: number | null = null;
   private mapInitialized: boolean = false;
 
-  // Reviews data (ยังไม่มีในระบบ)
+  // Auth related
+  isLoggedIn: boolean = false;
+  userAvatar: string = '';
+  
+  // Review related
+  sentimentResult: SentimentType | null = null;
+  
+  // Reviews data
   overallRating: number = 5.0;
   reviews: Review[] = [
     {
@@ -83,7 +95,8 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       avatar: '../../../assets/images/image-removebg-preview.png',
       comment: 'หอดีมาก',
       rating: 5,
-      isPositive: true
+      isPositive: true,
+      date: new Date()
     }
   ];
 
@@ -95,10 +108,15 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     private router: Router,
     private dormService: DormitoryService,
     private mapService: MapService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private authService: AuthService,
+    private sentimentService: SentimentService
   ) { }
 
   ngOnInit(): void {
+    // Check login status
+    this.checkLoginStatus();
+    
     // รับ dormId จาก URL และโหลดข้อมูล
     this.route.params.subscribe(params => {
       const id = params['id'];
@@ -388,15 +406,73 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // Reviews methods
+  private checkLoginStatus(): void {
+    this.authService.currentUser$.subscribe(user => {
+      this.isLoggedIn = !!user;
+      if (user) {
+        this.userAvatar = user.photoURL || '../../../assets/images/image-removebg-preview.png';
+      }
+    });
+  }
+
+  navigateToLogin(): void {
+    this.router.navigate(['/login'], { 
+      queryParams: { returnUrl: this.router.url } 
+    });
+  }
+
   addComment(comment: string): void {
-    if (comment.trim()) {
-      alert('ขออภัย ระบบรีวิวยังไม่เปิดให้ใช้งาน');
-      this.newComment = '';
+    if (!comment?.trim()) return;
+    
+    // ป้องกันการส่งข้อความว่าง
+    const trimmedComment = comment.trim();
+    if (trimmedComment.length === 0) {
+      return;
     }
+
+    // ตรวจสอบสถานะการล็อกอิน
+    if (!this.isLoggedIn) {
+      this.navigateToLogin();
+      return;
+    }
+
+    // วิเคราะห์ความรู้สึก
+    // this.analyzeSentiment(trimmedComment);
+  }
+
+  // private analyzeSentiment(comment: string): void {
+  //   this.sentimentService.analyzeSentiment(comment).subscribe({
+  //     next: (response) => {
+  //       this.sentimentResult = response.sentiment_text;
+  //       // เพิ่มความคิดเห็นหลังจากวิเคราะห์เสร็จ
+  //       this.addCommentToList(comment, response.sentiment_text);
+  //     },
+  //     error: (error) => {
+  //       console.error('Error analyzing sentiment:', error);
+  //       // กรณีมีข้อผิดพลาด ให้เพิ่มความคิดเห็นโดยไม่มีผลวิเคราะห์
+  //       this.addCommentToList(comment, 'neutral');
+  //     }
+  //   });
+  // }
+
+  // เพิ่มฟังก์ชันใหม่สำหรับเพิ่มความคิดเห็นลงในลิสต์
+  private addCommentToList(comment: string, sentiment: string): void {
+    const newReview: Review = {
+      username: 'ผู้ใช้งาน',
+      avatar: this.userAvatar,
+      comment: comment,
+      rating: 5, // ค่าเริ่มต้น หรือให้ผู้ใช้กำหนด
+      isPositive: sentiment === 'positive',
+      date: new Date()
+    };
+    
+    this.reviews.unshift(newReview);
+    this.newComment = '';
   }
 
   viewAllComments(): void {
-    alert('ขออภัย ระบบรีวิวยังไม่เปิดให้ใช้งาน');
+    // 实现查看所有评论的逻辑
+    console.log('View all comments clicked');
   }
 
   getStars(rating: number): number[] {

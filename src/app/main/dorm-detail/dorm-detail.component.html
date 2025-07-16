@@ -208,237 +208,141 @@
         </div>
       </div>
 
-      <div class="bg-white shadow-sm overflow-hidden">
-        <!-- Header with rating -->
-        <div class="p-4 border-b border-gray-200">
+      <!-- Reviews Section -->
+      <div class="bg-white shadow-sm mb-6">
+        <div class="bg-gray-50 border-b border-gray-200">
+          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">รีวิวจากผู้เช่า</h3>
+        </div>
+
+        <!-- Review Stats -->
+        <div class="p-6 border-b border-gray-200">
           <div class="flex items-center justify-between">
-            <span class="text-lg font-bold text-[#4F5356]">ความคิดเห็นของผู้ใช้หอพัก</span>
             <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="w-5 h-5 mr-2 text-green-500">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-              </svg>
-              <span class="text-base font-medium text-[#4F5356] relative top-0.5">5.0</span>
-              <div class="flex">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                </svg>
+              <span class="text-3xl font-bold text-[#4F5356]">{{ overallRating.toFixed(1) }}</span>
+              <div class="ml-3 flex">
+                <ng-container *ngFor="let star of getStars(overallRating)">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-6 h-6">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
+                  </svg>
+                </ng-container>
               </div>
+            </div>
+            <div class="text-sm text-gray-500">
+              จากทั้งหมด {{ reviews.length }} รีวิว
             </div>
           </div>
         </div>
 
-        <!-- Comment Input -->
-        <div class="p-4 border-b border-gray-200">
-          <div class="flex items-start space-x-3">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 overflow-hidden">
-              <img src="../../../assets/images/image-removebg-preview.png" alt="User"
-                class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1">
-              <input type="text" [(ngModel)]="newComment" placeholder=""
-                class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-white text-sm"
-                (keyup.enter)="addComment(newComment)">
+        <!-- Add Review Section -->
+        <div class="p-6 border-b border-gray-200">
+          <div *ngIf="isLoggedIn; else loginPrompt" class="space-y-4">
+            <div class="flex items-start space-x-4">
+              <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 overflow-hidden">
+                <img [src]="userAvatar || '../../../assets/images/image-removebg-preview.png'" alt="User" class="w-full h-full object-cover">
+              </div>
+              <div class="flex-1">
+                <textarea 
+                  [(ngModel)]="newComment"
+                  placeholder="แสดงความคิดเห็นของคุณ..."
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition duration-200"
+                  rows="3"
+                  (keydown.enter)="$event.preventDefault(); addComment(newComment)"
+                  (keyup.enter)="$event.preventDefault()"
+                ></textarea>
+                
+                <!-- Sentiment Analysis Result -->
+                <div *ngIf="newComment && sentimentResult" class="mt-2 p-3 rounded-lg" 
+                     [ngClass]="{
+                       'bg-green-50 text-green-700': sentimentResult === 'positive',
+                       'bg-red-50 text-red-700': sentimentResult === 'negative',
+                       'bg-yellow-50 text-yellow-700': sentimentResult === 'neutral'
+                     }">
+                  <div class="flex items-center space-x-2">
+                    <svg *ngIf="sentimentResult === 'positive'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-3 5a3 3 0 01-6 0h6z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg *ngIf="sentimentResult === 'negative'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-3 6a3 3 0 01-6 0h6z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg *ngIf="sentimentResult === 'neutral'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-4 3a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">
+                      {{ 
+                        sentimentResult === 'positive' ? 'ความคิดเห็นเชิงบวก' :
+                        sentimentResult === 'negative' ? 'ความคิดเห็นเชิงลบ' : 'ความคิดเห็นเป็นกลาง'
+                      }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Submit Button - ซ่อนปุ่มส่ง -->
+                <div class="hidden">
+                  <button 
+                    (click)="addComment(newComment)"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    [disabled]="!newComment.trim()">
+                    <span>ส่งความคิดเห็น</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+
+          <!-- Login Prompt Template -->
+          <ng-template #loginPrompt>
+            <div class="bg-gray-50 p-6 rounded-lg text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <p class="text-gray-600 mb-4">กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น</p>
+              <button 
+                (click)="navigateToLogin()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center space-x-2 transition duration-200">
+                <span>เข้าสู่ระบบ</span>
+              </button>
+            </div>
+          </ng-template>
         </div>
 
         <!-- Reviews List -->
         <div class="divide-y divide-gray-200">
-          <!-- Review Item 1 -->
-          <div class="p-4 flex">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-3 overflow-hidden">
-              <img src="../../../assets/images/image-removebg-preview.png" alt="User"
-                class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center">
-                  <span class="font-bold text-[#4F5356] text-sm">สมหมาย</span>
-                  <span class="text-[#4F5356] text-xs ml-2">หอพิณัก</span>
-                </div>
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="w-5 h-5 mr-2 text-red-500">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-                  </svg>
-                  <div class="flex">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
+          <!-- Review Items -->
+          <div *ngFor="let review of reviews" class="p-6">
+            <div class="flex">
+              <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-4 overflow-hidden">
+                <img [src]="review.avatar" alt="User" class="w-full h-full object-cover">
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center">
+                    <span class="font-bold text-[#4F5356] text-sm">{{ review.username }}</span>
+                    <span class="text-gray-500 text-xs ml-2">{{ review.date | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <div class="flex">
+                      <ng-container *ngFor="let star of getStars(review.rating)">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
+                        </svg>
+                      </ng-container>
+                    </div>
+                    <div class="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        [class.text-green-500]="review.isPositive"
+                        [class.text-red-500]="!review.isPositive"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" 
+                          [attr.d]="review.isPositive ? 'M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18' : 'M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3'" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
+                <p class="text-[#4F5356] text-sm">{{ review.comment }}</p>
               </div>
-              <p class="text-[#4F5356] text-sm">หอดีมาก</p>
-            </div>
-          </div>
-
-          <!-- Review Item 2 -->
-          <div class="p-4 flex">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-3 overflow-hidden">
-              <img src="../../../assets/images/image-removebg-preview.png" alt="User"
-                class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center">
-                  <span class="font-bold text-[#4F5356] text-sm">สมหมาย</span>
-                  <span class="text-[#4F5356] text-xs ml-2">หอพิณัก</span>
-                </div>
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="w-5 h-5 mr-2 text-green-500">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-                  </svg>
-                  <div class="flex">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <p class="text-[#4F5356] text-sm">หอดีมาก</p>
-            </div>
-          </div>
-
-          <!-- Review Item 3 -->
-          <div class="p-4 flex">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-3 overflow-hidden">
-              <img src="../../../assets/images/image-removebg-preview.png" alt="User"
-                class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center">
-                  <span class="font-bold text-[#4F5356] text-sm">สมหมาย</span>
-                  <span class="text-[#4F5356] text-xs ml-2">หอพิณัก</span>
-                </div>
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="w-5 h-5 mr-2 text-red-500">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-                  </svg>
-                  <div class="flex">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <p class="text-[#4F5356] text-sm">หอดีมาก</p>
-            </div>
-          </div>
-
-          <!-- Review Item 4 -->
-          <div class="p-4 flex">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-3 overflow-hidden">
-              <img src="../../../assets/images/image-removebg-preview.png" alt="User"
-                class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center">
-                  <span class="font-bold text-[#4F5356] text-sm">สมหมาย</span>
-                  <span class="text-[#4F5356] text-xs ml-2">หอพิณัก</span>
-                </div>
-                <div class="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="w-5 h-5 mr-2 text-red-500">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-                  </svg>
-                  <div class="flex">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="#E5E7EB" viewBox="0 0 20 20" class="w-4 h-4">
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <p class="text-[#4F5356] text-sm">หอดีมาก</p>
             </div>
           </div>
         </div>
@@ -446,7 +350,7 @@
         <!-- View All Button -->
         <div class="p-4 text-center border-t border-gray-200">
           <button (click)="viewAllComments()"
-            class="text-[#4F5356] hover:text-[#3a3e40] text-sm font-medium hover:underline transition-colors duration-200">
+            class="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline transition-colors duration-200">
             ดูความคิดเห็นทั้งหมด
           </button>
         </div>
