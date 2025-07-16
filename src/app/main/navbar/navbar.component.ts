@@ -122,7 +122,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   onPostDormClick() {
     if (this.isLoggedIn() && this.getUserType() === 'owner') {
-      this.router.navigate(['/post-dorm']);
+      this.router.navigate(['/owner/dorm-add']);
     } else {
       this.router.navigate(['/login', 'owner']);
     }

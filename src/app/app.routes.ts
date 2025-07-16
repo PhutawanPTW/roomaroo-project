@@ -40,17 +40,18 @@ export const routes: Routes = [
   {
     path: 'owner',
     component: OwnerComponent,
-    canActivate: [OwnerGuard]
+    canActivate: [OwnerGuard],
+    children: [
+      { path: 'dorm-add', component: DormAddComponent },
+    ]
   },
 
   {
     path: 'main',
     component: MainComponent,
     children: [
-      { path: '', component: DormListComponent },
       { path: 'dorm-detail', component: DormDetailComponent },
       { path: 'dorm-map', component: DormMapComponent },
-      { path: 'dorm-add', component: DormAddComponent },
       { path: 'dorm-compare', component: DormCompareComponent },
       { path: 'tenant-list', component: TenantListComponent },
       { path: 'profile', component: ProfileComponent },

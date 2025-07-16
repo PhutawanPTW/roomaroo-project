@@ -75,7 +75,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.authSub) {
       this.authSub.unsubscribe();
     }
-  }
+  } 
 
   private redirectBasedOnUserType(user: UserProfile): void {
     console.log('[LoginComponent] Redirecting user based on memberType:', user.memberType);
@@ -140,7 +140,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     } finally {
         this.isGoogleLoading = false;
     }
-}
+  }
 
   async onSubmit(): Promise<void> {
     this.isLoginLoading = true;

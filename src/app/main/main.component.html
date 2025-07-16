@@ -2,7 +2,11 @@
   <app-navbar></app-navbar>
 </ng-container>
 
-<div class="w-full max-w-7xl mx-auto px-4 pb-12 font-thai font-english">
+<!-- Router outlet for child routes -->
+<router-outlet *ngIf="!isAuthPage()"></router-outlet>
+
+<!-- Main content - show when not on child routes -->
+<div *ngIf="!isAuthPage() && !isChildRoute()" class="w-full max-w-7xl mx-auto px-4 pb-12 font-thai font-english">
   <!-- Slider section -->
   <div class="relative overflow-hidden h-[260px] sm:h-[340px] md:h-[420px] lg:h-[480px] mb-10">
     <div class="relative h-full overflow-hidden rounded-lg">

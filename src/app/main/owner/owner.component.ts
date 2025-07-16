@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-owner',
@@ -16,7 +17,9 @@ import { AuthService, UserProfile } from '../../services/auth.service';
     MatGridListModule,
     MatButtonModule,
     MatIconModule,
-    NavbarComponent
+    NavbarComponent,
+    RouterModule,
+    RouterOutlet
   ],
   templateUrl: './owner.component.html',
   styleUrls: ['./owner.component.css']
@@ -64,7 +67,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
     { name: 'หอพัก E', price: '2,600 - 3,000 บาท/เดือน', image: 'assets/images/dorm8.jpg', rating: 5.0, updated: '10 พฤษภาคม 2024' }
   ];
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
     this.subscription = this.authService.currentUser$.subscribe(user => {
@@ -124,5 +127,11 @@ export class OwnerComponent implements OnInit, OnDestroy {
       this.uploadLoading = false;
       input.value = '';
     }
+  }
+
+  isChildRoute(): boolean {
+    // Check if the current route is a child route like 'dorm-add'
+    const url = this.router.url;
+    return url.includes('/owner/') && url !== '/owner';
   }
 }

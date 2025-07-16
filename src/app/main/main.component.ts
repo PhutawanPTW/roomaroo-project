@@ -71,16 +71,6 @@ export class MainComponent implements OnInit {
   ngOnInit() {
     this.startSlideshow();
     this.loadDormitories();
-
-    this.authService.currentUser$.subscribe((user: UserProfile | null) => {
-      if (user) {
-        if (user.memberType === 'owner') {
-          this.router.navigate(['/owner']);
-        } else if (user.memberType === 'member') {
-          this.router.navigate(['/main/member/dashboard']);
-        }
-      }
-    });
   }
 
   private async loadDormitories() {
@@ -132,6 +122,14 @@ export class MainComponent implements OnInit {
     return this.currentRoute.includes('login') ||
       this.currentRoute.includes('register') ||
       this.currentRoute.includes('owner');
+  }
+
+  isChildRoute(): boolean {
+    return this.currentRoute.includes('/main/profile') ||
+      this.currentRoute.includes('/main/dorm-detail') ||
+      this.currentRoute.includes('/main/dorm-map') ||
+      this.currentRoute.includes('/main/dorm-compare') ||
+      this.currentRoute.includes('/main/tenant-list');
   }
 
   getPriceHtml(price: string | undefined): string {

@@ -125,13 +125,8 @@ export class MapService {
   private addControls(): void {
     if (!this.map) return;
 
-    // Add zoom and navigation controls (Google Maps style)
-    const nav = new maptilersdk.NavigationControl({
-      showCompass: true,
-      visualizePitch: true,
-      showZoom: true
-    });
-    this.map.addControl(nav, 'bottom-right');
+    // Remove bottom-right navigation controls
+    // We'll use our custom controls from the component instead
 
     // Add custom layer toggle control
     const layerControl = {

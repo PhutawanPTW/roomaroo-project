@@ -1,5 +1,10 @@
 <app-navbar></app-navbar>
-<div class="w-full max-w-6xl mx-auto px-4 py-6 font-thai font-english">
+
+<!-- Router outlet for child routes like dorm-add -->
+<router-outlet></router-outlet>
+
+<!-- Main owner dashboard content -->
+<div class="w-full max-w-6xl mx-auto px-4 py-6 font-thai font-english" *ngIf="!isChildRoute()">
   <h2 class="text-lg font-thai font-medium mb-2 flex items-end gap-2 font-normal">
     รายการหอพักของฉัน
     <span class="text-gray-400 text-sm font-normal mb-0.5">({{ recommendedDorms.length }})</span>

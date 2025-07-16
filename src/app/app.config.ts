@@ -2,6 +2,7 @@
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http'; // เพิ่มถ้าใช้ HttpClient
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes'; // ตรวจสอบว่า path ถูกต้อง
 import { environment } from '../environments/environment'; // import environment
 
@@ -16,6 +17,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes), // สำหรับจัดการ Routing
     provideHttpClient(), // สำหรับ HttpClient ใน AuthService
+    provideAnimations(), // สำหรับ animations
 
     // --- ตั้งค่า Firebase ---
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),

@@ -78,7 +78,6 @@ export class DormDetailComponent implements OnInit, OnDestroy {
   showMap: boolean = false;
   mapLatitude: number | null = null;
   mapLongitude: number | null = null;
-  isSatelliteView: boolean = false;
   private map: maptilersdk.Map | null = null;
   private marker: maptilersdk.Marker | null = null;
 
@@ -306,96 +305,54 @@ export class DormDetailComponent implements OnInit, OnDestroy {
   }
 
   private initializeMap(): void {
-    if (!this.mapLatitude || !this.mapLongitude) {
-      console.error('Map coordinates not available:', { lat: this.mapLatitude, lng: this.mapLongitude });
-      return;
-    }
+    if (!this.mapLatitude || !this.mapLongitude) return;
 
-    try {
-      console.log('Initializing map with coordinates:', { lat: this.mapLatitude, lng: this.mapLongitude });
-      
-      // Initialize map with longitude first, then latitude
-      this.map = new maptilersdk.Map({
-        container: 'map',
-        style: maptilersdk.MapStyle.STREETS,
-        center: [this.mapLongitude, this.mapLatitude], // [lng, lat] order
-        zoom: 15,
-        pitch: 0,
-        bearing: 0
-      });
+    this.map = new maptilersdk.Map({
+      container: 'map',
+      style: maptilersdk.MapStyle.STREETS,
+      center: [this.mapLongitude, this.mapLatitude],
+      zoom: 15,
+      attributionControl: false,
+      navigationControl: false,
+      geolocateControl: false,
+      scaleControl: false,
+      cooperativeGestures: false
+    });
 
-      // Wait for map to load before adding marker and controls
-      this.map.on('load', () => {
-        console.log('Map loaded, adding marker...');
-        this.addMarker();
-        this.addMapControls();
-      });
-
-      // Add zoom controls
-      this.map.addControl(new maptilersdk.NavigationControl({
-        showCompass: false,
-        showZoom: false,
-        visualizePitch: false
-      }), 'bottom-right');
-
-    } catch (error) {
-      console.error('Error initializing map:', error);
-    }
+    this.map.on('load', () => {
+      this.addMarker();
+    });
   }
 
   private addMarker(): void {
-    if (!this.map || !this.mapLatitude || !this.mapLongitude) {
-      console.error('Cannot add marker, map or coordinates not ready');
-      return;
-    }
-  
-    try {
-      // Create a simple red marker
-      this.marker = new Marker({ color: "#FF0000" })
+    if (!this.map || !this.mapLatitude || !this.mapLongitude) return;
+
+    // Create popup
+    const popupContent = document.getElementById('marker-popup')?.cloneNode(true) as HTMLElement;
+    if (popupContent) {
+      popupContent.style.display = 'block';
+      const popup = new maptilersdk.Popup()
+        .setDOMContent(popupContent);
+
+      // Add marker
+      this.marker = new maptilersdk.Marker({
+        color: "#FF0000"
+      })
         .setLngLat([this.mapLongitude, this.mapLatitude])
+        .setPopup(popup)
         .addTo(this.map);
-  
-      console.log('Marker added at:', [this.mapLongitude, this.mapLatitude]);
-    } catch (error) {
-      console.error('Error adding marker:', error);
     }
   }
 
-  private addMapControls(): void {
-    if (!this.map) return;
-
-    // Add navigation control
-    const nav = new maptilersdk.NavigationControl({
-      showCompass: true,
-      visualizePitch: true
-    });
-    this.map.addControl(nav, 'bottom-right');
+  zoomIn(): void {
+    if (this.map) {
+      this.map.zoomIn();
+    }
   }
 
-  toggleMapStyle(): void {
-    this.isSatelliteView = !this.isSatelliteView;
+  zoomOut(): void {
     if (this.map) {
-      const style = this.isSatelliteView ? 
-        'https://api.maptiler.com/maps/hybrid/style.json?key=Gpwk2Mpi9cl8hUkVrf6f' : 
-        maptilersdk.MapStyle.STREETS;
-      
-      const center = this.map.getCenter();
-      const zoom = this.map.getZoom();
-      
-      this.map.setStyle(style);
-      
-      this.map.once('style.load', () => {
-        this.map?.setCenter(center);
-        this.map?.setZoom(zoom);
-        if (this.mapLatitude && this.mapLongitude) {
-          // ลบ marker เก่าก่อน
-          if (this.marker) {
-            this.marker.remove();
-          }
-          // สร้าง marker ใหม่
-          this.addMarker();
-        }
-      });
+      this.map.zoomOut();
     }
   }
 
@@ -462,18 +419,5 @@ export class DormDetailComponent implements OnInit, OnDestroy {
         currentDormId: this.dormId
       } 
     });
-  }
-
-  // Zoom functions
-  zoomIn(): void {
-    if (this.map) {
-      this.map.zoomIn();
-    }
-  }
-
-  zoomOut(): void {
-    if (this.map) {
-      this.map.zoomOut();
-    }
   }
 }

@@ -17,6 +17,27 @@
   overflow: hidden;
 }
 
+/* Hide all default MapTiler controls */
+.maplibregl-ctrl-top-right {
+  display: none !important;
+}
+
+.maplibregl-ctrl-top-left {
+  display: none !important;
+}
+
+.maplibregl-ctrl-bottom-right {
+  display: none !important;
+}
+
+.maplibregl-ctrl-bottom-left {
+  display: none !important;
+}
+
+.maplibregl-ctrl-attrib {
+  display: none !important;
+}
+
 /* Make sure the map container is visible */
 .map-section {
   display: block;
