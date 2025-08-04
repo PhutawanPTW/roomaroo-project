@@ -38,14 +38,28 @@ export class GoogleAuthService {
         }
     }
 
-    // แก้ไข method completeUserProfile สำหรับ Google OAuth flow
-    async completeGoogleUserProfile(phoneNumber: string | undefined, userType: 'member' | 'owner', dormitoryId?: number): Promise<UserProfile> {
+    // *** ปรับปรุง method completeUserProfile ให้รองรับ owner fields ***
+    async completeGoogleUserProfile(
+        phoneNumber: string | undefined, 
+        userType: 'member' | 'owner', 
+        dormitoryId?: number,
+        ownerData?: {
+            managerName: string;
+            secondaryPhone?: string;
+            lineId?: string;
+        }
+    ): Promise<UserProfile> {
         // *** เซ็ต flag ป้องกัน race condition ***
         this.isRegistrationInProgress = true;
 
         try {
-            // Delegate to AuthService's implementation
-            return await this.authService.completeUserProfile(phoneNumber, userType, dormitoryId);
+            // *** Delegate to AuthService's implementation with owner data ***
+            return await this.authService.completeUserProfile(
+                phoneNumber, 
+                userType, 
+                dormitoryId, 
+                ownerData
+            );
         } catch (error) {
             console.error('[GoogleAuthService] Error completing user profile:', error);
             this.isGoogleRegistrationFlow = false;

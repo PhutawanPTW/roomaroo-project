@@ -72,7 +72,7 @@ export class MainComponent implements OnInit {
     this.startSlideshow();
     this.loadDormitories();
 
-    this.authService.currentUser$.subscribe((user: UserProfile | null) => {
+    this.authService.currentUser$.subscribe((user: UserProfile | null | undefined) => {
       if (user) {
         if (user.memberType === 'owner') {
           this.router.navigate(['/owner']);

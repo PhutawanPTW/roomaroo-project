@@ -36,18 +36,18 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.authSubscription = this.authService.currentUser$
-      .pipe(
-        filter(user => user !== undefined) // Wait for a defined value (not undefined)
-      )
-      .subscribe(
-        (user: UserProfile | null) => {
+    this.authService.currentUser$.subscribe(user => {
+      // ไม่แสดงข้อมูล user ถ้าเป็น temporary user หรือยังไม่สมบูรณ์
+      if (user && !this.authService.isTemporaryUser() && !user.needsProfileSetup) {
           this.currentUser = user;
           this.userType = user?.memberType ?? null;
           this.isOwner = user?.memberType === 'owner';
           this.isLoading = false; // Set loading to false once we have a definitive answer
+      } else {
+        this.currentUser = null;
+        this.isLoading = false; // Ensure loading is false if no user
         }
-      );
+    });
       
     this.router.events.subscribe(() => {
       this.currentPath = this.router.url;

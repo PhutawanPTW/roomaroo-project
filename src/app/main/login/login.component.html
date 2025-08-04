@@ -87,7 +87,7 @@
 
         <!-- Google Button -->
         <button type="button" (click)="connectWithGoogle()" [disabled]="isGoogleLoading"
-          class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-english mt-4">
+          class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-thai mt-4">
           <!-- Loading Spinner for Google Button -->
           <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
             fill="none" viewBox="0 0 24 24">
@@ -97,7 +97,7 @@
             </path>
           </svg>
           <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
-          <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'Connect with Google' }}</span>
+          <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วยบัญชี Google' }}</span>
         </button>
         <div *ngIf="errorMessageGoogle" class="text-red-600 text-sm mt-1 text-center">{{ errorMessageGoogle }}</div>
       </form>

@@ -7,7 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
+import { DormitoryService, RoomType } from '../../services/dormitory.service';
 import { filter } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 import { RouterModule } from '@angular/router';
 
 
@@ -32,46 +34,13 @@ export class OwnerComponent implements OnInit, OnDestroy {
   uploadLoading = false;
   uploadError: string | null = null;
 
-  recommendedDorms = [
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักวีรวิชญ์',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '12 พฤษภาคม 2024',
-      rating: 5.0,
-      verified: true
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน\n400 บาท/วัน',
-      name: 'หอพักเรือนร่มเย็น',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '8 พฤษภาคม 2024',
-      rating: 5.0,
-      verified: false
-    },
-    {
-      image: 'https://s3-ap-southeast-1.amazonaws.com/builk3storage/project/20161028_122650_project_2045817_big.jpg',
-      price: '2,600 - 3,000บาท/เดือน',
-      name: 'หอพักวีรวิชญ์ชาย',
-      location: 'ใกล้มหาวิทยาลัย',
-      date: '15 พฤษภาคม 2024',
-      rating: 5.0,
-      verified: true
-    },
-  ];
-
-  latestDorms = [
-    { name: 'หอพัก D', price: '2,600 - 3,000 บาท/เดือน', image: 'assets/images/dorm5.jpg', rating: 5.0, updated: '14 พฤษภาคม 2024' },
-    { name: '400 บาท/วัน', price: '2,600 - 3,000 บาท/เดือน', image: 'assets/images/dorm6.jpg', rating: 5.0, updated: '10 พฤษภาคม 2024' },
-    { name: '400 บาท/วัน', price: '2,600 - 3,000 บาท/เดือน', image: 'assets/images/dorm7.jpg', rating: 5.0, updated: '10 พฤษภาคม 2024' },
-    { name: 'หอพัก E', price: '2,600 - 3,000 บาท/เดือน', image: 'assets/images/dorm8.jpg', rating: 5.0, updated: '10 พฤษภาคม 2024' }
-  ];
-
   myDorms: any[] = [];
 
-  constructor(private authService: AuthService, private ownerDormService: OwnerDormitoryService) { }
+  constructor(
+    private authService: AuthService, 
+    private ownerDormService: OwnerDormitoryService,
+    private dormService: DormitoryService
+  ) { }
 
   ngOnInit() {
     this.subscription = this.authService.currentUser$
@@ -97,9 +66,9 @@ export class OwnerComponent implements OnInit, OnDestroy {
               }
 
               console.log('[OwnerComponent] My dorms:', this.myDorms);
-              this.myDorms.forEach((dorm, idx) => {
-                console.log(`[OwnerComponent] Dorm #${idx + 1}:`, dorm);
-              });
+              
+              // ดึงข้อมูล room types สำหรับแต่ละหอพัก
+              this.loadRoomTypesForDorms();
             },
             error: (err) => {
               console.error('API error:', err);
@@ -116,6 +85,104 @@ export class OwnerComponent implements OnInit, OnDestroy {
           });
         }
       });
+  }
+
+  // เพิ่ม method สำหรับดึงข้อมูล room types
+  private loadRoomTypesForDorms() {
+    if (this.myDorms.length === 0) return;
+
+    console.log('[OwnerComponent] Loading room types for dorms:', this.myDorms.map(d => d.dorm_id));
+
+    // สร้าง array ของ observables สำหรับดึง room types ของแต่ละหอพัก
+    const roomTypeObservables = this.myDorms.map(dorm => 
+      this.dormService.getRoomTypes(dorm.dorm_id)
+    );
+
+    // ดึงข้อมูล room types พร้อมกัน
+    forkJoin(roomTypeObservables).subscribe({
+      next: (roomTypesArray) => {
+        console.log('[OwnerComponent] Room types for all dorms:', roomTypesArray);
+        
+        // คำนวณราคาจาก room types สำหรับแต่ละหอพัก
+        this.myDorms.forEach((dorm, index) => {
+          const roomTypes = roomTypesArray[index] || [];
+          console.log(`[OwnerComponent] Processing room types for dorm ${dorm.dorm_id}:`, roomTypes);
+          this.calculatePricesFromRoomTypes(dorm, roomTypes);
+        });
+      },
+      error: (err) => {
+        console.error('[OwnerComponent] Error loading room types:', err);
+      }
+    });
+  }
+
+  // เพิ่ม method สำหรับคำนวณราคาจาก room types
+  private calculatePricesFromRoomTypes(dorm: any, roomTypes: RoomType[]) {
+    console.log(`[OwnerComponent] Calculating prices for dorm ${dorm.dorm_id}:`, roomTypes);
+
+    if (roomTypes.length === 0) {
+      console.log(`[OwnerComponent] No room types found for dorm ${dorm.dorm_id}`);
+      return;
+    }
+
+    // คำนวณราคารายเดือน
+    const monthlyPrices = roomTypes
+      .filter(room => room.monthly_price && room.monthly_price > 0)
+      .map(room => room.monthly_price!);
+    
+    console.log(`[OwnerComponent] Monthly prices for dorm ${dorm.dorm_id}:`, monthlyPrices);
+    
+    if (monthlyPrices.length > 0) {
+      const minMonthlyPrice = Math.min(...monthlyPrices);
+      const maxMonthlyPrice = Math.max(...monthlyPrices);
+      
+      // ถ้า min = max แสดงว่ามีราคาเดียว
+      if (minMonthlyPrice === maxMonthlyPrice) {
+        dorm.monthly_price = minMonthlyPrice;
+        dorm.min_price = undefined;
+        dorm.max_price = undefined;
+        console.log(`[OwnerComponent] Single monthly price for dorm ${dorm.dorm_id}: ${minMonthlyPrice}`);
+      } else {
+        dorm.min_price = minMonthlyPrice;
+        dorm.max_price = maxMonthlyPrice;
+        dorm.monthly_price = undefined;
+        console.log(`[OwnerComponent] Monthly price range for dorm ${dorm.dorm_id}: ${minMonthlyPrice} - ${maxMonthlyPrice}`);
+      }
+    } else {
+      // ไม่มีราคารายเดือน
+      dorm.min_price = undefined;
+      dorm.max_price = undefined;
+      dorm.monthly_price = undefined;
+    }
+
+    // คำนวณราคารายวัน
+    const dailyPrices = roomTypes
+      .filter(room => room.daily_price && room.daily_price > 0)
+      .map(room => room.daily_price!);
+    
+    console.log(`[OwnerComponent] Daily prices for dorm ${dorm.dorm_id}:`, dailyPrices);
+    
+    if (dailyPrices.length > 0) {
+      const minDailyPrice = Math.min(...dailyPrices);
+      const maxDailyPrice = Math.max(...dailyPrices);
+      
+      if (minDailyPrice === maxDailyPrice) {
+        dorm.daily_price = minDailyPrice;
+        console.log(`[OwnerComponent] Single daily price for dorm ${dorm.dorm_id}: ${minDailyPrice}`);
+      } else {
+        dorm.daily_price = `${minDailyPrice} - ${maxDailyPrice}`;
+        console.log(`[OwnerComponent] Daily price range for dorm ${dorm.dorm_id}: ${minDailyPrice} - ${maxDailyPrice}`);
+      }
+    } else {
+      dorm.daily_price = undefined;
+    }
+
+    console.log(`[OwnerComponent] Final calculated prices for dorm ${dorm.dorm_id}:`, {
+      min_price: dorm.min_price,
+      max_price: dorm.max_price,
+      monthly_price: dorm.monthly_price,
+      daily_price: dorm.daily_price
+    });
   }
 
   ngOnDestroy() {
@@ -137,14 +204,58 @@ export class OwnerComponent implements OnInit, OnDestroy {
   // Helper to format price string like main page
   formatPriceString(dorm: any): string {
     let priceDisplay = '';
-    if (dorm.min_price && dorm.max_price) {
-      priceDisplay = `${dorm.min_price.toLocaleString()} - ${dorm.max_price.toLocaleString()} บาท/เดือน`;
-    } else if (dorm.monthly_price) {
-      priceDisplay = `${dorm.monthly_price.toLocaleString()} บาท/เดือน`;
+    
+    // ตรวจสอบว่ามีราคารายเดือนหรือไม่
+    const hasMonthlyPrice = dorm.min_price && dorm.max_price;
+    const hasSingleMonthlyPrice = dorm.monthly_price;
+    
+    // ตรวจสอบว่ามีราคารายวันหรือไม่
+    const hasDailyPrice = dorm.daily_price;
+    
+    console.log(`[OwnerComponent] Formatting prices for dorm ${dorm.dorm_id}:`, {
+      hasMonthlyPrice,
+      hasSingleMonthlyPrice,
+      hasDailyPrice,
+      min_price: dorm.min_price,
+      max_price: dorm.max_price,
+      monthly_price: dorm.monthly_price,
+      daily_price: dorm.daily_price
+    });
+    
+    // กรณีที่ 1: มีเฉพาะราคารายวัน
+    if (!hasMonthlyPrice && !hasSingleMonthlyPrice && hasDailyPrice) {
+      if (typeof dorm.daily_price === 'string' && dorm.daily_price.includes('-')) {
+        // กรณีมี range ราคารายวัน
+        priceDisplay = `${dorm.daily_price} บาท/วัน`;
+      } else {
+        // กรณีมีราคารายวันเดียว
+        priceDisplay = `${dorm.daily_price.toLocaleString()} บาท/วัน`;
+      }
     }
-    if (dorm.daily_price) {
-      priceDisplay += `\n${dorm.daily_price.toLocaleString()} บาท/วัน`;
+    // กรณีที่ 2: มีทั้งรายเดือนและรายวัน
+    else if ((hasMonthlyPrice || hasSingleMonthlyPrice) && hasDailyPrice) {
+      if (hasMonthlyPrice) {
+        priceDisplay = `${dorm.min_price.toLocaleString()} - ${dorm.max_price.toLocaleString()} บาท/เดือน`;
+      } else {
+        priceDisplay = `${dorm.monthly_price.toLocaleString()} บาท/เดือน`;
+      }
+      
+      // เพิ่มราคารายวัน
+      if (typeof dorm.daily_price === 'string' && dorm.daily_price.includes('-')) {
+        priceDisplay += `\n${dorm.daily_price} บาท/วัน`;
+      } else {
+        priceDisplay += `\n${dorm.daily_price.toLocaleString()} บาท/วัน`;
+      }
     }
+    // กรณีที่ 3: มีเฉพาะรายเดือน
+    else if (hasMonthlyPrice || hasSingleMonthlyPrice) {
+      if (hasMonthlyPrice) {
+        priceDisplay = `${dorm.min_price.toLocaleString()} - ${dorm.max_price.toLocaleString()} บาท/เดือน`;
+      } else {
+        priceDisplay = `${dorm.monthly_price.toLocaleString()} บาท/เดือน`;
+      }
+    }
+    
     return priceDisplay;
   }
 
@@ -176,6 +287,15 @@ export class OwnerComponent implements OnInit, OnDestroy {
       const dailyMatch = lines[1].match(/([\d,]+)\s*(บาท\/วัน)/);
       if (dailyMatch) {
         const [_, number, unit] = dailyMatch;
+        html += `<div class="price-daily"><span class="font-english">${number}</span> <span class="font-thai unit">${unit}</span></div>`;
+      }
+    }
+
+    // Process daily price only (first line if no monthly price)
+    if (lines.length === 1 && lines[0].includes('บาท/วัน')) {
+      const dailyOnlyMatch = lines[0].match(/([\d,]+)\s*(บาท\/วัน)/);
+      if (dailyOnlyMatch) {
+        const [_, number, unit] = dailyOnlyMatch;
         html += `<div class="price-daily"><span class="font-english">${number}</span> <span class="font-thai unit">${unit}</span></div>`;
       }
     }

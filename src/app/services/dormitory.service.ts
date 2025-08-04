@@ -183,8 +183,32 @@ export class DormitoryService {
   }
 
   // ดึงรายการหอพักทั้งหมด
-  getAllDormitories(): Observable<Dorm[]> {
-    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories`);
+  getAllDormitories(params?: {
+    zone_id?: number;
+    min_price?: number;
+    max_price?: number;
+    limit?: number;
+    offset?: number;
+  }): Observable<Dorm[]> {
+    let httpParams = new HttpParams();
+    
+    if (params?.zone_id) {
+      httpParams = httpParams.set('zone_id', params.zone_id.toString());
+    }
+    if (params?.min_price) {
+      httpParams = httpParams.set('min_price', params.min_price.toString());
+    }
+    if (params?.max_price) {
+      httpParams = httpParams.set('max_price', params.max_price.toString());
+    }
+    if (params?.limit) {
+      httpParams = httpParams.set('limit', params.limit.toString());
+    }
+    if (params?.offset) {
+      httpParams = httpParams.set('offset', params.offset.toString());
+    }
+    
+    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories`, { params: httpParams });
   }
 
   // ดึงรายละเอียดหอพักตาม ID

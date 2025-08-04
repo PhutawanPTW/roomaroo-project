@@ -24,6 +24,14 @@ export interface UserProfile {
     // เพิ่ม property ที่อาจมาจาก backend ด้วย snake_case ถ้า backend ยังไม่ถูกแก้
     display_name?: string | null;
     member_type?: 'member' | 'owner';  // แก้ไขให้ไม่มี null ป้องกัน TypeScript error
+    // Add new owner fields
+    secondaryPhone?: string | null;
+    lineId?: string | null;
+    managerName?: string | null;
+    // Add snake_case variants
+    secondary_phone?: string | null;
+    line_id?: string | null;
+    manager_name?: string | null;
 }
 
 // เพิ่ม interface สำหรับ dormitory
@@ -66,6 +74,9 @@ export class AuthService {
     private isRefreshingToken = false;
     private tokenRefreshPromise: Promise<string> | null = null;
 
+    // เพิ่ม flag เพื่อติดตามสถานะผู้ใช้ชั่วคราวจาก Google
+    private isTemporaryGoogleUser = false;
+
     constructor(
         private http: HttpClient,
         private auth: Auth,
@@ -83,6 +94,11 @@ export class AuthService {
 
             if (this.skipAuthStateChange) {
                 this.skipAuthStateChange = false;
+                return;
+            }
+
+            // ป้องกันการจัดการ temporary Google user
+            if (this.isTemporaryGoogleUser) {
                 return;
             }
 
@@ -153,7 +169,9 @@ export class AuthService {
     async signUpWithFormData(formData: FormData): Promise<UserProfile> {
         // *** เซ็ต flag ป้องกัน race condition ***
         this.isRegistrationInProgress = true;
-
+        this.isGoogleRegistrationFlow = false;
+        this.isTemporaryGoogleUser = false; // reset flag เมื่อบันทึกข้อมูลจริง
+    
         try {
             const email = formData.get('email') as string;
             const password = formData.get('password') as string;
@@ -164,23 +182,30 @@ export class AuthService {
             // แก้ไข: ใช้ dormitoryId แทน dormitory
             const dormitoryId = formData.get('dormitoryId') as string;
             const profileImage = formData.get('profileImage') as File;
-
-            // ปรับปรุงการตรวจสอบข้อมูล: owner ไม่จำเป็นต้องมี phoneNumber
+    
+            // *** เพิ่มการอ่านข้อมูล owner ***
+            const managerName = formData.get('managerName') as string;
+            const secondaryPhone = formData.get('secondaryPhone') as string;
+            const lineId = formData.get('lineId') as string;
+    
+            // ปรับปรุงการตรวจสอบข้อมูล: owner ต้องมี managerName
             const requiredFields = userType === 'owner' 
-                ? [email, password, userType, fullName]
+                ? [email, password, userType, fullName, managerName] // เพิ่ม managerName เป็น required
                 : [email, password, userType, fullName, phoneNumber];
                 
             if (requiredFields.some(field => !field)) {
-                throw new Error('Missing required registration data');
+                throw new Error(userType === 'owner' 
+                    ? 'Missing required registration data: email, password, fullName, and managerName are required for owners'
+                    : 'Missing required registration data: email, password, fullName, and phoneNumber are required for members');
             }
-
+    
             const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
             const firebaseUser = userCredential.user;
-
+    
             await updateProfile(firebaseUser, { displayName: fullName });
-
+    
             const idToken = await firebaseUser.getIdToken();
-
+    
             const submitFormData = new FormData();
             submitFormData.append('email', firebaseUser.email || '');
             submitFormData.append('fullName', fullName);
@@ -189,26 +214,39 @@ export class AuthService {
             
             // เพิ่มเบอร์โทรเฉพาะเมื่อมีค่า
             if (phoneNumber) {
-            submitFormData.append('phoneNumber', phoneNumber);
+                submitFormData.append('phoneNumber', phoneNumber);
             }
-
+    
+            // *** เพิ่มข้อมูล owner ***
+            if (userType === 'owner') {
+                submitFormData.append('managerName', managerName);
+                if (secondaryPhone) {
+                    submitFormData.append('secondaryPhone', secondaryPhone);
+                }
+                if (lineId) {
+                    submitFormData.append('lineId', lineId);
+                }
+            }
+    
             // แก้ไข: ใช้ dormitoryId แทน dormitory
             if (userType === 'member' && dormitoryId) {
                 submitFormData.append('dormitoryId', dormitoryId);
             }
-
+    
             if (profileImage) {
                 submitFormData.append('profileImage', profileImage);
             }
-
+    
             const headers = new HttpHeaders().set('Authorization', `Bearer ${idToken}`);
-
+    
             const rawResponse = await this.http.post<any>(`${this.backendUrl}/auth/register`, submitFormData, { headers }).toPromise();
 
+            console.log('[AuthService] Backend registration response:', rawResponse);
+    
             if (!rawResponse || !rawResponse.user) {
                 throw new Error('Backend registration response is incomplete or invalid.');
             }
-
+    
             const userProfile: UserProfile = {
                 uid: rawResponse.user.uid,
                 id: rawResponse.user.id,
@@ -225,24 +263,36 @@ export class AuthService {
                 residenceDormId: rawResponse.user.residenceDormId || rawResponse.user.residence_dorm_id || null,
                 provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'password',
                 member_type: rawResponse.user.member_type || null,
+                // *** เพิ่ม fields ใหม่สำหรับ owner ***
+                lineId: rawResponse.user.lineId || rawResponse.user.line_id || null,
+                secondaryPhone: rawResponse.user.secondaryPhone || rawResponse.user.secondary_phone || null,
+                managerName: rawResponse.user.managerName || rawResponse.user.manager_name || null,
             };
 
+            console.log('[AuthService] Created user profile:', {
+                memberType: userProfile.memberType,
+                needsProfileSetup: userProfile.needsProfileSetup,
+                managerName: userProfile.managerName,
+                provider: userProfile.provider
+            });
+    
             // อัปเดต currentUser$
             this.currentUser$.next(userProfile);
-
+    
             // รอสักครู่เพื่อให้ currentUser$ ได้รับการอัปเดต
             await new Promise(resolve => setTimeout(resolve, 100));
-
+    
             // Add safeguard: if backend returned success but memberType ≠ requested type → block login
             if (!userProfile.needsProfileSetup && userProfile.memberType !== userType) {
                 await this.signOut(null);
-
+    
                 const thaiRole = userProfile.memberType === 'owner' ? 'เจ้าของหอพัก' : 'สมาชิก';
                 throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
             }
-
+    
             return userProfile;
         } catch (error: any) {
+            this.isTemporaryGoogleUser = false; // reset flag เมื่อเกิด error
             throw error;
         } finally {
             // *** รีเซ็ต flag เมื่อเสร็จสิ้น ***
@@ -251,9 +301,20 @@ export class AuthService {
     }
 
     // แก้ไข method completeUserProfile ให้รองรับกรณี phoneNumber เป็น undefined สำหรับ owner
-    async completeUserProfile(phoneNumber: string | undefined, userType: 'member' | 'owner', dormitoryId?: number): Promise<UserProfile> {
+    async completeUserProfile(
+        phoneNumber: string | undefined, 
+        userType: 'member' | 'owner', 
+        dormitoryId?: number,
+        ownerData?: {
+            managerName: string;
+            secondaryPhone?: string;
+            lineId?: string;
+        }
+    ): Promise<UserProfile> {
         // *** เซ็ต flag ป้องกัน race condition ***
         this.isRegistrationInProgress = true;
+        this.isGoogleRegistrationFlow = false;
+        this.isTemporaryGoogleUser = false;
 
         const currentUser = this.auth.currentUser;
         if (!currentUser) {
@@ -278,6 +339,17 @@ export class AuthService {
                 payload.dormitoryId = dormitoryId;
             }
 
+            // Add owner data if present
+            if (userType === 'owner' && ownerData) {
+                payload.managerName = ownerData.managerName;
+                if (ownerData.secondaryPhone) {
+                    payload.secondaryPhone = ownerData.secondaryPhone;
+                }
+                if (ownerData.lineId) {
+                    payload.lineId = ownerData.lineId;
+                }
+            }
+
             const rawResponse = await this.http.put<any>(`${this.backendUrl}/auth/me`, payload, { headers }).toPromise();
 
             const userProfile: UserProfile = {
@@ -291,8 +363,16 @@ export class AuthService {
                 needsProfileSetup: false,
                 phoneNumber: rawResponse.phone_number || null,
                 residenceDormId: rawResponse.residence_dorm_id || null,
-                provider: 'google', // *** แก้ไข: เปลี่ยนจาก 'password' เป็น 'google' ***
+                provider: 'google',
                 member_type: rawResponse.member_type || null,
+                // Add owner fields
+                secondaryPhone: rawResponse.secondary_phone || rawResponse.secondaryPhone || null,
+                lineId: rawResponse.line_id || rawResponse.lineId || null,
+                managerName: rawResponse.manager_name || rawResponse.managerName || null,
+                // Add snake_case variants
+                secondary_phone: rawResponse.secondary_phone || null,
+                line_id: rawResponse.line_id || null,
+                manager_name: rawResponse.manager_name || null
             };
 
             this.currentUser$.next(userProfile);
@@ -452,18 +532,27 @@ export class AuthService {
         }
     }
 
-    async signOut(redirectTo: string | null = null): Promise<void> {
+    async signOut(redirectTo: string | Router | null = null): Promise<void> {
+        try {
+            // Reset all flags before signing out
         this.isGoogleRegistrationFlow = false;
-        this.skipAuthStateChange = false;
+            this.isRegistrationInProgress = false;
+            this.isTemporaryGoogleUser = false;
+            this.skipAuthStateChange = true;
 
-        await signOut(this.auth);
-
-        // Clear cached user state
+            await this.auth.signOut();
         this.currentUser$.next(null);
 
         if (redirectTo) {
-            // Use Angular router navigation rather than forcing a full reload
-            this.router.navigate([redirectTo]);
+                if (redirectTo instanceof Router) {
+                    await redirectTo.navigate(['/login']);
+                } else {
+                    await this.router.navigate([redirectTo]);
+                }
+            }
+        } catch (error) {
+            console.error('Error signing out:', error);
+            throw error;
         }
     }
 
@@ -559,6 +648,14 @@ export class AuthService {
                 businessRegistration: rawResponse.business_registration || rawResponse.businessRegistration || null,
                 residenceDormId: rawResponse.residence_dorm_id || rawResponse.residenceDormId || null,
                 provider: firebaseUser.providerData[0]?.providerId === 'google.com' ? 'google' : 'password',
+                // Add owner fields
+                secondaryPhone: rawResponse.secondary_phone || rawResponse.secondaryPhone || null,
+                lineId: rawResponse.line_id || rawResponse.lineId || null,
+                managerName: rawResponse.manager_name || rawResponse.managerName || null,
+                // Add snake_case variants
+                secondary_phone: rawResponse.secondary_phone || null,
+                line_id: rawResponse.line_id || null,
+                manager_name: rawResponse.manager_name || null
             };
 
             return userProfile;
@@ -711,5 +808,43 @@ export class AuthService {
             this.currentUser$.next(null);
             return null;
         }
+    }
+
+    async getGoogleUserInfo(userType: 'member' | 'owner'): Promise<{
+        email: string | null;
+        displayName: string | null;
+        photoURL: string | null;
+    } | null> {
+        try {
+            // เซ็ต flag เพื่อป้องกันการจัดการ auth state
+            this.isGoogleRegistrationFlow = true;
+            this.isTemporaryGoogleUser = true;
+            this.skipAuthStateChange = true;
+
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(this.auth, provider);
+            const user = result.user;
+
+            // ถ้าได้ข้อมูลจาก Google สำเร็จ ให้ sign out ทันทีเพื่อไม่ให้เข้าสู่ระบบ
+            await this.signOut(null);
+
+            return {
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL
+            };
+        } catch (error: any) {
+            console.error('Error getting Google user info:', error);
+            // รีเซ็ต flags เมื่อเกิด error
+            this.isGoogleRegistrationFlow = false;
+            this.isTemporaryGoogleUser = false;
+            this.skipAuthStateChange = false;
+            throw error;
+        }
+    }
+
+    // เพิ่ม method สำหรับตรวจสอบว่าเป็น temporary user หรือไม่
+    isTemporaryUser(): boolean {
+        return this.isTemporaryGoogleUser;
     }
 }

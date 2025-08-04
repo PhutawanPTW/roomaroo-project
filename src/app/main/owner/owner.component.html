@@ -2,7 +2,7 @@
 <div class="w-full max-w-6xl mx-auto px-4 py-6 font-thai font-english pt-[60px]">
   <h2 class="text-lg font-thai font-medium mb-2 flex items-end gap-2 font-normal">
     รายการหอพักของฉัน
-    <span class="text-gray-400 text-sm font-normal mb-0.5">({{ myDorms.length }})</span>
+    <span class="text-gray-400 text-sm font-normal mb-1">({{ myDorms.length }})</span>
   </h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
     <ng-container *ngFor="let dorm of myDorms; let i = index">
@@ -13,7 +13,7 @@
           [innerHTML]="getPriceHtml(formatPriceString(dorm))"></div>
         <div class="font-semibold text-base mb-1 font-thai">{{ dorm.name || dorm.dorm_name }}</div>
         <div class="flex items-center mb-2">
-          <button *ngIf="dorm.verified || dorm.is_verified"
+          <button *ngIf="dorm.approval_status === 'approved'"
             class="flex items-center gap-2 bg-[#4CAF50] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
             <span class="">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -22,9 +22,20 @@
                   stroke-linejoin="round" />
               </svg>
             </span>
-            <span class="font-thai text-sm font-normal">ตรวจสอบแล้ว</span>
+            <span class="font-thai text-sm font-normal">อนุมัติแล้ว</span>
           </button>
-          <button *ngIf="!(dorm.verified || dorm.is_verified)"
+          <button *ngIf="dorm.approval_status === 'pending'"
+            class="flex items-center gap-2 bg-[#FF9800] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
+            <span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="11" fill="#fff" />
+                <path d="M12 6V12L16 14" stroke="#FF9800" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </span>
+            <span class="font-thai text-sm font-normal">รอการอนุมัติ</span>
+          </button>
+          <button *ngIf="dorm.approval_status === 'rejected'"
             class="flex items-center gap-2 bg-[#F44336] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
             <span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -33,7 +44,7 @@
                   stroke-linejoin="round" />
               </svg>
             </span>
-            <span class="font-thai text-sm font-normal">ยังไม่ตรวจสอบ</span>
+            <span class="font-thai text-sm font-normal">ไม่อนุมัติ</span>
           </button>
         </div>
         <div class="text-gray-400 text-sm font-thai mb-2">อัพเดทล่าสุด: {{ dorm.updated || dorm.date || dorm.updated_at }}</div>

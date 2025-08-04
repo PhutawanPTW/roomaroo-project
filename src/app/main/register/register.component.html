@@ -41,22 +41,27 @@
         <div
           class="mx-auto w-20 h-20 bg-gradient-to-br from-orange-400 to-purple-600 rounded-full flex items-center justify-center mb-4 relative avatar-container">
           <img *ngIf="photoURL; else defaultAvatar" [src]="photoURL" alt="Profile Avatar"
-            class="w-full h-full rounded-full object-cover cursor-pointer" (click)="onEditAvatar()">
+            class="w-full h-full rounded-full object-cover" [class.cursor-not-allowed]="isFromGoogle">
           <ng-template #defaultAvatar>
-            <img src="assets/icon/Rectangle 6.png" alt="Profile Avatar"
-              class="w-full h-full rounded-full object-cover cursor-pointer" (click)="onEditAvatar()">
+            <img src="assets/icon/Rectangle 6.png" alt="Profile Avatar" class="w-full h-full rounded-full object-cover"
+              [class.cursor-not-allowed]="isFromGoogle">
           </ng-template>
-          <!-- Edit Icon - กลับมาเป็นปุ่มในวงกลมเล็ก -->
-          <div *ngIf="!isFromGoogle"
-            class="absolute -bottom-1 -right-1 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer"
+          <!-- Edit Icon - แสดงเฉพาะเมื่อไม่ใช่ Google OAuth และไม่มีรูปจาก Google -->
+          <div *ngIf="!isFromGoogle && !photoURL"
+            class="absolute -bottom-1 -right-1 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
             (click)="onEditAvatar()">
             <img src="assets/icon/editing.png" alt="Edit" class="w-4 h-4 filter invert object-contain" />
           </div>
+          <!-- Google Badge - แสดงเมื่อเป็นรูปจาก Google -->
+          <div *ngIf="isFromGoogle && photoURL"
+            class="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
+            <img src="assets/icon/google.png" alt="Google" class="w-3 h-3">
+          </div>
         </div>
 
-        <!-- Image Upload Popup -->
-        <div *ngIf="showImagePopup" class="fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-          (click)="closeImagePopup()">
+        <!-- Image Upload Popup (เฉพาะการสมัครธรรมดา) -->
+        <div *ngIf="showImagePopup && !isFromGoogle && !photoURL"
+          class="fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm" (click)="closeImagePopup()">
           <div
             class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300 border-2 border-gray-200"
             (click)="$event.stopPropagation()">
@@ -160,7 +165,6 @@
           </div>
         </div>
 
-
         <!-- Title -->
         <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ getPageTitle() }}</h1>
         <p class="text-gray-500 text-base font-normal font-thai mb-2">
@@ -171,45 +175,121 @@
       <!-- Registration Form -->
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4">
 
+        <!-- ========== ข้อมูลพื้นฐาน ========== -->
+
         <!-- Full Name -->
         <div>
-          <input type="text" formControlName="fullName" placeholder="ชื่อ-นามสกุล"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-            [class.border-red-500]="hasError('fullName', 'required')">
+          <div class="relative">
+            <input type="text" formControlName="fullName"
+              [placeholder]="isFromGoogle ? 'ชื่อ-นามสกุล (จาก Google)' : 'ชื่อ-นามสกุล'"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200"
+              [class.bg-gray-100]="isFromGoogle" [class.bg-gray-50]="!isFromGoogle"
+              [class.cursor-not-allowed]="isFromGoogle" [class.border-red-500]="hasError('fullName', 'required')"
+              [attr.readonly]="isFromGoogle">
+            
+            <!-- Google Badge -->
+            <div *ngIf="isFromGoogle" class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+              <span class="text-sm text-gray-500 mr-2">จาก Google</span>
+              <img src="assets/icon/google.png" alt="Google" class="w-4 h-4">
+            </div>
+
+            <!-- Required indicator for regular registration -->
+            <div *ngIf="!isFromGoogle" class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+              <span class="text-red-500 text-sm">*</span>
+            </div>
+          </div>
           <p *ngIf="hasError('fullName', 'required') && (registerForm.get('fullName')?.touched || registerForm.get('fullName')?.dirty)"
             class="mt-1 text-sm text-red-600">{{ getErrorMessage('fullName') }}</p>
         </div>
 
         <!-- Email -->
         <div>
-          <input type="email" formControlName="email" placeholder="อีเมล"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
-            [class.border-red-500]="hasError('email', 'required') || hasError('email', 'email')">
+          <div class="relative">
+            <input type="email" formControlName="email" [placeholder]="isFromGoogle ? 'อีเมล (จาก Google)' : 'อีเมล'"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 font-english"
+              [class.bg-gray-100]="isFromGoogle" [class.bg-gray-50]="!isFromGoogle"
+              [class.cursor-not-allowed]="isFromGoogle"
+              [class.border-red-500]="hasError('email', 'required') || hasError('email', 'email')"
+              [attr.readonly]="isFromGoogle">
+            
+            <!-- Google Badge -->
+            <div *ngIf="isFromGoogle" class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+              <span class="text-sm text-gray-500 mr-2">จาก Google</span>
+              <img src="assets/icon/google.png" alt="Google" class="w-4 h-4">
+            </div>
+
+            <!-- Required indicator for regular registration -->
+            <div *ngIf="!isFromGoogle" class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+              <span class="text-red-500 text-sm">*</span>
+            </div>
+          </div>
           <p *ngIf="getErrorMessage('email') && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)"
             class="mt-1 text-sm text-red-600">{{ getErrorMessage('email') }}</p>
         </div>
 
+        <!-- Password Fields - แสดงเฉพาะสำหรับการสมัครแบบธรรมดา และซ่อนเมื่อใช้ Google -->
+        <ng-container *ngIf="!isFromGoogle">
+          <div class="space-y-4">
+          <!-- Password -->
+          <div>
+              <div class="relative">
+            <input type="password" formControlName="password" placeholder="รหัสผ่าน"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+              [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength')">
+                <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+                  <span class="text-red-500 text-sm">*</span>
+                </div>
+              </div>
+            <p *ngIf="getErrorMessage('password') && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)"
+              class="mt-1 text-sm text-red-600">{{ getErrorMessage('password') }}</p>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+              <div class="relative">
+            <input type="password" formControlName="confirmPassword" placeholder="ยืนยันรหัสผ่าน"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+              [class.border-red-500]="hasError('confirmPassword', 'required') || registerForm.hasError('passwordMismatch')">
+                <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+                  <span class="text-red-500 text-sm">*</span>
+                </div>
+              </div>
+            <p *ngIf="getErrorMessage('confirmPassword') && (registerForm.get('confirmPassword')?.touched || registerForm.get('confirmPassword')?.dirty)"
+              class="mt-1 text-sm text-red-600">{{ getErrorMessage('confirmPassword') }}</p>
+          </div>
+        </div>
+        </ng-container>
+
+        <!-- ========== ข้อมูลติดต่อ ========== -->
+
         <!-- Phone Number -->
         <div>
-          <input type="tel" formControlName="phoneNumber" placeholder="เบอร์โทรศัพท์"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
-            [class.border-red-500]="hasError('phoneNumber', 'required')">
+          <div class="relative">
+            <input type="tel" formControlName="phoneNumber" placeholder="เบอร์โทรศัพท์"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
+              [class.border-red-500]="hasError('phoneNumber', 'required') || hasError('phoneNumber', 'pattern')">
+            
+            <!-- Required indicator -->
+            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+              <span class="text-red-500 text-sm">*</span>
+            </div>
+          </div>
           <p *ngIf="getErrorMessage('phoneNumber') && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)"
             class="mt-1 text-sm text-red-600">{{ getErrorMessage('phoneNumber') }}</p>
         </div>
 
+        <!-- ========== ข้อมูลเฉพาะสมาชิก ========== -->
+
         <!-- Searchable Dormitory Dropdown (เฉพาะสมาชิก) -->
         <div *ngIf="userType === 'member'" class="relative dorm-dropdown-container">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            เลือกหอพัก <span class="text-red-500">*</span>
+          </label>
           <!-- Search Input -->
           <div class="relative">
-            <input 
-              type="text" 
-              [formControl]="dormSearchControl"
-              placeholder="ค้นหาหอพัก หรือเลือกจากรายการ" 
+            <input type="text" [formControl]="dormSearchControl" placeholder="ค้นหาหอพัก หรือเลือกจากรายการ"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-              (focus)="showDormList = true"
-              (input)="filterDorms()"
-              [value]="selectedDormName || ''"
+              (focus)="showDormList = true" (input)="filterDorms()" [value]="selectedDormName || ''"
               [class.border-red-500]="hasError('dormitory', 'required')">
             <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
               <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,62 +297,99 @@
               </svg>
             </div>
           </div>
-          
+
           <!-- Dropdown List -->
-          <div *ngIf="showDormList" 
+          <div *ngIf="showDormList"
             class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
             (click)="$event.stopPropagation()">
-            
+
+            <!-- Loading State -->
+            <div *ngIf="isLoadingDorms" class="px-4 py-3 text-gray-500 text-sm flex items-center">
+              <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                </path>
+              </svg>
+              กำลังโหลดข้อมูลหอพัก...
+            </div>
+
             <!-- No Results -->
-            <div *ngIf="filteredDorms.length === 0" class="px-4 py-3 text-gray-500 text-sm">
+            <div *ngIf="!isLoadingDorms && filteredDorms.length === 0" class="px-4 py-3 text-gray-500 text-sm">
               ไม่พบหอพักที่ค้นหา
             </div>
-            
+
             <!-- Grouped Results -->
             <ng-container *ngFor="let zone of filteredDorms">
               <!-- Zone Header -->
               <div class="px-4 py-2 bg-gray-100 font-medium text-gray-700 sticky top-0">
                 {{ zone.name }}
               </div>
-              
+
               <!-- Dormitories in Zone -->
-              <div *ngFor="let dorm of zone.dormitories" 
-                class="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
+              <div *ngFor="let dorm of zone.dormitories"
+                class="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors border-l-2 border-transparent hover:border-blue-400"
                 (click)="selectDorm(dorm.id, dorm.name)">
                 {{ dorm.name }}
               </div>
             </ng-container>
           </div>
-          
+
           <!-- Hidden Form Control -->
           <input type="hidden" formControlName="dormitory">
-          
+
           <!-- Error Message -->
           <p *ngIf="hasError('dormitory', 'required') && (registerForm.get('dormitory')?.touched || registerForm.get('dormitory')?.dirty)"
-            class="mt-1 text-sm text-red-600">กรุณาเลือกหอพัก</p>
+            class="mt-1 text-sm text-red-600">{{ getErrorMessage('dormitory') }}</p>
         </div>
 
-        <!-- Password -->
-        <div *ngIf="!registerForm.get('password')?.disabled">
-          <input type="password" formControlName="password" placeholder="รหัสผ่าน"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-            [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength')">
-          <p *ngIf="getErrorMessage('password') && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)"
-            class="mt-1 text-sm text-red-600">{{ getErrorMessage('password') }}</p>
+        <!-- ========== ข้อมูลเฉพาะเจ้าของหอพัก ========== -->
+
+        <div *ngIf="userType === 'owner'" class="space-y-4">
+          <!-- Section Header -->
+          <div class="border-t border-gray-200 pt-4">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">ข้อมูลเจ้าของหอพัก</h3>
+            <p class="text-sm text-gray-500 mb-4">กรุณากรอกข้อมูลสำหรับการจัดการหอพัก</p>
+          </div>
+
+          <!-- Manager Name (Required) -->
+          <div>
+            <div class="relative">
+              <input type="text" formControlName="managerName" placeholder="ชื่อผู้จัดการ/เจ้าของหอพัก"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+                [class.border-red-500]="hasError('managerName', 'required')">
+              <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+                <span class="text-red-500 text-sm">*</span>
+              </div>
+            </div>
+            <p *ngIf="hasError('managerName', 'required') && (registerForm.get('managerName')?.touched || registerForm.get('managerName')?.dirty)"
+              class="mt-1 text-sm text-red-600">{{ getErrorMessage('managerName') }}</p>
+          </div>
+
+          <!-- Secondary Phone (Optional) -->
+          <div>
+            <input type="tel" formControlName="secondaryPhone" placeholder="เบอร์โทรศัพท์สำรอง"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
+              [class.border-red-500]="hasError('secondaryPhone', 'pattern')">
+            <p *ngIf="hasError('secondaryPhone', 'pattern')" class="mt-1 text-sm text-red-600">
+              {{ getErrorMessage('secondaryPhone') }}
+            </p>
+            <p class="mt-1 text-xs text-gray-500">เบอร์โทรศัพท์สำรอง (ไม่บังคับ)</p>
+          </div>
+
+          <!-- Line ID (Optional) -->
+          <div>
+            <input type="text" formControlName="lineId" placeholder="Line ID"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english">
+            <p class="mt-1 text-xs text-gray-500">Line ID สำหรับให้ลูกค้าติดต่อสอบถามหอพัก (ไม่บังคับ)</p>
+          </div>
         </div>
 
-        <!-- Confirm Password -->
-        <div *ngIf="!registerForm.get('confirmPassword')?.disabled">
-          <input type="password" formControlName="confirmPassword" placeholder="ยืนยันรหัสผ่าน"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-            [class.border-red-500]="hasError('confirmPassword', 'required') || registerForm.hasError('passwordMismatch')">
-          <p *ngIf="getErrorMessage('confirmPassword') && (registerForm.get('confirmPassword')?.touched || registerForm.get('confirmPassword')?.dirty)"
-            class="mt-1 text-sm text-red-600">{{ getErrorMessage('confirmPassword') }}</p>
-        </div>
+        <!-- ========== ปุ่มสมัครสมาชิก ========== -->
 
         <!-- Submit Button -->
         <button type="submit" [disabled]="isRegisterLoading || registerForm.invalid"
-          class="mb-1 mt-6 w-full bg-[#68ACFD] hover:bg-[#68ACFD] disabled:bg-gray-300 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+          class="mb-1 mt-6 w-full bg-[#68ACFD] hover:bg-[#5b9bfc] disabled:bg-gray-300 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center"
           [class.cursor-not-allowed]="isRegisterLoading || registerForm.invalid">
           <svg *ngIf="isRegisterLoading" class="animate-spin h-5 w-5 text-white mr-2" xmlns="http://www.w3.org/2000/svg"
             fill="none" viewBox="0 0 24 24">
@@ -281,54 +398,52 @@
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
             </path>
           </svg>
-          <span>สมัครสมาชิก</span>
+          <span>{{ isFromGoogle ? 'สมัครสมาชิก' : 'สมัครสมาชิก' }}</span>
         </button>
-        <div *ngIf="errorMessage" class="text-red-600 text-sm mt-1 text-center">{{ errorMessage }}</div>
 
-        <!-- Divider -->
-        <div *ngIf="!isFromGoogle" class="relative mt-1 mb-2">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-200"></div>
-          </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500 font-thai">หรือ</span>
-          </div>
-        </div>
-        <div *ngIf="isFromGoogle" class="relative mt-1 mb-2">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-200"></div>
-          </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500 font-thai">กรุณากรอกข้อมูลเพิ่มเติมเพื่อสมัครสมาชิก</span>
-          </div>
+        <!-- Error Message -->
+        <div *ngIf="errorMessage"
+          class="text-red-600 text-sm mt-1 text-center bg-red-50 p-3 rounded border border-red-200">
+          {{ errorMessage }}
         </div>
 
-        <!-- Google Button -->
-        <button *ngIf="!isFromGoogle" type="button" (click)="connectWithGoogle()" [disabled]="isGoogleLoading"
-          class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-english">
-          <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
-            fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-            </path>
-          </svg>
-          <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
-          <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'Connect with Google' }}</span>
-        </button>
-        <div *ngIf="errorMessageGoogle" class="text-red-600 text-sm mt-1 text-center font-thai">
-          {{ errorMessageGoogle }}
-        </div>
-        <div *ngIf="isFromGoogle"
-          class="w-full bg-gray-200 text-gray-600 font-normal py-3 px-4 rounded-lg flex items-center justify-center space-x-3 font-english mb-2">
-          <img src="assets/icon/google.png" alt="Google" class="w-5 h-5">
-          <span>คุณได้เชื่อมต่อกับ Google แล้ว</span>
+        <!-- ========== การสมัครผ่าน Google (เฉพาะการสมัครธรรมดา) ========== -->
+
+        <!-- Divider and Google Button - แสดงเฉพาะสำหรับการสมัครแบบธรรมดา -->
+        <div *ngIf="!isFromGoogle">
+          <!-- Divider -->
+          <div class="relative mt-6 mb-4">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-200"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-3 bg-white text-gray-500 font-thai">หรือ</span>
+            </div>
+          </div>
+
+          <!-- Google Button -->
+          <button type="button" (click)="connectWithGoogle()" [disabled]="isGoogleLoading"
+            class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-thai">
+            <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+              fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+            <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
+            <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'สมัครผ่าน Google' }}</span>
+          </button>
+          <div *ngIf="errorMessageGoogle"
+            class="text-red-600 text-sm mt-2 text-center font-thai bg-red-50 p-2 rounded border border-red-200">
+            {{ errorMessageGoogle }}
+          </div>
         </div>
 
       </form>
 
       <!-- Footer -->
-      <div class="text-center">
+      <div class="text-center mt-6">
         <span class="text-gray-600 text-sm font-thai">เป็นสมาชิกอยู่แล้วใช่ไหม? </span>
         <button (click)="onLogin()"
           class="text-blue-500 hover:text-blue-600 font-semibold hover:underline transition duration-200 text-sm font-thai">

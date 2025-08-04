@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule, F
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { AuthService, UserProfile, DormitoryOption, ZoneOption } from '../../services/auth.service';
+import { Location } from '@angular/common';
+import { Auth } from '@angular/fire/auth';
 
 // Add interface for grouped dormitories
 interface ZoneDormitories {
@@ -41,16 +43,16 @@ export class RegisterComponent implements OnInit, OnDestroy {
   zoneList: { id: string, name: string }[] = [{ id: '', name: 'ทุกโซน' }];
   selectedZoneId: string = '';
   dormList: { id: string, name: string }[] = [{ id: '', name: 'กรุณาเลือกหอพัก' }];
-  
+
   // Add groupedDorms property
   groupedDorms: ZoneDormitories[] = [];
-  
+
   // Add properties for searchable dropdown
   dormSearchControl = new FormControl('');
   showDormList = false;
   filteredDorms: ZoneDormitories[] = [];
   selectedDormName: string = '';
-  
+
   // Add sliderImages property
   sliderImages = [
     { src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Modern Dormitory Building' },
@@ -61,7 +63,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   // เพิ่ม flag เพื่อป้องกันการแสดงผลก่อนที่จะได้ userType ที่ถูกต้อง
   isInitializing = true;
-  
+
   // Add isNavigating property
   isNavigating = false;
 
@@ -79,17 +81,28 @@ export class RegisterComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private authService: AuthService
+    private authService: AuthService,
+    private location: Location,  // เพิ่ม Location service
+    private auth: Auth  // เพิ่ม Auth service จาก Firebase
   ) {
     this.registerForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]],
-      fullName: ['', Validators.required],
-      phoneNumber: ['', [Validators.pattern('^[0-9]{10}$')]],
-      businessName: [''],
-      businessAddress: [''],
-      businessRegistration: [''],
+      password: [''],
+      confirmPassword: [''],
+      fullName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      phoneNumber: ['', [
+        Validators.required,
+        Validators.pattern('^[0-9]{10}$'),
+        Validators.minLength(10),
+        Validators.maxLength(10)
+      ]],
+      managerName: ['', [Validators.minLength(2), Validators.maxLength(100)]],
+      secondaryPhone: ['', [
+        Validators.pattern('^[0-9]{10}$'),
+        Validators.minLength(10),
+        Validators.maxLength(10)
+      ]],
+      lineId: [''],
       dormitory: [''],
     }, {
       validators: this.passwordMatchValidator
@@ -111,6 +124,13 @@ export class RegisterComponent implements OnInit, OnDestroy {
       const fromGoogle = this.route.snapshot.queryParamMap.get('fromGoogle');
       if (fromGoogle === 'true') {
         this.isFromGoogle = true;
+        // Remove password validators for Google sign-in
+        this.registerForm.get('password')?.clearValidators();
+        this.registerForm.get('confirmPassword')?.clearValidators();
+      } else {
+        // Add password validators for normal sign-up
+        this.registerForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
+        this.registerForm.get('confirmPassword')?.setValidators([Validators.required]);
       }
 
       // Update validators and end initializing
@@ -132,26 +152,74 @@ export class RegisterComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.startSlideshow();
     document.addEventListener('keydown', this.handleKeydown.bind(this));
-  
+
     // ดึงข้อมูลหอพักจาก API
     this.loadDormitories();
-    
+
     // Initialize filteredDorms
     this.filteredDorms = [...this.groupedDorms];
-  
-    // ตรวจสอบ navigation state
-    const nav = this.router.getCurrentNavigation();
-    const state = nav?.extras.state as {
-      fullName?: string;
-      email?: string;
-      photoURL?: string;
-      userType?: 'member' | 'owner' | 'general';
-      isFromGoogle?: boolean;
-    };
-  
-    if (state && state.isFromGoogle) {
-      this.populateGoogleData(state);
+
+    // ตรวจสอบและป้องกันการเข้าถึงหน้า registration โดยตรง
+    this.validateRegistrationAccess();
+
+    // เพิ่ม history state เพื่อจัดการการย้อนกลับ
+    this.setupHistoryState();
+
+    // เพิ่มการจัดการ history state ที่แข็งแกร่งขึ้น
+    setTimeout(() => {
+      // เพิ่ม entry ของหน้าแรกเข้าไปใน history
+      window.history.pushState({ page: 'home' }, '', '/main');
+      // แทนที่ entry ปัจจุบันด้วยหน้า registration
+      window.history.replaceState({ page: 'register' }, '', this.router.url);
+    }, 100);
+
+    // เพิ่มการจัดการ history state อีกครั้งหลังจาก component initialize เสร็จ
+    setTimeout(() => {
+      // ตรวจสอบว่า URL ยังคงเป็น registration page หรือไม่
+      if (this.router.url.includes('/register')) {
+        // เพิ่ม entry ของหน้าแรกเข้าไปใน history อีกครั้ง
+        window.history.pushState({ page: 'home' }, '', '/main');
+        // แทนที่ entry ปัจจุบันด้วยหน้า registration
+        window.history.replaceState({ page: 'register' }, '', this.router.url);
+      }
+    }, 500);
+
+    // ตรวจสอบ query params
+    this.route.queryParamMap.subscribe(params => {
+      const fromGoogle = params.get('fromGoogle') === 'true';
+      const additionalInfo = params.get('additionalInfo') === 'true';
+
+      console.log('[RegisterComponent] Query params:', { fromGoogle, additionalInfo });
+
+      // ถ้าเป็น additionalInfo แต่ไม่ได้มาจาก Google ให้ redirect กลับไปหน้าสมัครสมาชิก
+      if (additionalInfo && !fromGoogle) {
+        this.router.navigate(['/register', this.userType]);
+        return;
+      }
+
+      if (fromGoogle) {
+        console.log('[RegisterComponent] Setting up Google flow');
+        this.isFromGoogle = true;
+        // Remove password validators
+        this.registerForm.get('password')?.clearValidators();
+        this.registerForm.get('confirmPassword')?.clearValidators();
+        this.registerForm.get('password')?.disable();
+        this.registerForm.get('confirmPassword')?.disable();
+        this.registerForm.updateValueAndValidity();
+        
+        // อัปเดต URL เพื่อแสดงสถานะ Google flow
+        this.router.navigate([], {
+          queryParams: { fromGoogle: 'true' },
+          replaceUrl: true
+        });
     } else {
+        // ถ้าไม่ได้มาจาก Google ให้ reset state
+        console.log('[RegisterComponent] Setting up normal registration flow');
+        this.isFromGoogle = false;
+        this.updateFormValidation();
+      }
+    });
+
       // ตรวจสอบ history.state สำหรับกรณีที่ navigation state หายไป
       const historyState = history.state as {
         fullName?: string;
@@ -160,60 +228,78 @@ export class RegisterComponent implements OnInit, OnDestroy {
         userType?: 'member' | 'owner' | 'general';
         isFromGoogle?: boolean;
       };
-  
+
       if (historyState && historyState.isFromGoogle) {
         this.populateGoogleData(historyState);
-      }
     }
-  
+
     // *** แก้ไขการ subscribe currentUser$ เพื่อป้องกัน redirect ระหว่าง registration ***
     this.authService.currentUser$.subscribe(userProfile => {
       // *** ป้องกันการ redirect ระหว่าง submit ***
       if (this.isSubmitting) {
         return;
       }
-  
+
       // เติมข้อมูลอัตโนมัติให้ Google flow หลัง refresh
-      if (this.isFromGoogle && userProfile) {
+      if (userProfile?.provider === 'google' && this.isFromGoogle) {
         if (userProfile.displayName) {
-          this.registerForm.get('fullName')?.setValue(userProfile.displayName);
+          this.registerForm.patchValue({ fullName: userProfile.displayName });
+          this.registerForm.get('fullName')?.disable();
         }
         if (userProfile.email) {
-          this.registerForm.get('email')?.setValue(userProfile.email);
+          this.registerForm.patchValue({ email: userProfile.email });
+          this.registerForm.get('email')?.disable();
         }
         if (userProfile.photoURL) {
           this.photoURL = userProfile.photoURL;
         }
+        // Remove password validators
+        this.registerForm.get('password')?.clearValidators();
+        this.registerForm.get('confirmPassword')?.clearValidators();
+        this.registerForm.get('password')?.disable();
+        this.registerForm.get('confirmPassword')?.disable();
+        this.registerForm.updateValueAndValidity();
       }
-  
-      if (userProfile && !userProfile.needsProfileSetup) {
+
+      // ป้องกันการ redirect ถ้ายังอยู่ใน registration flow
+      if (userProfile && !userProfile.needsProfileSetup && !this.isFromGoogle) {
         const expectedDashboard = userProfile.memberType === 'owner' ? '/owner' : '/main';
         if (!this.router.url.startsWith(expectedDashboard) &&
           !this.router.url.startsWith('/login') &&
           !this.router.url.startsWith('/register')) {
           this.router.navigate([expectedDashboard]);
         }
-      } else if (userProfile && userProfile.needsProfileSetup && !this.isFromGoogle) {
-        // Auto-populate ข้อมูลจาก userProfile ถ้ามี (เฉพาะเมื่อไม่ใช่ Google OAuth)
-        if (userProfile.displayName) {
-          this.registerForm.get('fullName')?.setValue(userProfile.displayName);
-        }
-        if (userProfile.email) {
-          this.registerForm.get('email')?.setValue(userProfile.email);
-        }
-        if (userProfile.photoURL) {
-          this.photoURL = userProfile.photoURL;
-        }
-  
-        // *** เฉพาะกรณีนี้เท่านั้นที่ navigate ไป register ***
-        if (!this.router.url.startsWith('/register')) {
-          this.router.navigate(['/register', userProfile.memberType || 'member']);
-        }
       }
     });
 
     // โหลดโซนก่อน
     this.loadZones();
+  }
+
+  // เพิ่ม method สำหรับตรวจสอบการเข้าถึงหน้า registration
+  private validateRegistrationAccess(): void {
+    // ตรวจสอบว่าผู้ใช้เข้าถึงหน้า registration ผ่านทางที่ถูกต้องหรือไม่
+    const currentUrl = this.router.url;
+    const referrer = document.referrer;
+    
+    // ถ้าเข้าถึงโดยตรง (ไม่มี referrer) และไม่ได้มาจาก Google flow
+    if (!referrer && !currentUrl.includes('fromGoogle=true')) {
+      // Redirect ไปหน้าแรก
+      this.router.navigate(['/'], { replaceUrl: true });
+      return;
+    }
+    
+    // ตรวจสอบว่า URL มีรูปแบบที่ถูกต้อง
+    const validRegistrationPatterns = [
+      /^\/register\/owner(\?.*)?$/,
+      /^\/register\/member(\?.*)?$/
+    ];
+    
+    const isValidUrl = validRegistrationPatterns.some(pattern => pattern.test(currentUrl));
+    if (!isValidUrl) {
+      this.router.navigate(['/'], { replaceUrl: true });
+      return;
+    }
   }
 
   // เพิ่ม method สำหรับโหลดข้อมูลหอพักจาก API
@@ -231,10 +317,10 @@ export class RegisterComponent implements OnInit, OnDestroy {
           name: dorm.dorm_name
         }))
       ];
-      
+
       // Group dormitories by zone
       this.updateGroupedDorms(dormitories);
-      
+
       // Initialize filteredDorms with all loaded dormitories
       this.filteredDorms = [...this.groupedDorms];
     } catch (error) {
@@ -247,24 +333,24 @@ export class RegisterComponent implements OnInit, OnDestroy {
   private updateGroupedDorms(dormitories: DormitoryOption[]): void {
     // Group dormitories by zone_name
     const zoneMap = new Map<string, { id: string, dormitories: { id: string, name: string }[] }>();
-    
+
     // First, create a map of zones
     dormitories.forEach(dorm => {
       const zoneName = dorm.zone_name || 'อื่นๆ';
       if (!zoneMap.has(zoneName)) {
-        zoneMap.set(zoneName, { 
-          id: dorm.zone_id?.toString() || '', 
-          dormitories: [] 
+        zoneMap.set(zoneName, {
+          id: dorm.zone_id?.toString() || '',
+          dormitories: []
         });
       }
-      
+
       // Add this dorm to its zone group
       zoneMap.get(zoneName)?.dormitories.push({
         id: dorm.dorm_id.toString(),
         name: dorm.dorm_name
       });
     });
-    
+
     // Convert map to array
     this.groupedDorms = Array.from(zoneMap.entries()).map(([name, data]) => ({
       id: data.id,
@@ -280,15 +366,21 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
     // ใช้ setTimeout เพื่อให้ form initialize เสร็จก่อน
     setTimeout(() => {
+      // ตรวจสอบและเติมข้อมูลจาก Google
       if (state.fullName) {
-        this.registerForm.get('fullName')?.setValue(state.fullName);
+        this.registerForm.patchValue({ fullName: state.fullName });
       }
       if (state.email) {
-        this.registerForm.get('email')?.setValue(state.email);
+        this.registerForm.patchValue({ email: state.email });
       }
       if (state.photoURL) {
         this.photoURL = state.photoURL;
       }
+
+      // Disable fields ที่มาจาก Google
+      this.registerForm.get('fullName')?.disable();
+      this.registerForm.get('email')?.disable();
+
       this.updateFormValidation();
       this.isInitializing = false; // ปิด initializing flag เมื่อเสร็จ
     }, 100);
@@ -299,7 +391,16 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (this.isInitializing || this.isNavigating) {
       return 'กำลังโหลด...';
     }
-    return this.userType === 'owner' ? 'สมัครสมาชิกสำหรับเจ้าของหอพัก' : 'สมัครสมาชิกสำหรับสมาชิก';
+
+    if (this.isFromGoogle) {
+      return this.userType === 'owner' 
+        ? 'สมัครสมาชิกเจ้าของหอพัก' 
+        : 'สมัครสมาชิก';
+    }
+
+    return this.userType === 'owner' 
+      ? 'สมัครสมาชิกเจ้าของหอพัก' 
+      : 'สมัครสมาชิก';
   }
 
   // แก้ไข getPageDescription() method
@@ -307,6 +408,11 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (this.isInitializing || this.isNavigating) {
       return 'กำลังเตรียมข้อมูล...';
     }
+
+    if (this.isFromGoogle) {
+      return 'กรุณากรอกข้อมูลเพิ่มเติมเพื่อสมบูรณ์การสมัครสมาชิก';
+    }
+
     return this.userType === 'owner'
       ? 'สร้างบัญชีเพื่อเริ่มต้นจัดการหอพักของคุณ'
       : 'สร้างบัญชีเพื่อเริ่มต้นค้นหาหอพักที่คุณต้องการ';
@@ -317,9 +423,20 @@ export class RegisterComponent implements OnInit, OnDestroy {
       clearInterval(this.slideInterval);
     }
     document.removeEventListener('keydown', this.handleKeydown.bind(this));
+    
+    // ทำความสะอาด event listeners
+    window.removeEventListener('popstate', this.onPopState.bind(this));
+    window.removeEventListener('beforeunload', this.onBeforeUnload.bind(this));
+    
+    // ถ้าอยู่ใน Google flow ให้ sign out ก่อน destroy component
+    if (this.isFromGoogle) {
+      this.authService.signOut(null);
+    }
   }
 
+  // *** ปรับปรุง updateFormValidation ให้ชัดเจนขึ้น ***
   private updateFormValidation() {
+    // Clear all business fields first
     const businessFields = ['businessName', 'businessAddress', 'businessRegistration'];
     businessFields.forEach(field => {
       const control = this.registerForm.get(field);
@@ -329,19 +446,85 @@ export class RegisterComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Update phoneNumber validation based on userType
+    // *** 1. จัดการ Email และ FullName สำหรับ Google OAuth ***
+    const emailControl = this.registerForm.get('email');
+    const fullNameControl = this.registerForm.get('fullName');
+
+    if (this.isFromGoogle) {
+      // สำหรับ Google OAuth: ข้อมูลจาก Google ไม่สามารถแก้ไขได้
+      emailControl?.disable();
+      fullNameControl?.disable();
+      // ยังคง validation ไว้เพื่อให้แน่ใจว่ามีข้อมูล แต่จะ enable ชั่วคราวตอน submit
+      emailControl?.setValidators([Validators.required, Validators.email]);
+      fullNameControl?.setValidators([Validators.required]);
+    } else {
+      // สำหรับการสมัครธรรมดา: สามารถแก้ไขได้
+      emailControl?.enable();
+      fullNameControl?.enable();
+      emailControl?.setValidators([Validators.required, Validators.email]);
+      fullNameControl?.setValidators([Validators.required]);
+    }
+
+    // *** 2. จัดการ Password fields ***
+    const passwordControl = this.registerForm.get('password');
+    const confirmPasswordControl = this.registerForm.get('confirmPassword');
+
+    if (this.isFromGoogle) {
+      // Google OAuth: ไม่ต้องรหัสผ่าน
+      passwordControl?.clearValidators();
+      passwordControl?.disable();
+      confirmPasswordControl?.clearValidators();
+      confirmPasswordControl?.disable();
+      // ซ่อน fields ด้วยการเซ็ตค่าเป็น empty string
+      passwordControl?.setValue('');
+      confirmPasswordControl?.setValue('');
+    } else {
+      // การสมัครธรรมดา: ต้องมีรหัสผ่าน
+      passwordControl?.setValidators([Validators.required, Validators.minLength(6)]);
+      passwordControl?.enable();
+      confirmPasswordControl?.setValidators([Validators.required]);
+      confirmPasswordControl?.enable();
+    }
+
+    // *** 3. จัดการ Phone Number validation - บังคับทั้ง member และ owner ***
     const phoneNumberControl = this.registerForm.get('phoneNumber');
     if (phoneNumberControl) {
-      if (this.userType === 'member') {
-        // For members, phoneNumber is required
-        phoneNumberControl.setValidators([Validators.required, Validators.pattern('^[0-9]{10}$')]);
-      } else {
-        // For owners, phoneNumber is optional but must be valid if provided
-        phoneNumberControl.setValidators([Validators.pattern('^[0-9]{10}$')]);
-      }
+      // เบอร์โทรบังคับสำหรับทั้งสมาชิกและเจ้าของหอพัก
+      phoneNumberControl.setValidators([Validators.required, Validators.pattern('^[0-9]{10}$')]);
       phoneNumberControl.updateValueAndValidity();
     }
 
+    // *** 4. จัดการ Manager Name สำหรับ Owner (บังคับ) ***
+    const managerNameControl = this.registerForm.get('managerName');
+    if (managerNameControl) {
+      if (this.userType === 'owner') {
+        managerNameControl.setValidators([Validators.required]);
+      } else {
+        managerNameControl.clearValidators();
+      }
+      managerNameControl.updateValueAndValidity();
+    }
+
+    // *** 5. จัดการ Secondary Phone สำหรับ Owner (ไม่บังคับ) ***
+    const secondaryPhoneControl = this.registerForm.get('secondaryPhone');
+    if (secondaryPhoneControl) {
+      if (this.userType === 'owner') {
+        secondaryPhoneControl.setValidators([Validators.pattern('^[0-9]{10}$')]);
+      } else {
+        secondaryPhoneControl.clearValidators();
+      }
+      secondaryPhoneControl.updateValueAndValidity();
+    }
+
+    // *** 6. จัดการ Line ID สำหรับ Owner (ไม่บังคับ) ***
+    const lineIdControl = this.registerForm.get('lineId');
+    if (lineIdControl) {
+      // Line ID ไม่บังคับเสมอ ไม่ต้อง validation
+      lineIdControl.clearValidators();
+      lineIdControl.updateValueAndValidity();
+    }
+
+    // *** 7. จัดการ Dormitory สำหรับ Member (บังคับ) ***
     const dormControl = this.registerForm.get('dormitory');
     if (dormControl) {
       if (this.userType === 'member') {
@@ -353,25 +536,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
       dormControl.updateValueAndValidity();
     }
 
-    const passwordControl = this.registerForm.get('password');
-    const confirmPasswordControl = this.registerForm.get('confirmPassword');
-
-    if (this.isFromGoogle) {
-      passwordControl?.clearValidators();
-      passwordControl?.disable();
-      confirmPasswordControl?.clearValidators();
-      confirmPasswordControl?.disable();
-      this.registerForm.get('email')?.disable();
-      this.registerForm.get('fullName')?.disable();
-    } else {
-      passwordControl?.setValidators([Validators.required, Validators.minLength(6)]);
-      passwordControl?.enable();
-      confirmPasswordControl?.setValidators([Validators.required]);
-      confirmPasswordControl?.enable();
-      this.registerForm.get('email')?.enable();
-      this.registerForm.get('fullName')?.enable();
-    }
-
+    // Update validity for all controls
+    emailControl?.updateValueAndValidity();
+    fullNameControl?.updateValueAndValidity();
     passwordControl?.updateValueAndValidity();
     confirmPasswordControl?.updateValueAndValidity();
   }
@@ -401,8 +568,30 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (!control) return '';
 
     if (control.hasError('required')) {
+      if (controlName === 'phoneNumber') {
+        return 'กรุณากรอกเบอร์โทรศัพท์';
+      }
+      if (controlName === 'managerName') {
+        return 'กรุณากรอกชื่อผู้จัดการ/เจ้าของหอพัก';
+      }
+      if (controlName === 'dormitory') {
+        return 'กรุณาเลือกหอพัก';
+      }
+      if (controlName === 'fullName') {
+        return 'กรุณากรอกชื่อ-นามสกุล';
+      }
       return 'กรุณากรอกข้อมูล';
     }
+
+    if (controlName === 'fullName') {
+      if (control.hasError('minlength')) {
+        return 'ชื่อ-นามสกุลต้องมีความยาวอย่างน้อย 2 ตัวอักษร';
+      }
+      if (control.hasError('maxlength')) {
+        return 'ชื่อ-นามสกุลต้องมีความยาวไม่เกิน 100 ตัวอักษร';
+      }
+    }
+
     if (controlName === 'email' && control.hasError('email')) {
       return 'กรุณากรอกอีเมลให้ถูกต้อง';
     }
@@ -415,27 +604,51 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (controlName === 'confirmPassword' && control.hasError('passwordMismatch')) {
       return 'รหัสผ่านไม่ตรงกัน';
     }
-    if (controlName === 'phoneNumber' && control.hasError('pattern')) {
-      return 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (10 หลัก)';
+    if ((controlName === 'phoneNumber' || controlName === 'secondaryPhone')) {
+      if (control.hasError('pattern')) {
+        return 'กรุณากรอกเบอร์โทรศัพท์เป็นตัวเลข 10 หลักเท่านั้น';
+      }
+      if (control.hasError('minlength') || control.hasError('maxlength')) {
+        return 'เบอร์โทรศัพท์ต้องมี 10 หลักเท่านั้น';
+      }
     }
     return '';
   }
 
+  // *** ปรับปรุง isFieldRequired method ***
+  isFieldRequired(controlName: string): boolean {
+    const control = this.registerForm.get(controlName);
+    if (!control) return false;
+
+    // ตรวจสอบว่า field นี้มี required validator หรือไม่
+    return control.hasValidator(Validators.required);
+  }
+
+  // *** เพิ่ม method สำหรับตรวจสอบว่า field สามารถแก้ไขได้หรือไม่ ***
+  isFieldEditable(controlName: string): boolean {
+    if (this.isFromGoogle) {
+      // สำหรับ Google OAuth: เฉพาะข้อมูลจาก Google ที่แก้ไขไม่ได้
+      const googleFields = ['email', 'fullName'];
+      return !googleFields.includes(controlName);
+    }
+    return true; // การสมัครธรรมดาแก้ไขได้ทุก field
+  }
+
   async onSubmit(): Promise<void> {
     if (this.isRegisterLoading) return;
-  
+
     // *** เซ็ต flag ป้องกันการเปลี่ยน userType ***
     this.isSubmitting = true;
     this.isRegisterLoading = true;
     this.errorMessage = null;
-  
+
     if (this.userType === 'general') {
       this.errorMessage = 'กรุณาเลือกประเภทสมาชิก (เจ้าของหอพัก หรือ สมาชิก)';
       this.isRegisterLoading = false;
-      this.isSubmitting = false; // รีเซ็ต flag
+      this.isSubmitting = false;
       return;
     }
-  
+
     // *** เฉพาะ member เท่านั้นที่ต้องเลือกหอพัก ***
     if (this.userType === 'member') {
       const dormValue = this.registerForm.get('dormitory')?.value;
@@ -443,68 +656,67 @@ export class RegisterComponent implements OnInit, OnDestroy {
         this.errorMessage = 'กรุณาเลือกหอพัก';
         this.registerForm.get('dormitory')?.markAsTouched();
         this.isRegisterLoading = false;
-        this.isSubmitting = false; // รีเซ็ต flag
+        this.isSubmitting = false;
         return;
       }
     }
-  
-    const wasEmailDisabled = this.registerForm.get('email')?.disabled;
-    const wasFullNameDisabled = this.registerForm.get('fullName')?.disabled;
-    const wasPasswordDisabled = this.registerForm.get('password')?.disabled;
-    const wasConfirmPasswordDisabled = this.registerForm.get('confirmPassword')?.disabled;
-  
-    if (this.isFromGoogle) {
-      this.registerForm.get('email')?.enable();
-      this.registerForm.get('fullName')?.enable();
-    } else {
-      this.registerForm.get('password')?.enable();
-      this.registerForm.get('confirmPassword')?.enable();
+
+    // *** เฉพาะ owner เท่านั้นที่ต้องกรอก managerName ***
+    if (this.userType === 'owner' && !this.registerForm.get('managerName')?.value) {
+      this.errorMessage = 'กรุณากรอกชื่อผู้จัดการ/เจ้าของหอพัก';
+      this.isRegisterLoading = false;
+      this.isSubmitting = false;
+      return;
     }
-  
+
+    // *** Enable disabled fields temporarily for form submission ***
+    const fieldsToReEnable: string[] = [];
+    if (this.isFromGoogle) {
+      // เฉพาะ Google OAuth fields ที่ disabled - ไม่รวม password
+      ['email', 'fullName'].forEach(fieldName => {
+        const control = this.registerForm.get(fieldName);
+        if (control && control.disabled) {
+          control.enable();
+          fieldsToReEnable.push(fieldName);
+        }
+      });
+    }
+
     this.registerForm.updateValueAndValidity();
-  
+
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       this.errorMessage = 'กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง';
-      this.restoreFieldsDisabledState(wasEmailDisabled, wasFullNameDisabled, wasPasswordDisabled, wasConfirmPasswordDisabled);
+      this.restoreDisabledFields(fieldsToReEnable);
       this.isRegisterLoading = false;
-      this.isSubmitting = false; // รีเซ็ต flag
+      this.isSubmitting = false;
       return;
     }
-  
+
     try {
       const formData = this.registerForm.getRawValue();
       let userProfile: UserProfile;
-  
+
       // *** เก็บ userType ไว้ในตัวแปร local ป้องกันการเปลี่ยน ***
       const currentUserType = this.userType;
-  
+
       if (this.isFromGoogle) {
         console.log('[RegisterComponent] Completing Google OAuth profile');
-        
-        // *** สำหรับ owner ไม่ต้องกรอกข้อมูลเพิ่มเติม ***
-        if (currentUserType === 'owner') {
-          console.log('[RegisterComponent] Owner type - completing profile without additional data');
-          
-          // สำหรับ owner ส่ง undefined สำหรับ phoneNumber ที่ไม่จำเป็น
-          userProfile = await this.authService.completeUserProfile(
-            formData.phoneNumber || undefined, // ส่ง undefined ถ้าไม่มีค่า
-            currentUserType as 'member' | 'owner',
-            undefined // owner ไม่ต้องมี dormitoryId
-          );
-        } else {
-          // *** สำหรับ member ต้องเลือกหอพัก ***
-          console.log('[RegisterComponent] dormitory value:', formData.dormitory, typeof formData.dormitory);
-          const dormitoryId = formData.dormitory ? parseInt(formData.dormitory, 10) : undefined;
-          console.log('[RegisterComponent] dormitoryId to send:', dormitoryId);
-          
-          userProfile = await this.authService.completeUserProfile(
-            formData.phoneNumber,
-            currentUserType as 'member' | 'owner',
-            dormitoryId
-          );
-        }
-        
+
+        // Prepare owner data for Google OAuth
+        const ownerData = currentUserType === 'owner' ? {
+          managerName: formData.managerName,
+          secondaryPhone: formData.secondaryPhone || undefined,
+          lineId: formData.lineId || undefined
+        } : undefined;
+
+        userProfile = await this.authService.completeUserProfile(
+          formData.phoneNumber || undefined, // ส่ง undefined ถ้าไม่มีค่า
+          currentUserType as 'member' | 'owner',
+          currentUserType === 'member' && formData.dormitory ? parseInt(formData.dormitory, 10) : undefined,
+          ownerData
+        );
+
         this.receivedUsername = userProfile?.username || null;
         console.log('[RegisterComponent] Google user profile completed successfully');
       } else {
@@ -512,73 +724,98 @@ export class RegisterComponent implements OnInit, OnDestroy {
         const submitFormData = new FormData();
         submitFormData.append('email', formData.email);
         submitFormData.append('password', formData.password);
-        
-        // ส่ง memberType ให้ backend ตามสเปคใหม่
-        console.log('[RegisterComponent] Appending memberType:', currentUserType);
         submitFormData.append('memberType', currentUserType);
-        
         submitFormData.append('fullName', formData.fullName);
-        
+
         // ส่ง phoneNumber เฉพาะเมื่อมีค่า
         if (formData.phoneNumber) {
-        submitFormData.append('phoneNumber', formData.phoneNumber);
+          submitFormData.append('phoneNumber', formData.phoneNumber);
         }
-        
+
         if (currentUserType === 'member' && formData.dormitory) {
-          // *** แก้ไข: ส่ง dormitoryId ที่ถูกต้อง ***
           submitFormData.append('dormitoryId', formData.dormitory);
         }
-        
+
         if (this.selectedFile) submitFormData.append('profileImage', this.selectedFile);
-        
+
+        if (currentUserType === 'owner') {
+          submitFormData.append('managerName', formData.managerName);
+          if (formData.secondaryPhone) {
+            submitFormData.append('secondaryPhone', formData.secondaryPhone);
+          }
+          if (formData.lineId) {
+            submitFormData.append('lineId', formData.lineId);
+          }
+        }
+
         userProfile = await this.authService.signUpWithFormData(submitFormData);
       }
-  
+
       // รอให้ auth state update เสร็จ
       await new Promise(resolve => setTimeout(resolve, 200));
-  
+
       // *** อัปเดต userType ใน component หากจำเป็น ***
       if (userProfile.memberType && userProfile.memberType !== currentUserType) {
         console.log('[RegisterComponent] Updating userType from', currentUserType, 'to', userProfile.memberType);
         this.userType = userProfile.memberType;
       }
-  
+
+      // Debug: แสดงข้อมูล userProfile
+      console.log('[RegisterComponent] User profile after registration:', {
+        memberType: userProfile.memberType,
+        needsProfileSetup: userProfile.needsProfileSetup,
+        managerName: userProfile.managerName,
+        provider: userProfile.provider,
+        hasManagerName: !!userProfile.managerName,
+        isFromGoogle: this.isFromGoogle
+      });
+
       // *** Navigate ตรงไปยัง dashboard ทันที ***
+      // ตรวจสอบว่าผู้ใช้มีข้อมูลครบหรือไม่
+      if (userProfile.needsProfileSetup && this.isFromGoogle) {
+        // ถ้ายังไม่มีข้อมูลครบและมาจาก Google ให้ไปหน้า main
+        const targetRoute = '/main';
+        console.log('[RegisterComponent] Google user needs profile setup, navigating to:', targetRoute);
+        await this.router.navigate([targetRoute]);
+      } else {
+        // ถ้ามีข้อมูลครบแล้ว หรือเป็นการสมัครแบบปกติ ให้ไปหน้า owner
       const targetRoute = userProfile.memberType === 'owner' ? '/owner' : '/main';
-      console.log('[RegisterComponent] Navigating to:', targetRoute, 'based on memberType:', userProfile.memberType);
-      
+        console.log('[RegisterComponent] User has complete profile or normal registration, navigating to:', targetRoute, 'based on memberType:', userProfile.memberType);
       await this.router.navigate([targetRoute]);
+      }
       return;
     } catch (error: any) {
       console.error('[RegisterComponent] Registration error:', error);
       const errorMsg = this.authService.errorMessageHandler(error);
-      if (errorMsg === 'อีเมลนี้ถูกใช้งานแล้ว') {
+      
+      // ตรวจสอบ Firebase email already in use error
+      if (error.code === 'auth/email-already-in-use' || errorMsg === 'อีเมลนี้ถูกใช้งานแล้ว') {
+        this.registerForm.get('email')?.setErrors({ emailInUse: true });
+        this.errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น';
+      } else if (errorMsg === 'อีเมลนี้ถูกใช้งานแล้ว') {
         this.registerForm.get('email')?.setErrors({ emailInUse: true });
         this.errorMessage = errorMsg;
       } else {
         this.errorMessage = errorMsg || 'เกิดข้อผิดพลาดในการสมัครสมาชิก กรุณาลองอีกครั้ง';
       }
+      
       // Sign out เมื่อเกิดข้อผิดพลาด
       await this.authService.signOut(null);
     } finally {
       this.isRegisterLoading = false;
-      this.isSubmitting = false; // *** รีเซ็ต flag ***
-      this.restoreFieldsDisabledState(wasEmailDisabled, wasFullNameDisabled, wasPasswordDisabled, wasConfirmPasswordDisabled);
+      this.isSubmitting = false;
+      this.restoreDisabledFields(fieldsToReEnable);
     }
   }
 
-  private restoreFieldsDisabledState(
-    wasEmailDisabled: boolean | undefined,
-    wasFullNameDisabled: boolean | undefined,
-    wasPasswordDisabled: boolean | undefined,
-    wasConfirmPasswordDisabled: boolean | undefined
-  ): void {
-    if (this.isFromGoogle) {
-      if (wasEmailDisabled) this.registerForm.get('email')?.disable();
-      if (wasFullNameDisabled) this.registerForm.get('fullName')?.disable();
-      if (wasPasswordDisabled) this.registerForm.get('password')?.disable();
-      if (wasConfirmPasswordDisabled) this.registerForm.get('confirmPassword')?.disable();
-    }
+  // *** เพิ่ม helper method สำหรับ restore disabled fields ***
+  private restoreDisabledFields(fieldsToReEnable: string[]): void {
+    fieldsToReEnable.forEach(fieldName => {
+      const control = this.registerForm.get(fieldName);
+      if (control) {
+        control.disable();
+      }
+    });
   }
 
   onLogin(): void {
@@ -606,13 +843,41 @@ export class RegisterComponent implements OnInit, OnDestroy {
         return;
       }
 
-      console.log(`[RegisterComponent] Initiating Google OAuth for ${targetUserType}`);
+      // เปลี่ยนจาก signInWithGoogle เป็น getGoogleUserInfo เพื่อไม่ให้บันทึกข้อมูลทันที
+      const userInfo = await this.authService.getGoogleUserInfo(targetUserType);
+      
+      // นำข้อมูลมาเติมในฟอร์มแทนที่จะบันทึกทันที
+      if (userInfo) {
+        console.log('[RegisterComponent] Google user info received:', userInfo);
+        this.isFromGoogle = true;
+        this.registerForm.patchValue({
+          email: userInfo.email,
+          fullName: userInfo.displayName
+        });
+        if (userInfo.photoURL) {
+          this.photoURL = userInfo.photoURL;
+        }
+        
+        // Disable fields ที่มาจาก Google
+        this.registerForm.get('email')?.disable();
+        this.registerForm.get('fullName')?.disable();
+        
+        // Clear password validators
+        this.registerForm.get('password')?.clearValidators();
+        this.registerForm.get('confirmPassword')?.clearValidators();
+        this.registerForm.get('password')?.disable();
+        this.registerForm.get('confirmPassword')?.disable();
 
-      // Using popup directly - will either complete profile setup or redirect based on result
-      const userProfile = await this.authService.signInWithGoogle(targetUserType);
-      console.log('[RegisterComponent] Google sign-in successful:', userProfile);
+        this.registerForm.updateValueAndValidity();
 
-      // Navigation is handled in the authService
+        // อัปเดต URL เพื่อแสดงสถานะ Google flow
+        this.router.navigate([], {
+          queryParams: { fromGoogle: 'true' },
+          replaceUrl: true
+        });
+        
+        console.log('[RegisterComponent] Google flow setup completed');
+      }
 
     } catch (error: any) {
       console.error('[RegisterComponent] Google OAuth error:', error);
@@ -641,7 +906,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   onEditAvatar(): void {
     if (this.isFromGoogle && this.photoURL) {
-      return;
+      return; // ไม่สามารถแก้ไขรูป Google ได้
     }
     this.showImagePopup = true;
     this.resetImagePopup();
@@ -821,23 +1086,23 @@ export class RegisterComponent implements OnInit, OnDestroy {
   // Add method to filter dormitories based on search text
   filterDorms(): void {
     const searchText = this.dormSearchControl.value?.toLowerCase() || '';
-    
+
     if (!searchText) {
       this.filteredDorms = [...this.groupedDorms];
       return;
     }
-    
+
     // Filter zones and dormitories that match the search text
     this.filteredDorms = this.groupedDorms
       .map(zone => {
         // First check if zone name matches
         const zoneMatches = zone.name.toLowerCase().includes(searchText);
-        
+
         // Then filter dormitories
-        const matchingDorms = zone.dormitories.filter(dorm => 
+        const matchingDorms = zone.dormitories.filter(dorm =>
           dorm.name.toLowerCase().includes(searchText)
         );
-        
+
         // Return zone with matching dorms if either zone matches or has matching dorms
         if (zoneMatches || matchingDorms.length > 0) {
           return {
@@ -845,12 +1110,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
             dormitories: zoneMatches ? zone.dormitories : matchingDorms
           };
         }
-        
+
         return null;
       })
       .filter(zone => zone !== null) as ZoneDormitories[];
   }
-  
+
   // Add method to select a dormitory
   selectDorm(dormId: string, dormName: string): void {
     this.registerForm.get('dormitory')?.setValue(dormId);
@@ -865,9 +1130,62 @@ export class RegisterComponent implements OnInit, OnDestroy {
     // Check if click is outside the dropdown
     const clickedElement = event.target as HTMLElement;
     const isClickInsideDropdown = clickedElement.closest('.dorm-dropdown-container');
-    
+
     if (!isClickInsideDropdown && this.showDormList) {
       this.showDormList = false;
+    }
+  }
+
+  // เพิ่ม method สำหรับจัดการ history state
+  private setupHistoryState(): void {
+    // เพิ่ม entry ของหน้าแรกเข้าไปใน history ก่อน
+    window.history.pushState({ page: 'home' }, '', '/main');
+    
+    // แทนที่ entry ปัจจุบันด้วยหน้า registration
+    window.history.replaceState({ page: 'register' }, '', this.router.url);
+    
+    // เพิ่ม event listener สำหรับ beforeunload
+    window.addEventListener('beforeunload', () => {
+    if (this.isFromGoogle) {
+        this.authService.signOut(null);
+        }
+      });
+    }
+
+  // Override browser back button - วิธีของ Google/Facebook
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: PopStateEvent) {
+    console.log('[RegisterComponent] PopState event triggered');
+    console.log('[RegisterComponent] Current URL:', this.router.url);
+    console.log('[RegisterComponent] isFromGoogle:', this.isFromGoogle);
+    
+    // ป้องกันการทำงานปกติ
+    event.preventDefault();
+    
+    // ถ้าอยู่ใน Google flow ให้ sign out ก่อน
+      if (this.isFromGoogle) {
+      console.log('[RegisterComponent] Signing out Google user before navigation');
+      this.authService.signOut(null);
+      
+      // รอสักครู่ให้ sign out เสร็จก่อนนำทาง
+      setTimeout(() => {
+        console.log('[RegisterComponent] Navigating to /main after sign out');
+        window.location.href = '/main';
+      }, 500);
+      } else {
+      // กลับไปหน้าแรกเสมอ - ใช้ window.location.href แทน router.navigate
+      // ไปที่ /main แทน /owner เพื่อหลีกเลี่ยง OwnerGuard
+      console.log('[RegisterComponent] Navigating to /main');
+      window.location.href = '/main';
+    }
+  }
+
+  // เพิ่ม method สำหรับจัดการ URL changes
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent) {
+    // ถ้าอยู่ใน Google flow ให้ sign out ก่อนปิดหน้า
+      if (this.isFromGoogle) {
+      this.authService.signOut(null);
     }
   }
 }

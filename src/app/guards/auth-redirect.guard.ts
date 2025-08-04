@@ -12,13 +12,9 @@ export class AuthRedirectGuard implements CanActivate {
     console.log('[AuthRedirectGuard] Checking route access');
     
     return this.authService.currentUser$.pipe(
-      // Wait until auth state is definitely determined (not undefined)
       filter(user => user !== undefined),
-      // Add logging to see the auth state
       tap(user => console.log('[AuthRedirectGuard] Auth state determined:', user ? 'User found' : 'No user')),
-      // Take only the first emission after auth is determined
       first(),
-      // Map the user to a boolean or UrlTree
       map(user => {
         const destPath = route.routeConfig?.path || '';
         const isLoginPage = destPath.startsWith('login');
@@ -27,7 +23,17 @@ export class AuthRedirectGuard implements CanActivate {
         console.log(`[AuthRedirectGuard] Checking access to ${destPath}, user:`, user ? `${user.memberType}` : 'null');
 
         if (user) {
+          // เพิ่มเงื่อนไขสำหรับ owner ที่ต้องกรอกข้อมูลเพิ่มเติม
           if (user.memberType === 'owner') {
+            // ถ้าไม่มี managerName ถือว่ายังต้องกรอกข้อมูลเพิ่มเติม
+            if (!user.managerName) {
+              if (isRegisterPage) return true;
+              console.log('[AuthRedirectGuard] Owner needs additional info, redirecting to register');
+              return this.router.createUrlTree(['/register', 'owner'], {
+                queryParams: { additionalInfo: 'true' }
+              });
+            }
+            
             if (!destPath.startsWith('owner')) {
               console.log('[AuthRedirectGuard] Owner accessing non-owner page, redirecting to owner dashboard');
               return this.router.createUrlTree(['/owner']);
