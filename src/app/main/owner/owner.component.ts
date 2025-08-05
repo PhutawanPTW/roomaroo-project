@@ -118,7 +118,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
 
   // เพิ่ม method สำหรับคำนวณราคาจาก room types
   private calculatePricesFromRoomTypes(dorm: any, roomTypes: RoomType[]) {
-    console.log(`[OwnerComponent] Calculating prices for dorm ${dorm.dorm_id}:`, roomTypes);
+    // console.log(`[OwnerComponent] Calculating prices for dorm ${dorm.dorm_id}:`, roomTypes);
 
     if (roomTypes.length === 0) {
       console.log(`[OwnerComponent] No room types found for dorm ${dorm.dorm_id}`);

@@ -221,7 +221,7 @@ export class MainComponent implements OnInit {
 
     return {
       id: d.dorm_id,
-      image: d.thumbnail_url || d.main_image_url || 'assets/images/placeholder.jpg',
+      image: d.thumbnail_url || d.main_image_url || 'assets/images/photo.png',
       price: priceDisplay,
       name: d.dorm_name,
       location: locationDisplay,

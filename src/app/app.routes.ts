@@ -21,12 +21,14 @@ export const routes: Routes = [
   // Add dorm-list as a top-level route
   { path: 'dorm-list', component: DormListComponent },
 
+  // Login routes
   {
     path: 'login/:type',
     component: LoginComponent,
     canActivate: [AuthRedirectGuard]
   },
 
+  // Register routes
   {
     path: 'register/:type',
     component: RegisterComponent,
@@ -37,38 +39,45 @@ export const routes: Routes = [
   { path: 'login', redirectTo: 'login/member', pathMatch: 'full' },
   { path: 'register', redirectTo: 'register/member', pathMatch: 'full' },
 
+  // Owner routes
   {
     path: 'owner',
     component: OwnerComponent,
     canActivate: [OwnerGuard],
     children: [
       { path: 'dorm-add', component: DormAddComponent },
-    ]
-  },
-
-  {
-    path: 'main',
-    component: MainComponent,
-    children: [
-      { path: '', component: DormListComponent },
-      { path: 'dorm-detail', component: DormDetailComponent },
-      { path: 'dorm-map', component: DormMapComponent },
-      { path: 'dorm-compare', component: DormCompareComponent },
       { path: 'tenant-list', component: TenantListComponent },
       { path: 'profile', component: ProfileComponent },
     ]
   },
 
+  // Main routes
+  {
+    path: 'main',
+    component: MainComponent,
+    canActivate: [AuthRedirectGuard],
+    children: [
+      { path: '', component: DormListComponent },
+      { path: 'dorm-detail', component: DormDetailComponent },
+      { path: 'dorm-map', component: DormMapComponent },
+      { path: 'dorm-compare', component: DormCompareComponent },
+      { path: 'tenant-list', component: TenantListComponent, canActivate: [AuthRedirectGuard] },
+      { path: 'profile', component: ProfileComponent },
+    ]
+  },
+
+  // Admin routes
   {
     path: 'admin',
     component: AdminComponent
   },
 
+  // Dorm detail route with ID
   {
     path: 'dorm-detail/:id',
     loadComponent: () => import('./main/dorm-detail/dorm-detail.component').then(c => c.DormDetailComponent)
   },
 
-  // Wildcard route
+  // Wildcard route - redirect to main (but owner will be redirected to /owner by guard)
   { path: '**', redirectTo: '/main' }
 ];

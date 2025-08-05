@@ -185,7 +185,8 @@
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200"
               [class.bg-gray-100]="isFromGoogle" [class.bg-gray-50]="!isFromGoogle"
               [class.cursor-not-allowed]="isFromGoogle" [class.border-red-500]="hasError('fullName', 'required')"
-              [attr.readonly]="isFromGoogle">
+              [disabled]="isFromGoogle"
+              >
             
             <!-- Google Badge -->
             <div *ngIf="isFromGoogle" class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
@@ -210,7 +211,8 @@
               [class.bg-gray-100]="isFromGoogle" [class.bg-gray-50]="!isFromGoogle"
               [class.cursor-not-allowed]="isFromGoogle"
               [class.border-red-500]="hasError('email', 'required') || hasError('email', 'email')"
-              [attr.readonly]="isFromGoogle">
+              [disabled]="isFromGoogle"
+              >
             
             <!-- Google Badge -->
             <div *ngIf="isFromGoogle" class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
@@ -235,7 +237,8 @@
               <div class="relative">
             <input type="password" formControlName="password" placeholder="รหัสผ่าน"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-              [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength')">
+              [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength')"
+              >
                 <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
                   <span class="text-red-500 text-sm">*</span>
                 </div>
@@ -249,7 +252,8 @@
               <div class="relative">
             <input type="password" formControlName="confirmPassword" placeholder="ยืนยันรหัสผ่าน"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-              [class.border-red-500]="hasError('confirmPassword', 'required') || registerForm.hasError('passwordMismatch')">
+              [class.border-red-500]="hasError('confirmPassword', 'required') || registerForm.hasError('passwordMismatch')"
+              >
                 <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
                   <span class="text-red-500 text-sm">*</span>
                 </div>
@@ -267,7 +271,8 @@
           <div class="relative">
             <input type="tel" formControlName="phoneNumber" placeholder="เบอร์โทรศัพท์"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50 font-english"
-              [class.border-red-500]="hasError('phoneNumber', 'required') || hasError('phoneNumber', 'pattern')">
+              [class.border-red-500]="hasError('phoneNumber', 'required') || hasError('phoneNumber', 'pattern')"
+              >
             
             <!-- Required indicator -->
             <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
@@ -432,14 +437,13 @@
               </path>
             </svg>
             <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
-            <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'สมัครผ่าน Google' }}</span>
+            <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วยบัญชี Google' }}</span>
           </button>
           <div *ngIf="errorMessageGoogle"
             class="text-red-600 text-sm mt-2 text-center font-thai bg-red-50 p-2 rounded border border-red-200">
             {{ errorMessageGoogle }}
           </div>
         </div>
-
       </form>
 
       <!-- Footer -->

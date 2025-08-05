@@ -131,6 +131,9 @@ export class LoginComponent implements OnInit, OnDestroy {
         const userProfile = await this.authService.signInWithGoogle(this.userType);
         console.log('[LoginComponent] Google sign-in successful:', userProfile);
         
+        // รอให้ auth state update เสร็จก่อน redirect
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Navigation ถูก handle โดย authService แล้ว
         // ไม่ต้อง redirect ที่นี่
 
@@ -174,7 +177,17 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   onRegister(): void {
-    this.router.navigate(['/register', this.userType]);
+    console.log('[LoginComponent] Navigating to register page for userType:', this.userType);
+    // ตรวจสอบว่าอยู่ในหน้า login/owner หรือ login/member
+    const currentPath = this.router.url;
+    if (currentPath.includes('/login/owner')) {
+      this.router.navigate(['/register', 'owner']);
+    } else if (currentPath.includes('/login/member')) {
+      this.router.navigate(['/register', 'member']);
+    } else {
+      // fallback ใช้ userType จาก parameter
+      this.router.navigate(['/register', this.userType]);
+    }
   }
 
   goToSlide(index: number): void {

@@ -37,16 +37,28 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.authService.currentUser$.subscribe(user => {
+      console.log('[NavbarComponent] User state changed:', {
+        hasUser: !!user,
+        memberType: user?.memberType,
+        provider: user?.provider,
+        needsProfileSetup: user?.needsProfileSetup,
+        isTemporaryUser: this.authService.isTemporaryUser()
+      });
+
       // ไม่แสดงข้อมูล user ถ้าเป็น temporary user หรือยังไม่สมบูรณ์
       if (user && !this.authService.isTemporaryUser() && !user.needsProfileSetup) {
-          this.currentUser = user;
-          this.userType = user?.memberType ?? null;
-          this.isOwner = user?.memberType === 'owner';
-          this.isLoading = false; // Set loading to false once we have a definitive answer
+        this.currentUser = user;
+        this.userType = user?.memberType ?? null;
+        this.isOwner = user?.memberType === 'owner';
+        this.isLoading = false;
+        console.log('[NavbarComponent] Showing user info:', user.displayName);
       } else {
         this.currentUser = null;
-        this.isLoading = false; // Ensure loading is false if no user
-        }
+        this.userType = null;
+        this.isOwner = false;
+        this.isLoading = false;
+        console.log('[NavbarComponent] Hiding user info - temporary or incomplete profile');
+      }
     });
       
     this.router.events.subscribe(() => {
@@ -143,7 +155,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   goToProfile() {
-    this.router.navigate(['/main/profile']);
+    if (this.getUserType() === 'owner') {
+      this.router.navigate(['/owner/profile']);
+    } else {
+      this.router.navigate(['/main/profile']);
+    }
     this.closeProfileDropdown();
   }
 
@@ -155,5 +171,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
       return false;
     }
     return true;
+  }
+
+  getHomeLink(): string {
+    if (this.isLoggedIn() && this.getUserType() === 'owner') {
+      return '/owner';
+    }
+    return '/main';
   }
 }

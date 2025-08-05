@@ -83,33 +83,43 @@ export class AuthService {
         private router: Router
     ) {
         onAuthStateChanged(this.auth, async (user) => {
+            console.log('[AuthService] Auth state changed:', user ? 'User found' : 'No user');
+            
             if (this.isGoogleRegistrationFlow) {
+                console.log('[AuthService] Skipping auth state change - Google registration flow');
                 return;
             }
 
             // *** เพิ่มการ skip เมื่อกำลัง registration ***
             if (this.isRegistrationInProgress) {
+                console.log('[AuthService] Skipping auth state change - Registration in progress');
                 return;
             }
 
             if (this.skipAuthStateChange) {
+                console.log('[AuthService] Skipping auth state change - Skip flag set');
                 this.skipAuthStateChange = false;
                 return;
             }
 
             // ป้องกันการจัดการ temporary Google user
             if (this.isTemporaryGoogleUser) {
+                console.log('[AuthService] Skipping auth state change - Temporary Google user');
                 return;
             }
 
             if (user) {
                 try {
+                    console.log('[AuthService] Fetching user profile for:', user.email);
                     const profile = await this.fetchUserProfile(user);
+                    console.log('[AuthService] User profile fetched:', profile);
                     this.currentUser$.next(profile);
                 } catch (error) {
+                    console.error('[AuthService] Error fetching user profile:', error);
                     this.currentUser$.next(null);
                 }
             } else {
+                console.log('[AuthService] No user, setting currentUser$ to null');
                 this.currentUser$.next(null);
             }
         });
@@ -278,9 +288,14 @@ export class AuthService {
     
             // อัปเดต currentUser$
             this.currentUser$.next(userProfile);
+            
+            // Force refresh navbar โดยการ emit user profile อีกครั้ง
+            setTimeout(() => {
+                this.currentUser$.next(userProfile);
+            }, 100);
     
             // รอสักครู่เพื่อให้ currentUser$ ได้รับการอัปเดต
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 200));
     
             // Add safeguard: if backend returned success but memberType ≠ requested type → block login
             if (!userProfile.needsProfileSetup && userProfile.memberType !== userType) {
@@ -376,6 +391,11 @@ export class AuthService {
             };
 
             this.currentUser$.next(userProfile);
+            
+            // Force refresh navbar โดยการ emit user profile อีกครั้ง
+            setTimeout(() => {
+                this.currentUser$.next(userProfile);
+            }, 100);
 
             return userProfile;
         } catch (error: any) {
@@ -404,7 +424,7 @@ export class AuthService {
             const user = result.user;
     
             if (!user) {
-                throw new Error('Google authentication failed');
+                throw new Error('การยืนยันตัวตนด้วย Google ล้มเหลว');
             }
     
             const idToken = await user.getIdToken();
@@ -439,12 +459,39 @@ export class AuthService {
                 needsProfileSetup: needsProfileSetupCalc,
                 phoneNumber: rawUser.phoneNumber || rawUser.phone_number || null,
                 residenceDormId: rawUser.residenceDormId || rawUser.residence_dorm_id || null,
-                        provider: 'google'
-                    };
+                provider: 'google',
+                // Add owner fields
+                managerName: rawUser.managerName || rawUser.manager_name || null,
+                secondaryPhone: rawUser.secondaryPhone || rawUser.secondary_phone || null,
+                lineId: rawUser.lineId || rawUser.line_id || null
+            };
     
             this.currentUser$.next(userProfile);
     
-            if (userProfile.needsProfileSetup) {
+            console.log('[AuthService] Google sign-in result:', {
+                needsProfileSetup: userProfile.needsProfileSetup,
+                memberType: userProfile.memberType,
+                requestedUserType: userType,
+                hasManagerName: !!userProfile.managerName,
+                hasPhoneNumber: !!userProfile.phoneNumber
+            });
+            
+            // Force refresh navbar โดยการ emit user profile อีกครั้ง
+            setTimeout(() => {
+                this.currentUser$.next(userProfile);
+            }, 100);
+    
+            // ถ้าผู้ใช้มีข้อมูลครบแล้ว ให้ไป dashboard เลย
+            if (!userProfile.needsProfileSetup) {
+                console.log('[AuthService] User has complete profile, redirecting to dashboard');
+                if (userProfile.memberType === 'owner') {
+                    await this.router.navigate(['/owner']);
+                } else {
+                    await this.router.navigate(['/main']);
+                }
+            } else {
+                // ถ้าผู้ใช้ยังไม่มีข้อมูลครบ ให้ไปหน้า registration
+                console.log('[AuthService] User needs profile setup, redirecting to registration');
                 this.router.navigate(['/register', userType], {
                     queryParams: { fromGoogle: 'true' },
                     state: {
@@ -455,12 +502,6 @@ export class AuthService {
                         isFromGoogle: true
                     }
                 });
-            } else {
-                if (userProfile.memberType === 'owner') {
-                    await this.router.navigate(['/owner']);
-                } else {
-                    await this.router.navigate(['/main']);
-                }
             }
     
             // Add safeguard: if backend returned success but memberType ≠ requested type → block login
@@ -793,18 +834,25 @@ export class AuthService {
 
     // เพิ่มเมธอด checkAuthState เพื่อตรวจสอบสถานะการเข้าสู่ระบบเมื่อแอปเริ่มทำงาน
     async checkAuthState(): Promise<UserProfile | null> {
+        console.log('[AuthService] Checking auth state...');
         const currentUser = this.auth.currentUser;
+        
         if (!currentUser) {
+            console.log('[AuthService] No current user found');
+            this.currentUser$.next(null);
             return null;
         }
         
         try {
+            console.log('[AuthService] Current user found:', currentUser.email);
             await this.refreshToken(true);
             
             const userProfile = await this.fetchUserProfile(currentUser);
+            console.log('[AuthService] User profile loaded:', userProfile);
             this.currentUser$.next(userProfile);
             return userProfile;
         } catch (error) {
+            console.error('[AuthService] Error checking auth state:', error);
             this.currentUser$.next(null);
             return null;
         }
@@ -840,6 +888,42 @@ export class AuthService {
             this.isTemporaryGoogleUser = false;
             this.skipAuthStateChange = false;
             throw error;
+        }
+    }
+
+    // เพิ่ม method สำหรับตรวจสอบข้อมูลผู้ใช้ที่มีอยู่แล้วจากอีเมล
+    async checkExistingUserByEmail(email: string): Promise<UserProfile | null> {
+        try {
+            const response = await this.http.get<any>(`${this.backendUrl}/auth/check-user/${encodeURIComponent(email)}`).toPromise();
+            
+            if (response && response.user) {
+                const user = response.user;
+                return {
+                    uid: user.uid,
+                    id: user.id,
+                    email: user.email,
+                    username: user.username || '',
+                    displayName: user.display_name || user.displayName || null,
+                    photoURL: user.photo_url || user.photoURL || null,
+                    memberType: user.member_type || user.memberType || 'member',
+                    needsProfileSetup: user.needs_profile_setup || user.needsProfileSetup || false,
+                    phoneNumber: user.phone_number || user.phoneNumber || null,
+                    residenceDormId: user.residence_dorm_id || user.residenceDormId || null,
+                    provider: user.provider || 'google',
+                    // Add owner fields
+                    secondaryPhone: user.secondary_phone || user.secondaryPhone || null,
+                    lineId: user.line_id || user.lineId || null,
+                    managerName: user.manager_name || user.managerName || null,
+                    // Add snake_case variants
+                    secondary_phone: user.secondary_phone || null,
+                    line_id: user.line_id || null,
+                    manager_name: user.manager_name || null
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error checking existing user:', error);
+            return null;
         }
     }
 

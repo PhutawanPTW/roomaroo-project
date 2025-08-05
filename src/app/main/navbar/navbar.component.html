@@ -2,7 +2,7 @@
   <!-- Content container with max-width -->
   <div class="w-full max-w-7xl mx-auto px-4 flex items-center justify-between h-full">
     <!-- ซ้ายสุด: โลโก้ -->
-    <a class="flex items-center cursor-pointer" routerLink="/main">
+    <a class="flex items-center cursor-pointer" [routerLink]="getHomeLink()">
       <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo" class="w-auto object-contain"
         style="height: 60px;" />
       <span class="text-xl font-thai flex items-center ml-2">
@@ -31,7 +31,7 @@
 
       <button *ngIf="!isLoading && isLoggedIn() && getUserType() === 'owner'"
         class="text-gray-600 text-base font-thai font-normal px-3 py-2 flex items-center bg-transparent border-0 outline-none cursor-pointer hover:text-black"
-        routerLink="/main/tenant-list">
+        routerLink="/owner/tenant-list">
         รายการผู้เช่า
       </button>
     </div>
