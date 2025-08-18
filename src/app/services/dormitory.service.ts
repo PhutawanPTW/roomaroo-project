@@ -70,6 +70,7 @@ export interface RoomType {
   size_sqm?: number;
   monthly_price?: number;
   daily_price?: number;
+  term_price?: number;
   summer_price?: number;
   price_type: 'fixed' | 'contact';  // fixed = ราคาชัดเจน, contact = ติดต่อสอบถาม
   description?: string;
@@ -160,6 +161,11 @@ export class DormitoryService {
   /** Add a new room type */
   addRoomType(dormId: number, roomType: Partial<RoomType>): Observable<RoomType> {
     return this.http.post<RoomType>(`${this.backendUrl}/dormitories/${dormId}/room-types`, roomType);
+  }
+  
+  /** Add multiple room types in one request (bulk) */
+  addRoomTypesBulk(dormId: number, roomTypes: Array<Partial<RoomType>>): Observable<any> {
+    return this.http.post(`${this.backendUrl}/dormitories/${dormId}/room-types/bulk`, { room_types: roomTypes });
   }
   
   /** Update a room type */

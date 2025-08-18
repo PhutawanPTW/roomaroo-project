@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -9,37 +10,118 @@ import { catchError } from 'rxjs/operators';
 export class OwnerDormitoryService {
   private apiUrl = 'http://localhost:3000'; // Your backend URL
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // สำหรับ production หรือหลัง login จริง
   getMyDormitorySubmissions(): Observable<any> {
     return this.http.get(`${this.apiUrl}/api/dormitories/my/submissions`)
       .pipe(
+        tap((resp) => {
+          try {
+            const arr = Array.isArray(resp) ? resp : [resp];
+            console.log('[OwnerDormitoryService] GET /api/dormitories/my/submissions -> items:', arr.length,
+              'first keys:', Object.keys(arr[0] || {}));
+            if (arr.length > 0) {
+              console.log('[OwnerDormitoryService] sample item:', arr[0]);
+            }
+          } catch { }
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // เพิ่มหอพัก: ส่งได้ทั้งเฉพาะข้อมูลพื้นฐาน หรือแนบ room_types มาด้วย
+  addDormitoryBasic(payload: {
+    dorm_name: string;
+    address: string;
+    dorm_description?: string;
+    zone_id: number | string;
+    room_types?: Array<{
+      name: string;
+      price_type: 'fixed' | 'contact';
+      monthly_price?: number;
+      daily_price?: number;
+      term_price?: number;
+      summer_price?: number;
+      description?: string;
+    }>;  // แนบได้เลยถ้าต้องการบันทึกพร้อมกัน
+  }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/api/add-dormitory/`, payload)
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] POST /api/add-dormitory/ -> ok', resp);
+          } catch { }
+        }),
         catchError(this.handleError)
       );
   }
 
   // ดึงหอพักที่ userId เป็นเจ้าของ (API ใหม่)
   getDormsByUserId(userId: string | number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/api/dormitories/user/${userId}`)
+    return this.http.get(`${this.apiUrl}/api/add-dormitory/owner/dormitories`)
       .pipe(
+        tap((resp) => {
+          try {
+            const arr = Array.isArray(resp) ? resp : [resp];
+            console.log('[OwnerDormitoryService] GET /api/add-dormitory/owner/dormitories',
+              '-> items:', arr.length, 'first keys:', Object.keys(arr[0] || {}));
+            if (arr.length > 0) {
+              console.log('[OwnerDormitoryService] sample item:', arr[0]);
+            }
+          } catch { }
+        }),
         catchError(this.handleError)
       );
   }
 
   private handleError(error: HttpErrorResponse) {
     console.error('API Error:', error);
-    
-    // Check if response is HTML (common when API endpoint doesn't exist)
-    if (error.error && typeof error.error === 'string' && error.error.includes('<!doctype')) {
+
+    // กรณี backend ส่ง HTML (เช่น endpoint ไม่ถูกต้อง)
+    if (typeof error.error === 'string' && (error.error.includes('<!doctype') || error.error.includes('<html'))) {
+      console.error('Server returned HTML response');
       return throwError(() => new Error('API endpoint not found - received HTML instead of JSON'));
     }
+
+    let serverMessage: string | undefined;
+    let serverErrors: unknown;
+
+    // ดึงข้อมูล message/errors จาก backend ให้ครบที่สุด
+    if (error.error) {
+      if (typeof error.error === 'object') {
+        serverMessage = (error.error.message ?? error.error.msg ?? error.error.error ?? undefined);
+        serverErrors = (error.error.errors ?? error.error.details ?? undefined);
+      } else if (typeof error.error === 'string') {
+        const trimmed = error.error.trim();
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            serverMessage = (parsed.message ?? parsed.msg ?? parsed.error ?? serverMessage);
+            serverErrors = (parsed.errors ?? parsed.details ?? serverErrors);
+          } catch {
+            // ไม่สามารถ parse ได้ ปล่อยผ่าน
+          }
+        }
+      }
+    }
+
+    if (serverMessage) console.error('Server message:', serverMessage);
+    if (serverErrors !== undefined) console.error('Server errors:', serverErrors);
     
-    // Handle other HTTP errors
+
     if (error.status === 0) {
       return throwError(() => new Error('Unable to connect to server'));
     }
-    
-    return throwError(() => new Error(error.message || 'An error occurred'));
+
+    // ส่งข้อความที่อ่านง่ายกลับไปให้ component
+    const message = serverMessage || error.message || 'An error occurred';
+    return throwError(() => new Error(message));
+
+    if (error.error) {
+      console.error('Server message:', error.error.message);
+      console.error('Server errors:', error.error.errors);
+      console.error('Server normalized:', error.error.normalized); // เพิ่มบรรทัดนี้
+    }
   }
 }

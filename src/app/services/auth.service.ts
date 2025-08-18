@@ -57,6 +57,10 @@ export class AuthService {
     private backendUrl = 'http://localhost:3000/api';
     public currentUser$ = new BehaviorSubject<UserProfile | null | undefined>(undefined);
     
+    // เพิ่ม flag เพื่อติดตามสถานะการโหลด auth state
+    private authStateInitialized = false;
+    private authStatePromise: Promise<void> | null = null;
+    
     // Define user types to avoid TypeScript errors
     private readonly USER_TYPE_OWNER: 'owner' = 'owner';
     private readonly USER_TYPE_MEMBER: 'member' = 'member';
@@ -82,47 +86,71 @@ export class AuthService {
         private auth: Auth,
         private router: Router
     ) {
-        onAuthStateChanged(this.auth, async (user) => {
-            console.log('[AuthService] Auth state changed:', user ? 'User found' : 'No user');
-            
-            if (this.isGoogleRegistrationFlow) {
-                console.log('[AuthService] Skipping auth state change - Google registration flow');
-                return;
-            }
+        this.initializeAuthState();
+    }
 
-            // *** เพิ่มการ skip เมื่อกำลัง registration ***
-            if (this.isRegistrationInProgress) {
-                console.log('[AuthService] Skipping auth state change - Registration in progress');
-                return;
-            }
+    // เพิ่ม method สำหรับ initialize auth state
+    private initializeAuthState(): void {
+        if (this.authStatePromise) {
+            return; // กำลัง initialize อยู่แล้ว
+        }
 
-            if (this.skipAuthStateChange) {
-                console.log('[AuthService] Skipping auth state change - Skip flag set');
-                this.skipAuthStateChange = false;
-                return;
-            }
-
-            // ป้องกันการจัดการ temporary Google user
-            if (this.isTemporaryGoogleUser) {
-                console.log('[AuthService] Skipping auth state change - Temporary Google user');
-                return;
-            }
-
-            if (user) {
-                try {
-                    console.log('[AuthService] Fetching user profile for:', user.email);
-                    const profile = await this.fetchUserProfile(user);
-                    console.log('[AuthService] User profile fetched:', profile);
-                    this.currentUser$.next(profile);
-                } catch (error) {
-                    console.error('[AuthService] Error fetching user profile:', error);
-                    this.currentUser$.next(null);
+        this.authStatePromise = new Promise<void>((resolve) => {
+            onAuthStateChanged(this.auth, async (user) => {
+                console.log('[AuthService] Auth state changed:', user ? 'User found' : 'No user');
+                
+                if (this.isGoogleRegistrationFlow) {
+                    console.log('[AuthService] Skipping auth state change - Google registration flow');
+                    return;
                 }
-            } else {
-                console.log('[AuthService] No user, setting currentUser$ to null');
-                this.currentUser$.next(null);
-            }
+
+                // *** เพิ่มการ skip เมื่อกำลัง registration ***
+                if (this.isRegistrationInProgress) {
+                    console.log('[AuthService] Skipping auth state change - Registration in progress');
+                    return;
+                }
+
+                if (this.skipAuthStateChange) {
+                    console.log('[AuthService] Skipping auth state change - Skip flag set');
+                    this.skipAuthStateChange = false;
+                    return;
+                }
+
+                // ป้องกันการจัดการ temporary Google user
+                if (this.isTemporaryGoogleUser) {
+                    console.log('[AuthService] Skipping auth state change - Temporary Google user');
+                    return;
+                }
+
+                try {
+                    if (user) {
+                        console.log('[AuthService] Fetching user profile for:', user.email);
+                        const profile = await this.fetchUserProfile(user);
+                        console.log('[AuthService] User profile fetched:', profile);
+                        this.currentUser$.next(profile);
+                    } else {
+                        console.log('[AuthService] No user, setting currentUser$ to null');
+                        this.currentUser$.next(null);
+                    }
+                } catch (error) {
+                    console.error('[AuthService] Error in auth state change:', error);
+                    // ไม่ set currentUser$ เป็น null เมื่อเกิด error เพื่อป้องกันการ redirect
+                    // ให้รอให้ auth state ถูกต้องก่อน
+                } finally {
+                    if (!this.authStateInitialized) {
+                        this.authStateInitialized = true;
+                        resolve();
+                    }
+                }
+            });
         });
+    }
+
+    // เพิ่ม method สำหรับรอให้ auth state พร้อม
+    async waitForAuthState(): Promise<void> {
+        if (this.authStatePromise) {
+            await this.authStatePromise;
+        }
     }
 
     // เพิ่ม method สำหรับ refresh token
@@ -835,6 +863,10 @@ export class AuthService {
     // เพิ่มเมธอด checkAuthState เพื่อตรวจสอบสถานะการเข้าสู่ระบบเมื่อแอปเริ่มทำงาน
     async checkAuthState(): Promise<UserProfile | null> {
         console.log('[AuthService] Checking auth state...');
+        
+        // รอให้ auth state initialize เสร็จก่อน
+        await this.waitForAuthState();
+        
         const currentUser = this.auth.currentUser;
         
         if (!currentUser) {
@@ -845,7 +877,13 @@ export class AuthService {
         
         try {
             console.log('[AuthService] Current user found:', currentUser.email);
-            await this.refreshToken(true);
+            
+            // ลอง refresh token ก่อน
+            try {
+                await this.refreshToken(true);
+            } catch (tokenError) {
+                console.warn('[AuthService] Token refresh failed, but continuing:', tokenError);
+            }
             
             const userProfile = await this.fetchUserProfile(currentUser);
             console.log('[AuthService] User profile loaded:', userProfile);
@@ -853,7 +891,10 @@ export class AuthService {
             return userProfile;
         } catch (error) {
             console.error('[AuthService] Error checking auth state:', error);
-            this.currentUser$.next(null);
+            
+            // ไม่ set currentUser$ เป็น null ทันทีเมื่อเกิด error
+            // ให้รอให้ auth state ถูกต้องก่อน
+            // this.currentUser$.next(null);
             return null;
         }
     }

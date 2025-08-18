@@ -4,7 +4,7 @@
     <nav>
       <ul>
         <li class="font-thai" [class.active]="selectedTab === 'all'" (click)="setTab('all')">รายการหอพักทั้งหมด</li>
-        <li class="font-thai" [class.active]="selectedTab === 'pending'" (click)="setTab('pending')">รายการรอการอนุมัติ</li>
+        <li class="font-thai" [class.active]="selectedTab === 'รออนุมัติ'" (click)="setTab('รออนุมัติ')">รายการรอการอนุมัติ</li>
       </ul>
     </nav>
   </aside>
@@ -37,7 +37,7 @@
               <td class="font-english">{{ dorm.userId }}</td>
               <td class="font-thai">{{ dorm.owner }}</td>
               <td>
-                <ng-container *ngIf="selectedTab === 'pending'; else editDeleteBtns">
+                <ng-container *ngIf="selectedTab === 'รออนุมัติ'; else editDeleteBtns">
                   <button class="check-btn font-thai">ตรวจสอบ</button>
                 </ng-container>
                 <ng-template #editDeleteBtns>

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { Observable, of } from 'rxjs';
-import { map, take, filter, catchError, switchMap, tap, first } from 'rxjs/operators';
+import { map, take, filter, catchError, switchMap, tap, first, timeout } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class AuthRedirectGuard implements CanActivate {
@@ -14,6 +14,8 @@ export class AuthRedirectGuard implements CanActivate {
     return this.authService.currentUser$.pipe(
       filter(user => user !== undefined),
       tap(user => console.log('[AuthRedirectGuard] Auth state determined:', user ? 'User found' : 'No user')),
+      // เพิ่ม timeout เพื่อป้องกันการรอนานเกินไป
+      timeout(15000),
       first(),
       map(user => {
         const destPath = route.routeConfig?.path || '';

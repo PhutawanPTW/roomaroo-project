@@ -1,77 +1,121 @@
 <app-navbar></app-navbar>
 
-<!-- Stepper component -->
+<!-- Stepper -->
 <div class="flex justify-center my-10">
-  <div class="flex items-center w-full max-w-2xl">
-    <!-- Step 1: ข้อมูลหอพัก -->
+  <div class="flex items-center w-full max-w-xl">
+    <!-- Step 1 -->
     <div class="flex justify-center items-center relative">
-      <div 
-        class="w-12 h-12 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
+      <div
+        class="w-10 h-10 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
         [ngClass]="{
           'bg-[#007AFF]': currentStep >= 1,
           'bg-gray-300': currentStep < 1
         }"
         (click)="goToStep(1)"
-        title="ข้อมูลหอพัก">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m1.5.5l-1.5-.5M6.75 7.364V3h-3v18m3-13.636l10.5-3.819" />
+        title="เพิ่ม"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="w-5 h-5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 4.5v15m7.5-7.5h-15"
+          />
         </svg>
       </div>
     </div>
-    <!-- Connector 1-2 -->
-    <div class="flex-1 h-1 mx-2" [ngClass]="{'bg-[#007AFF]': currentStep >= 2, 'bg-gray-300': currentStep < 2}"></div>
-    
-    <!-- Step 2: ตัวอย่างหอพัก -->
+
+    <!-- Connector 1–2 -->
+    <div
+      class="relative flex-1 h-px mx-2 rounded overflow-hidden"
+      [ngClass]="{
+        'bg-[#007AFF]': currentStep >= 2,
+        'bg-gray-300': currentStep < 2
+      }"
+    >
+      <div *ngIf="currentStep === 1" class="absolute inset-0">
+        <div
+          class="h-full w-1/2 bg-gradient-to-r from-transparent via-[#007AFF] to-transparent opacity-90 animate-connector"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
     <div class="flex justify-center items-center relative">
-      <div 
-        class="w-12 h-12 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
+      <div
+        class="w-10 h-10 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
         [ngClass]="{
           'bg-[#007AFF]': currentStep >= 2,
           'bg-gray-300': currentStep < 2,
           'cursor-not-allowed': maxReachedStep < 2
         }"
         (click)="goToStep(2)"
-        title="ตัวอย่างหอพัก">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        title="ตรวจสอบ"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="w-5 h-5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M2.25 12c0 0 3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"
+          />
+          <circle cx="12" cy="12" r="3" />
         </svg>
       </div>
     </div>
-    <!-- Connector 2-3 -->
-    <div class="flex-1 h-1 mx-2" [ngClass]="{'bg-[#007AFF]': currentStep >= 3, 'bg-gray-300': currentStep < 3}"></div>
-    
-    <!-- Step 3: ข้อมูลติดต่อ -->
+
+    <!-- Connector 2–3 -->
+    <div
+      class="relative flex-1 h-px mx-2 rounded overflow-hidden"
+      [ngClass]="{
+        'bg-[#007AFF]': currentStep >= 3,
+        'bg-gray-300': currentStep < 3
+      }"
+    >
+      <div *ngIf="currentStep === 2" class="absolute inset-0">
+        <div
+          class="h-full w-1/2 bg-gradient-to-r from-transparent via-[#007AFF] to-transparent opacity-90 animate-connector"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
     <div class="flex justify-center items-center relative">
-      <div 
-        class="w-12 h-12 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
+      <div
+        class="w-10 h-10 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
         [ngClass]="{
           'bg-[#007AFF]': currentStep >= 3,
           'bg-gray-300': currentStep < 3,
           'cursor-not-allowed': maxReachedStep < 3
         }"
         (click)="goToStep(3)"
-        title="ข้อมูลติดต่อ">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-        </svg>
-      </div>
-    </div>
-    <!-- Connector 3-4 -->
-    <div class="flex-1 h-1 mx-2" [ngClass]="{'bg-[#007AFF]': currentStep >= 4, 'bg-gray-300': currentStep < 4}"></div>
-    
-    <!-- Step 4: เสร็จสิ้น -->
-    <div class="flex justify-center items-center relative">
-      <div 
-        class="w-12 h-12 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
-        [ngClass]="{
-          'bg-[#007AFF]': currentStep >= 4,
-          'bg-gray-300': currentStep < 4,
-          'cursor-not-allowed': maxReachedStep < 4
-        }"
-        (click)="goToStep(4)"
-        title="เสร็จสิ้น">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        title="สำเร็จ"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="w-5 h-5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 12.75l2.25 2.25L15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       </div>
     </div>
@@ -79,598 +123,1258 @@
 </div>
 
 <form [formGroup]="dormForm" (ngSubmit)="onSubmit()">
-  <!-- Main form container -->
   <div class="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 p-8">
-    
-    <!-- Step 1: ข้อมูลหอพัก -->
+    <!-- ==================== Step 1 ==================== -->
     <div *ngIf="currentStep === 1" class="space-y-8">
-      
       <!-- ข้อมูลทั่วไป -->
       <div formGroupName="generalInfo">
-        <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">ข้อมูลทั่วไป</h3>
-        
+        <h3
+          class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200"
+        >
+          ข้อมูลทั่วไป
+        </h3>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label for="name" class="block mb-2 text-sm font-medium text-gray-700">ชื่อหอพัก *</label>
-            <input 
-              type="text" 
-              id="name" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors" 
+            <label
+              for="name"
+              class="block mb-2 text-sm font-medium text-gray-700"
+              >ชื่อหอพัก <span class="text-red-500">*</span></label
+            >
+            <input
+              id="name"
+              type="text"
               formControlName="name"
-              placeholder="กรอกชื่อหอพัก">
-        </div>
-        
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
+              placeholder="กรอกชื่อหอพัก"
+            />
+          </div>
+
           <div>
-            <label for="type" class="block mb-2 text-sm font-medium text-gray-700">ประเภท *</label>
-            <select 
-              id="type" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] appearance-none bg-white" 
-              formControlName="type">
-              <option value="" disabled>เลือกประเภท</option>
-              <option value="หอพักชาย">หอพักชาย</option>
-              <option value="หอพักหญิง">หอพักหญิง</option>
-              <option value="หอพักรวม">หอพักรวม</option>
-          </select>
+            <label
+              for="zone"
+              class="block mb-2 text-sm font-medium text-gray-700"
+              >โซน <span class="text-red-500">*</span></label
+            >
+            <div class="relative">
+              <select
+                id="zone"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:border-[#007AFF] focus:shadow-none transition-colors appearance-none pr-12 bg-white text-gray-700"
+                formControlName="zone_id"
+              >
+                <option *ngFor="let z of zones" [ngValue]="z.zone_id">
+                  {{ z.zone_name }}
+                </option>
+              </select>
+              <span
+                *ngIf="!dormForm.get('generalInfo.zone_id')?.value"
+                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                >เลือกโซน</span
+              >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
+              </svg>
+            </div>
+            <div *ngIf="zonesLoading" class="text-xs text-gray-500 mt-1">
+              กำลังโหลดรายการโซน...
+            </div>
+            <div *ngIf="zonesError" class="text-xs text-red-600 mt-1">
+              {{ zonesError }}
+            </div>
           </div>
         </div>
-        
+
         <div class="mt-6">
-          <label for="price" class="block mb-2 text-sm font-medium text-gray-700">ราคา *</label>
-          <input 
-            type="text" 
-            id="price" 
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors" 
-            formControlName="price"
-            placeholder="กรอกช่วงราคา เช่น 3000-5000">
+          <label
+            for="address"
+            class="block mb-2 text-sm font-medium text-gray-700"
+            >ที่อยู่ <span class="text-red-500">*</span></label
+          >
+          <input
+            id="address"
+            type="text"
+            formControlName="address"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
+            placeholder="ระบุที่อยู่ของหอพัก"
+          />
         </div>
-        
+
         <div class="mt-6">
-          <label for="description" class="block mb-2 text-sm font-medium text-gray-700">รายละเอียดเพิ่มเติม *</label>
-          <textarea 
-            id="description" 
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors min-h-[120px] resize-y" 
-            rows="5" 
+          <label
+            for="description"
+            class="block mb-2 text-sm font-medium text-gray-700"
+            >รายละเอียดเพิ่มเติม <span class="text-red-500">*</span></label
+          >
+          <textarea
+            id="description"
+            rows="5"
             formControlName="description"
-            placeholder="อธิบายรายละเอียดของหอพัก สิ่งอำนวยความสะดวก และข้อมูลอื่นๆ"></textarea>
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:border-[#007AFF] focus:shadow-none transition-colors min-h-[120px] appearance-none resize-y"
+            placeholder="อธิบายรายละเอียดของหอพัก สิ่งอำนวยความสะดวก และข้อมูลอื่นๆ"
+          ></textarea>
         </div>
       </div>
-      
+
       <!-- ประเภทห้อง -->
-      <div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">ประเภทห้อง</h3>
-        
-        <div formArrayName="roomTypes" class="space-y-4">
-          <div *ngFor="let roomType of roomTypes.controls; let i = index" [formGroupName]="i" 
-               class="border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <div class="flex justify-between items-center mb-4">
-              <h4 class="font-medium text-gray-800">ประเภทห้อง {{i + 1}}</h4>
-              <button 
-                *ngIf="roomTypes.length > 1"
-                type="button" 
-                (click)="removeRoomType(i)"
-                class="text-red-500 hover:text-red-700 text-sm">
-                ลบ
-              </button>
+      <div formArrayName="roomTypes" class="space-y-4">
+        <h3
+          class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200"
+        >
+          ประเภทห้อง
+        </h3>
+
+        <div
+          *ngFor="let roomType of roomTypes.controls; let i = index"
+          [formGroupName]="i"
+          class="border border-gray-300 rounded-md p-4 bg-white"
+        >
+          <div class="flex justify-between items-center mb-4">
+            <span class="font-medium text-gray-800"
+              >ประเภทห้องที่ {{ i + 1 }}</span
+            >
+            <button
+              *ngIf="roomTypes.length > 1"
+              type="button"
+              (click)="removeRoomType(i)"
+              class="text-red-500 hover:underline text-sm"
+            >
+              ลบ
+            </button>
+          </div>
+
+          <div
+            class="grid grid-cols-1 md:[grid-template-columns:auto_1fr_auto_1fr] gap-3 md:gap-4"
+          >
+            <div class="relative w-full md:w-40 lg:w-44">
+              <select
+                *ngIf="!isOther(i)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md appearance-none pr-10 bg-white text-gray-700 focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                formControlName="type"
+                (change)="onTypeChange(i)"
+              >
+                <option value="" disabled selected>เลือกประเภทห้อง</option>
+                <option value="ห้องพัดลม">ห้องพัดลม</option>
+                <option value="ห้องแอร์">ห้องแอร์</option>
+                <option value="ห้องพัดลม + แอร์">ห้องพัดลม + แอร์</option>
+                <option value="other">อื่น ๆ</option>
+              </select>
+
+              <input
+                *ngIf="isOther(i)"
+                #customTypeInput
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 pr-10 focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                placeholder="ระบุชื่อประเภทห้อง"
+                formControlName="customType"
+                (keydown.enter)="customTypeInput.blur()"
+                (keydown.escape)="revertOther(i)"
+                (blur)="confirmOther(i)"
+              />
+
+              <svg
+                *ngIf="!isOther(i)"
+                xmlns="http://www.w3.org/2000/svg"
+                class="pointer-events-none absolute right-3 top-3.5 w-4 h-4 text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
+              </svg>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">ประเภทห้อง</label>
-                <select 
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] appearance-none bg-white" 
-                  formControlName="type">
-                  <option value="" disabled>เลือกประเภทห้อง</option>
-                  <option value="ห้องพัดลม">ห้องพัดลม</option>
-                  <option value="ห้องแอร์">ห้องแอร์</option>
-                  <option value="ห้องดีลักซ์">ห้องดีลักซ์</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">ราคา/เดือน</label>
-                <input 
-                  type="text" 
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors" 
-                  placeholder="ราคา/เดือน" 
-                  formControlName="pricePerMonth">
-              </div>
-              
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">ความจุ</label>
-                <input 
-                  type="text" 
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors" 
-                  placeholder="จำนวนคน" 
-                  formControlName="capacity">
-              </div>
+
+            <!-- เพิ่ม dropdown ประเภทเตียง -->
+            <div class="relative w-full md:w-40 lg:w-44">
+              <select
+                class="w-full px-3 py-2 border border-gray-300 rounded-md appearance-none pr-10 bg-white text-gray-700 focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                formControlName="bed_type"
+              >
+                <option value="" disabled selected>เลือกประเภทเตียง</option>
+                <option value="เตียงเดี่ยว">เตียงเดี่ยว</option>
+                <option value="เตียงคู่">เตียงคู่</option>
+              </select>
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="pointer-events-none absolute right-3 top-3.5 w-4 h-4 text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
+              </svg>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="^\\d+$"
+                (input)="enforceNumeric($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                placeholder="ราคารายเดือน"
+                formControlName="pricePerMonth"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="^\\d+$"
+                (input)="enforceNumeric($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                placeholder="ราคารายวัน"
+                formControlName="pricePerDay"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="^\\d+$"
+                (input)="enforceNumeric($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                placeholder="ราคารายเทอม"
+                formControlName="pricePerTerm"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="^\\d+$"
+                (input)="enforceNumeric($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-[#007AFF] transition-colors"
+                placeholder="ราคารายซัมเมอร์"
+                formControlName="pricePerSummer"
+              />
             </div>
           </div>
+
+          <div
+            *ngIf="roomType.errors?.['needMonthOrDay'] && (roomType.touched || roomType.dirty)"
+            class="text-red-500 text-sm mt-2"
+          >
+            กรุณากรอกอย่างน้อย 1 ช่อง: <b>รายเดือน</b> หรือ <b>รายวัน</b>
+          </div>
+
+          <!-- แสดง error สำหรับ bed_type -->
+          <div
+            *ngIf="roomType.get('bed_type')?.errors?.['required'] && (roomType.get('bed_type')?.touched || roomType.get('bed_type')?.dirty)"
+            class="text-red-500 text-sm mt-2"
+          >
+            กรุณาเลือกประเภทเตียง
+          </div>
         </div>
-        
-        <!-- Add Room Type Button -->
-        <div class="mt-6">
-          <button 
-            type="button" 
-            class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-2" 
-            (click)="addRoomType()">
-            <span class="text-lg">+</span> ประเภทห้อง
+
+        <div class="flex justify-center">
+          <button
+            type="button"
+            (click)="addRoomType()"
+            class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md font-medium transition"
+          >
+            + ประเภทห้อง
           </button>
         </div>
       </div>
-      
+
+      <!-- สิ่งอำนวยความสะดวก -->
+      <div formArrayName="amenities" class="mt-8">
+        <h3
+          class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200"
+        >
+          สิ่งอำนวยความสะดวก
+        </h3>
+        <!-- แยกเป็น 2 หมวด: ภายในห้อง และ ภายนอก -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- ภายในห้อง -->
+          <div>
+                         <h4 class="text-lg font-semibold text-gray-600 mb-4">ภายในห้อง</h4>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+               <ng-container *ngFor="let a of amenitiesList; let i = index">
+                 <label
+                   *ngIf="a.location_type === 'ภายใน'"
+                   class="flex items-center space-x-2 cursor-pointer"
+                 >
+                   <input
+                     type="checkbox"
+                     [formControlName]="i"
+                     (change)="onAmenityChange(i, a.id)"
+                     class="w-4 h-4 rounded border-gray-300 accent-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                   />
+                   <span
+                     class="text-sm select-none"
+                     [ngClass]="
+                       dormForm.get('amenities')?.value[i]
+                         ? 'text-gray-900 font-medium'
+                         : 'text-gray-600'
+                     "
+                   >
+                     {{ a.name }}
+                   </span>
+          </label>
+               </ng-container>
+             </div>
+          </div>
+
+          <!-- ภายนอก -->
+          <div>
+                         <h4 class="text-lg font-semibold text-gray-600 mb-4">ภายนอกห้อง</h4>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+               <ng-container *ngFor="let a of amenitiesList; let i = index">
+                 <label
+                   *ngIf="a.location_type === 'ภายนอก'"
+                   class="flex items-center space-x-2 cursor-pointer"
+                 >
+                   <input
+                     type="checkbox"
+                     [formControlName]="i"
+                     (change)="onAmenityChange(i, a.id)"
+                     class="w-4 h-4 rounded border-gray-300 accent-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                   />
+                   <span
+                     class="text-sm select-none"
+                     [ngClass]="
+                       dormForm.get('amenities')?.value[i]
+                         ? 'text-gray-900 font-medium'
+                         : 'text-gray-600'
+                     "
+                   >
+                     {{ a.name }}
+                   </span>
+                 </label>
+               </ng-container>
+             </div>
+          </div>
+        </div>
+        <!-- ช่องกรอก 'อื่นๆ' โผล่เมื่อเช็ค -->
+        <div *ngIf="isAmenityChecked('other')" class="mt-4 space-y-2">
+          <div class="text-sm text-gray-700 font-medium">
+            ระบุสิ่งอำนวยความสะดวก (อื่นๆ)
+          </div>
+          <div
+            *ngFor="let ctrl of amenitiesOther.controls; let k = index"
+            formArrayName="amenitiesOther"
+            class="flex items-center gap-2"
+          >
+            <div [formGroupName]="k" class="flex flex-col gap-2 flex-1">
+              <input
+                type="text"
+                formControlName="name"
+                maxlength="50"
+                placeholder="ชื่อสิ่งอำนวยความสะดวก"
+                class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF]"
+              />
+              <select
+                formControlName="location_type"
+                class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF]"
+              >
+                <option value="">เลือกตำแหน่ง</option>
+                <option value="ภายใน">ภายใน</option>
+                <option value="ภายนอก">ภายนอก</option>
+                <option value="ส่วนกลาง">ส่วนกลาง</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              (click)="removeOtherAmenityField(k)"
+              *ngIf="amenitiesOther.length > 1"
+              class="px-2 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+            >
+              ลบ
+            </button>
+          </div>
+          <button
+            type="button"
+            (click)="addOtherAmenityField()"
+            class="text-sm text-[#007AFF] hover:underline"
+          >
+            + เพิ่มรายการอื่น ๆ
+          </button>
+        </div>
+      </div>
+
       <!-- ค่าใช้จ่าย -->
       <div formGroupName="utilities">
-        <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">ค่าใช้จ่าย</h3>
-        
+        <h3
+          class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200"
+        >
+          ค่าใช้จ่าย
+        </h3>
+
         <!-- ค่าไฟ -->
         <div formGroupName="electricity" class="mb-8">
           <h4 class="font-medium text-gray-800 mb-4">ค่าไฟ</h4>
-          
+
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Radio Options -->
             <div class="space-y-4">
-              <div class="flex items-center">
-                <input 
-                  type="radio" 
-                  id="electricityByOutlet" 
-                  name="electricityType" 
-                  value="คิดตามปลั๊ว" 
-                  class="w-5 h-5 text-[#007AFF] border-gray-300 focus:ring-[#007AFF]" 
-                  formControlName="type">
-                <label for="electricityByOutlet" class="ml-3 text-gray-700">คิดตามปลั๊ว</label>
-              </div>
-              
-              <div class="flex items-center">
-                <input 
-                  type="radio" 
-                  id="electricityFixed" 
-                  name="electricityType" 
-                  value="เหมาจ่าย" 
-                  class="w-5 h-5 text-[#007AFF] border-gray-300 focus:ring-[#007AFF]" 
-                  formControlName="type">
-                <label for="electricityFixed" class="ml-3 text-gray-700">เหมาจ่าย</label>
-              </div>
-              
-              <div class="flex items-center">
-                <input 
-                  type="radio" 
-                  id="electricityByMeter" 
-                  name="electricityType" 
-                  value="ตามมิเตอร์ค่าไฟ" 
-                  class="w-5 h-5 text-[#007AFF] border-gray-300 focus:ring-[#007AFF]" 
-                  formControlName="type">
-                <label for="electricityByMeter" class="ml-3 text-gray-700">ตามมิเตอร์ค่าไฟ/จ่ายค่าไฟฟ้า</label>
-              </div>
+              <label class="flex items-center"
+                ><input
+                  type="radio"
+                  name="electricity_type"
+                  value="คิดตามหน่วย"
+                  class="w-5 h-5 accent-red-500 border-gray-300"
+                  formControlName="electricity_type"
+                /><span class="ml-3 text-gray-700">คิดตามหน่วย</span></label
+              >
+              <label class="flex items-center"
+                ><input
+                  type="radio"
+                  name="electricity_type"
+                  value="เหมาจ่าย"
+                  class="w-5 h-5 accent-red-500 border-gray-300"
+                  formControlName="electricity_type"
+                /><span class="ml-3 text-gray-700">เหมาจ่าย</span></label
+              >
+              <label class="flex items-center"
+                ><input
+                  type="radio"
+                  name="electricity_type"
+                  value="ตามมิเตอร์"
+                  class="w-5 h-5 accent-red-500 border-gray-300"
+                  formControlName="electricity_type"
+                /><span class="ml-3 text-gray-700"
+                  >ตามมิเตอร์ค่าไฟ/จ่ายค่าไฟฟ้า</span
+                ></label
+              >
             </div>
-            
-            <!-- Input Fields -->
+
             <div class="space-y-4">
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">บาท/หน่วย</label>
-                <input 
-                  type="text" 
-                  formControlName="pricePerUnit" 
+              <div
+                *ngIf="
+                  electricity.get('electricity_type')?.value ===
+                    'คิดตามหน่วย' ||
+                  electricity.get('electricity_type')?.value === 'เหมาจ่าย'
+                "
+              >
+                <label class="block mb-2 text-sm font-medium text-gray-700">
+                  {{
+                    electricity.get("electricity_type")?.value === "เหมาจ่าย"
+                      ? "บาท/เดือน"
+                      : "บาท/หน่วย"
+                  }}
+                </label>
+                <input
+                  type="text"
+                  formControlName="electricity_rate"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-                  [disabled]="electricity.get('type')?.value === 'เหมาจ่าย'"
-                  placeholder="ราคาต่อหน่วย">
+                  [placeholder]="
+                    electricity.get('electricity_type')?.value === 'เหมาจ่าย'
+                      ? 'ราคาเหมาจ่าย'
+                      : 'ราคาต่อหน่วย'
+                  "
+                  pattern="^\d+(\.\d{1,2})?$"
+                  (input)="enforceNumeric($event)"
+                />
               </div>
-              
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">ราคาเหมาจ่าย</label>
-                <input 
-                  type="text" 
-                  formControlName="fixedPrice" 
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-                  [disabled]="electricity.get('type')?.value !== 'เหมาจ่าย'"
-                  placeholder="ราคาเหมาจ่าย">
+              <div
+                *ngIf="
+                  electricity.get('electricity_type')?.value === 'ตามมิเตอร์'
+                "
+              >
+                <label class="block mb-2 text-sm font-medium text-gray-700"
+                  >บาท/หน่วย</label
+                >
+                <div
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                >
+                  ตามอัตราทางการ (การไฟฟ้า)
+              </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         <!-- ค่าน้ำ -->
         <div formGroupName="water">
           <h4 class="font-medium text-gray-800 mb-4">ค่าน้ำ</h4>
-          
+
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Radio Options -->
             <div class="space-y-4">
-              <div class="flex items-center">
-                <input 
-                  type="radio" 
-                  id="waterByOutlet" 
-                  name="waterType" 
-                  value="คิดตามปลั๊ว" 
-                  class="w-5 h-5 text-[#007AFF] border-gray-300 focus:ring-[#007AFF]" 
-                  formControlName="type">
-                <label for="waterByOutlet" class="ml-3 text-gray-700">คิดตามปลั๊ว</label>
-              </div>
-              
-              <div class="flex items-center">
-                <input 
-                  type="radio" 
-                  id="waterFixed" 
-                  name="waterType" 
-                  value="เหมาจ่าย" 
-                  class="w-5 h-5 text-[#007AFF] border-gray-300 focus:ring-[#007AFF]" 
-                  formControlName="type">
-                <label for="waterFixed" class="ml-3 text-gray-700">เหมาจ่าย</label>
-              </div>
-              
-              <div class="flex items-center">
-                <input 
-                  type="radio" 
-                  id="waterByMeter" 
-                  name="waterType" 
-                  value="ตามมิเตอร์ค่าน้ำ" 
-                  class="w-5 h-5 text-[#007AFF] border-gray-300 focus:ring-[#007AFF]" 
-                  formControlName="type">
-                <label for="waterByMeter" class="ml-3 text-gray-700">ตามมิเตอร์ค่าน้ำ/จ่ายค่าประปา</label>
-              </div>
+              <label class="flex items-center"
+                ><input
+                  type="radio"
+                  name="water_type"
+                  value="คิดตามหน่วย"
+                  class="w-5 h-5 accent-red-500 border-gray-300"
+                  formControlName="water_type"
+                /><span class="ml-3 text-gray-700">คิดตามหน่วย</span></label
+              >
+              <label class="flex items-center"
+                ><input
+                  type="radio"
+                  name="water_type"
+                  value="เหมาจ่าย"
+                  class="w-5 h-5 accent-red-500 border-gray-300"
+                  formControlName="water_type"
+                /><span class="ml-3 text-gray-700">เหมาจ่าย</span></label
+              >
+              <label class="flex items-center"
+                ><input
+                  type="radio"
+                  name="water_type"
+                  value="ตามมิเตอร์"
+                  class="w-5 h-5 accent-red-500 border-gray-300"
+                  formControlName="water_type"
+                /><span class="ml-3 text-gray-700"
+                  >ตามมิเตอร์ค่าน้ำ/จ่ายค่าประปา</span
+                ></label
+              >
             </div>
-            
-            <!-- Input Fields -->
+
             <div class="space-y-4">
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">บาท/หน่วย</label>
-                <input 
-                  type="text" 
-                  formControlName="pricePerUnit" 
+              <div
+                *ngIf="
+                  water.get('water_type')?.value === 'คิดตามหน่วย' ||
+                  water.get('water_type')?.value === 'เหมาจ่าย'
+                "
+              >
+                <label class="block mb-2 text-sm font-medium text-gray-700">
+                  {{
+                    water.get("water_type")?.value === "เหมาจ่าย"
+                      ? "บาท/เดือน"
+                      : "บาท/หน่วย"
+                  }}
+                </label>
+                <input
+                  type="text"
+                  formControlName="water_rate"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-                  [disabled]="water.get('type')?.value === 'เหมาจ่าย'"
-                  placeholder="ราคาต่อหน่วย">
+                  [placeholder]="
+                    water.get('water_type')?.value === 'เหมาจ่าย'
+                      ? 'ราคาเหมาจ่าย'
+                      : 'ราคาต่อหน่วย'
+                  "
+                  pattern="^\d+(\.\d{1,2})?$"
+                  (input)="enforceNumeric($event)"
+                />
               </div>
-              
-              <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">ราคาเหมาจ่าย</label>
-                <input 
-                  type="text" 
-                  formControlName="fixedPrice" 
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-                  [disabled]="water.get('type')?.value !== 'เหมาจ่าย'"
-                  placeholder="ราคาเหมาจ่าย">
+              <div *ngIf="water.get('water_type')?.value === 'ตามมิเตอร์'">
+                <label class="block mb-2 text-sm font-medium text-gray-700"
+                  >บาท/หน่วย</label
+                >
+                <div
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                >
+                  ตามอัตราทางการ (การประปา)
+              </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- ระบุตำแหน่งที่พัก -->
       <div formGroupName="location">
-        <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">ระบุตำแหน่งที่พัก</h3>
-        
-        <div class="mb-6">
-          <label class="block mb-2 text-sm font-medium text-gray-700">ที่อยู่</label>
-          <input 
-            type="text" 
-            formControlName="address" 
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors" 
-            placeholder="ระบุที่อยู่ของหอพัก">
+        <h3
+          class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200"
+        >
+          ระบุตำแหน่งที่พัก
+        </h3>
+        <div
+          class="w-full h-96 rounded-lg overflow-hidden border border-gray-200 mb-4 relative"
+          style="min-height: 384px; position: relative; z-index: 1;"
+        >
+          <div id="location-map" class="w-full h-full" style="min-height: 384px; position: relative; z-index: 1;"></div>
         </div>
-
-        <!-- Map Container -->
-        <div class="w-full h-80 rounded-lg overflow-hidden border border-gray-200 mb-4 relative">
-          <div id="location-map" class="w-full h-full"></div>
-          
-          <!-- Map Controls -->
-          <div class="absolute bottom-6 right-6 flex flex-col gap-2">
-            <div class="flex flex-col gap-1 bg-white/90 rounded-lg border border-gray-200/50 shadow-lg backdrop-blur-sm overflow-hidden">
-              <button 
-                type="button"
-                (click)="zoomIn()"
-                class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 border-b border-gray-200/50 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-              <button 
-                type="button"
-                (click)="zoomOut()"
-                class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-2 text-sm font-medium text-gray-700">ละติจูด</label>
-            <input 
-              type="text" 
-              formControlName="latitude" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" 
-              readonly>
+            <label class="block mb-2 text-sm font-medium text-gray-700"
+              >ละติจูด</label
+            >
+            <input
+              type="text"
+              formControlName="latitude"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+              readonly
+            />
           </div>
-          
           <div>
-            <label class="block mb-2 text-sm font-medium text-gray-700">ลองจิจูด</label>
-            <input 
-              type="text" 
-              formControlName="longitude" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" 
-              readonly>
+            <label class="block mb-2 text-sm font-medium text-gray-700"
+              >ลองจิจูด</label
+            >
+            <input
+              type="text"
+              formControlName="longitude"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+              readonly
+            />
           </div>
         </div>
       </div>
-      
+
       <!-- รูปภาพหอพัก -->
       <div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">รูปภาพหอพัก</h3>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <!-- Existing images -->
-          <div *ngFor="let image of imagePreviewUrls; let i = index" class="relative h-32 border border-gray-200 rounded-lg overflow-hidden group">
-            <img [src]="image" class="w-full h-full object-cover">
-            <button 
-              type="button" 
-              (click)="removeImage(i)" 
-              class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <span class="text-sm">×</span>
+        <h3
+          class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200"
+        >
+          รูปภาพหอพัก
+        </h3>
+
+        <div class="flex flex-col items-center text-center mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            class="w-10 h-10 text-gray-400 mb-2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25v13.5A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75V5.25z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 15l4.5-4.5a2.121 2.121 0 013 0L15 15m0 0l2.25-2.25a2.121 2.121 0 013 0L21 13.5"
+            />
+          </svg>
+          <div class="text-gray-600">
+            เพิ่มรูปภาพหอพัก
+            <span class="text-gray-500"
+              >(อย่างน้อย <span class="text-red-500">5</span> ภาพ)</span
+            >
+            <div class="text-xs text-blue-600 mt-1">
+              ภาพแรกจะเป็นภาพหลักของหอพัก
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div class="upload-dropzone">
+            <input
+              type="file"
+              id="file-upload"
+              class="hidden"
+              accept="image/*"
+              multiple
+              (change)="onFileSelect($event)"
+            />
+            <label for="file-upload" class="upload-label"
+              ><span class="upload-plus">+</span></label
+            >
+          </div>
+          <div *ngIf="imageError" class="text-red-500 text-sm mt-2">
+            กรุณาอัปโหลดรูปภาพอย่างน้อย 5 ภาพ
+          </div>
+        </div>
+
+        <div
+          class="flex flex-wrap gap-3"
+          *ngIf="imagePreviewUrls.length > 0"
+        >
+          <div
+            *ngFor="let image of imagePreviewUrls; let i = index"
+            class="relative h-24 w-24 rounded-lg overflow-hidden border"
+          >
+            <img [src]="image" class="w-full h-full object-cover" />
+            <button type="button" (click)="removeImage(i)" class="remove-btn">
+              ×
             </button>
           </div>
-          
-          <!-- Add new image -->
-          <div class="h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-            <input type="file" id="file-upload" class="hidden" accept="image/*" multiple (change)="onFileSelect($event)">
-            <label for="file-upload" class="w-full h-full flex flex-col items-center justify-center cursor-pointer">
-              <div class="text-gray-400 text-3xl mb-2">+</div>
-              <div class="text-xs text-gray-500 text-center px-2">เพิ่มรูปภาพ</div>
-            </label>
-          </div>
-        </div>
-      </div>
-      
-      <!-- สิ่งอำนวยความสะดวก -->
-      <div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-3 border-b border-gray-200">สิ่งอำนวยความสะดวก</h3>
-        
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div *ngFor="let amenity of amenities; let i = index" class="flex items-center">
-            <input 
-              type="checkbox" 
-              [id]="amenity.id" 
-              [checked]="amenity.checked"
-              (change)="toggleAmenity(i)"
-              class="w-5 h-5 text-red-500 border-gray-300 rounded focus:ring-red-500">
-            <label [for]="amenity.id" class="ml-3 text-sm text-gray-700">{{ amenity.name }}</label>
-          </div>
         </div>
       </div>
     </div>
-    
-    <!-- Step 2: ตัวอย่างหอพัก -->
+    <!-- ==================== /Step 1 ==================== -->
+
+    <!-- ==================== Step 2 ==================== -->
     <div *ngIf="currentStep === 2">
-      <!-- Image Gallery -->
-      <div class="grid grid-cols-3 gap-2 mb-6">
-        <div 
-          *ngFor="let image of imagePreviewUrls.slice(0, 3); let i = index" 
-          class="h-64 overflow-hidden rounded-lg"
-          [class.col-span-2]="i === 0">
-          <img [src]="image || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'" 
-               class="w-full h-full object-cover">
+      <!-- แถบรูป 3 ใบ เลื่อนด้วยปุ่ม -->
+      <div class="mb-6">
+        <div class="strip-container">
+          <div class="relative w-full max-w-[64rem]">
+            <div class="strip-viewport" #stripViewport>
+              <div class="strip-track no-animate">
+                <div
+                  class="strip-item"
+                  *ngFor="let image of imagePreviewUrls; let i = index"
+                >
+                  <img
+                    [src]="image"
+                    [alt]="'รูปภาพหอพัก ' + (i + 1)"
+                    (click)="openImageModal(i)"
+                    class="cursor-pointer select-none"
+                  />
+              </div>
+            </div>
+            </div>
+
+            <!-- ปุ่มซ้าย/ขวา -->
+            <button
+              class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/80 p-3 z-10 shadow-lg transition-all duration-200"
+              type="button"
+              (click)="onStripPrev()"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                class="w-6 h-6 text-gray-800"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <button
+              class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/80 p-3 z-10 shadow-lg transition-all duration-200"
+              type="button"
+              (click)="onStripNext()"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                class="w-6 h-6 text-gray-800"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
-      
-      <!-- Dormitory Info -->
-      <div class="border border-gray-200 rounded-lg overflow-hidden">
-        <!-- Header -->
-        <div class="p-6 border-b border-gray-200">
-          <div class="flex justify-between items-start mb-4">
-            <h2 class="text-2xl font-bold text-gray-800">{{ dormForm.get('generalInfo.name')?.value || 'หอพักกกกกกกกกกกกก' }}</h2>
+
+      <!-- ข้อมูลพื้นฐาน -->
+      <div class="mb-8">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 break-words">
+              {{ dormForm.get("generalInfo.name")?.value || "—" }}
+            </h2>
+            <div class="flex items-center text-gray-600 mt-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5 mr-2 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span class="leading-snug">{{
+                dormForm.get("generalInfo.address")?.value || "—"
+              }}</span>
+            </div>
+            <div class="mt-2 text-gray-800">
+              <span class="font-medium">โซน :</span>
+              <span class="ml-1">{{ zoneName || "—" }}</span>
+            </div>
+          </div>
             <div class="text-right">
-              <div class="text-2xl font-bold text-blue-600">{{ dormForm.get('generalInfo.price')?.value || '3500 - 4000' }} บาท</div>
-            </div>
-          </div>
-          
-          <!-- Location -->
-          <div class="flex items-center text-gray-600 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            <span>{{ dormForm.get('location.address')?.value || 'ถนนมหาวิทยาลัยมหาสารคาม ตำบล เมือง อำเภอ เมือง จังหวัด มหาสารคาม' }}</span>
-          </div>
-          
-          <!-- Owner -->
-          <div class="text-gray-700 mb-6">โดย : ชานเรือง</div>
-        </div>
-          
-        <!-- Content -->
-        <div class="p-6">
-          <!-- General Info -->
-          <div class="mb-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">ข้อมูลทั่วไป</h3>
-          
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div class="flex justify-between">
-              <span class="text-gray-600">ค่าน้ำ:</span>
-                <span class="font-medium">{{ dormForm.get('utilities.water.pricePerUnit')?.value || '25' }} บาท/หน่วย</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600">ค่าไฟ:</span>
-                <span class="font-medium">{{ dormForm.get('utilities.electricity.pricePerUnit')?.value || '8' }} บาท/หน่วย</span>
+              <div class="text-2xl font-semibold text-gray-900">
+                {{ priceRangeText }}
               </div>
             </div>
           </div>
-          
-          <!-- Description -->
-          <div class="mb-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">รายละเอียดหอพัก</h3>
-            <p class="text-gray-600 leading-relaxed">
-            {{ dormForm.get('generalInfo.description')?.value || 'หอพัก (ที่พักพิง) เป็นวิถีใหม่ที่สะท้อนความบ้าน ให้สัมผัสรูปแบบที่สบาย เย็น มาจากภายใน จัดแสงแสดสี หรือรูปแบบที่จัดตกแต่งมุมมุ่งสร้างสภาพแวดล้อมที่บรรยากาศผ่อนคลาย ที่ได้อยู่ในห้องเป็นโอกาสที่ได้พักผ่อน บริการและสร้างความรู้สึกถึงความสบายที่ได้ปรับรอบไว้ทุกคนที่เข้าพักจะได้รู้สึกผ่อนคลายและปลอดภัย' }}
+          </div>
+          <div class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">
+              ข้อมูลทั่วไป
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">ค่าน้ำ:</span>
+                <span class="font-medium">
+                  <ng-container [ngSwitch]="water.value.water_type">
+                    <span *ngSwitchCase="'เหมาจ่าย'"
+                      >เหมาจ่าย:
+                      {{ water.value.water_rate || "-" }} บาท/เดือน</span
+                    >
+                    <span *ngSwitchCase="'คิดตามหน่วย'"
+                      >{{ water.value.water_rate || "-" }} บาท/หน่วย</span
+                    >
+                    <span *ngSwitchDefault>ตามอัตราการประปา</span>
+                  </ng-container>
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">ค่าไฟ:</span>
+                <span class="font-medium">
+                  <ng-container [ngSwitch]="electricity.value.electricity_type">
+                    <span *ngSwitchCase="'เหมาจ่าย'"
+                      >เหมาจ่าย:
+                      {{ electricity.value.electricity_rate || "-" }}
+                      บาท/เดือน</span
+                    >
+                    <span *ngSwitchCase="'คิดตามหน่วย'"
+                      >{{
+                        electricity.value.electricity_rate || "-"
+                      }}
+                      บาท/หน่วย</span
+                    >
+                    <span *ngSwitchDefault>ตามอัตราการไฟฟ้า</span>
+                  </ng-container>
+                </span>
+              </div>
+            </div>
+          </div>
+
+
+
+          <div class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">
+              รายละเอียดหอพัก
+            </h3>
+            <p class="text-gray-500 leading-relaxed">
+              {{
+                dormForm.get("generalInfo.description")?.value ||
+                  "หอพัก [ชื่อหอพัก] ตั้งอยู่ในทำเลสะดวกสบาย ใกล้กับ
+              [ระบุสถานที่สำคัญ] บรรยากาศเงียบสงบและเป็นส่วนตัว ..."
+              }}
             </p>
           </div>
-          
-          <!-- Room Types Table -->
-          <div class="mb-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">ประเภทหอพัก</h3>
+
+
+
+          <div class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">ประเภทห้อง</h3>
             <div class="overflow-x-auto">
-              <table class="w-full border-collapse border border-gray-200">
-              <thead class="bg-gray-100">
-                <tr>
-                    <th class="py-3 px-4 text-left border border-gray-200 font-medium">ประเภท</th>
-                    <th class="py-3 px-4 text-left border border-gray-200 font-medium">ราคาเดือน</th>
-                    <th class="py-3 px-4 text-left border border-gray-200 font-medium">ราย/วัน</th>
-                    <th class="py-3 px-4 text-left border border-gray-200 font-medium">สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                  <tr class="border border-gray-200">
-                    <td class="py-3 px-4 border border-gray-200">ห้องพัดลม</td>
-                    <td class="py-3 px-4 border border-gray-200">-</td>
-                    <td class="py-3 px-4 border border-gray-200">300</td>
-                    <td class="py-3 px-4 border border-gray-200">
-                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">ว่าง</span>
-                  </td>
-                </tr>
-                  <tr class="border border-gray-200">
-                    <td class="py-3 px-4 border border-gray-200">ห้องแอร์</td>
-                    <td class="py-3 px-4 border border-gray-200">3000</td>
-                    <td class="py-3 px-4 border border-gray-200">-</td>
-                    <td class="py-3 px-4 border border-gray-200">
-                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">ว่าง</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+              <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      class="py-3 px-4 text-left border border-gray-300 font-medium"
+                    >
+                      ประเภท
+                    </th>
+                    <th
+                      class="py-3 px-4 text-left border border-gray-300 font-medium"
+                    >
+                      รายเดือน
+                    </th>
+                    <th
+                      class="py-3 px-4 text-left border border-gray-300 font-medium"
+                    >
+                      รายวัน
+                    </th>
+                    <th
+                      class="py-3 px-4 text-left border border-gray-300 font-medium"
+                    >
+                      รายเทอม
+                    </th>
+                    <th
+                      class="py-3 px-4 text-left border border-gray-300 font-medium"
+                    >
+                      รายซัมเมอร์
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let rt of roomTypes.value"
+                    class="border border-gray-300"
+                  >
+                    <td class="py-3 px-4 border border-gray-300">
+                      {{ rt.type === "other" ? rt.customType : rt.type || "-" }}
+                    </td>
+                    <td class="py-3 px-4 border border-gray-300">
+                      {{ rt.pricePerMonth || "-" }}
+                    </td>
+                    <td class="py-3 px-4 border border-gray-300">
+                      {{ rt.pricePerDay || "-" }}
+                    </td>
+                    <td class="py-3 px-4 border border-gray-300">
+                      {{ rt.pricePerTerm || "-" }}
+                    </td>
+                    <td class="py-3 px-4 border border-gray-300">
+                      {{ rt.pricePerSummer || "-" }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-          
-          <!-- Amenities -->
+
           <div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">สิ่งอำนวยความสะดวก</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              <div *ngFor="let amenity of amenities; let i = index" class="flex items-center">
-                <div 
-                  class="w-5 h-5 rounded flex items-center justify-center mr-3"
-                  [class.bg-red-500]="amenity.checked"
-                  [class.text-white]="amenity.checked"
-                  [class.border]="!amenity.checked"
-                  [class.border-gray-300]="!amenity.checked">
-                  <svg *ngIf="amenity.checked" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                    </svg>
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">
+              สิ่งอำนวยความสะดวก
+            </h3>
+            <!-- แยกเป็น 2 หมวด: ภายในห้อง และ ภายนอก -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <!-- ภายในห้อง -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-600 mb-4">ภายในห้อง</h4>
+                <div class="space-y-3">
+                  <ng-container *ngFor="let amenity of amenitiesList">
+                    <div
+                      *ngIf="amenity.location_type === 'ภายใน'"
+                      class="flex items-center"
+                    >
+                      <span class="text-sm flex items-center" [ngClass]="dormForm.get('amenities')?.value[getAmenityIndex(amenity.id)] ? 'text-gray-700' : 'text-gray-400 line-through'">
+                        <!-- FontAwesome Icons -->
+                        <i *ngIf="amenity.id === 'dressingTable'" class="fas fa-magic mr-2"></i>
+                        <i *ngIf="amenity.id === 'aircon'" class="fas fa-snowflake mr-2"></i>
+                        <i *ngIf="amenity.id === 'fan'" class="fas fa-fan mr-2"></i>
+                        <i *ngIf="amenity.id === 'tv'" class="fas fa-tv mr-2"></i>
+                        <i *ngIf="amenity.id === 'fridge'" class="fas fa-box mr-2"></i>
+                        <i *ngIf="amenity.id === 'bed'" class="fas fa-bed mr-2"></i>
+                        <i *ngIf="amenity.id === 'wifi'" class="fas fa-wifi mr-2"></i>
+                        <i *ngIf="amenity.id === 'wardrobe'" class="fas fa-door-open mr-2"></i>
+                        <i *ngIf="amenity.id === 'desk'" class="fas fa-desktop mr-2"></i>
+                        <i *ngIf="amenity.id === 'microwave'" class="fas fa-microchip mr-2"></i>
+                        <i *ngIf="amenity.id === 'waterHeater'" class="fas fa-hot-tub mr-2"></i>
+                        <i *ngIf="amenity.id === 'sink'" class="fas fa-tint mr-2"></i>
+                        
+                        {{ amenity.name }}
+                      </span>
                 </div>
-                <span class="text-sm text-gray-700">{{ amenity.name }}</span>
+                  </ng-container>
+              </div>
+            </div>
+
+              <!-- ภายนอก -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-600 mb-4">ภายนอกห้อง</h4>
+                <div class="space-y-3">
+                  <ng-container *ngFor="let amenity of amenitiesList">
+                    <div
+                      *ngIf="amenity.location_type === 'ภายนอก'"
+                      class="flex items-center"
+                    >
+                      <span class="text-sm flex items-center" [ngClass]="dormForm.get('amenities')?.value[getAmenityIndex(amenity.id)] ? 'text-gray-700' : 'text-gray-400 line-through'">
+                        <!-- External amenities -->
+                        <i *ngIf="amenity.id === 'cctv'" class="fas fa-video mr-2"></i>
+                        <i *ngIf="amenity.id === 'security'" class="fas fa-shield-alt mr-2"></i>
+                        <i *ngIf="amenity.id === 'elevator'" class="fas fa-arrow-up mr-2"></i>
+                        <i *ngIf="amenity.id === 'parking'" class="fas fa-car mr-2"></i>
+                        <i *ngIf="amenity.id === 'fitness'" class="fas fa-dumbbell mr-2"></i>
+                        <i *ngIf="amenity.id === 'lobby'" class="fas fa-building mr-2"></i>
+                        <i *ngIf="amenity.id === 'waterDispenser'" class="fas fa-tint mr-2"></i>
+                        <i *ngIf="amenity.id === 'swimmingPool'" class="fas fa-swimming-pool mr-2"></i>
+                        <i *ngIf="amenity.id === 'parcelShelf'" class="fas fa-box mr-2"></i>
+                        <i *ngIf="amenity.id === 'petsAllowed'" class="fas fa-paw mr-2"></i>
+                        <i *ngIf="amenity.id === 'keyCard'" class="fas fa-key mr-2"></i>
+                        <i *ngIf="amenity.id === 'washingMachine'" class="fas fa-tshirt mr-2"></i>
+                        
+                        {{ amenity.name }}
+                      </span>
+          </div>
+                  </ng-container>
+        </div>
+              </div>
+            
+            </div>
+
+            <div
+              *ngIf="isAmenityChecked('other') && amenitiesOther.length"
+              class="mt-4"
+            >
+              <div class="text-sm text-gray-600 mb-1">อื่นๆ</div>
+              <ul class="list-disc list-inside text-sm text-gray-800">
+                <li *ngFor="let ctrl of amenitiesOther.controls">
+                  {{ ctrl.get('name')?.value }} 
+                  <span class="text-xs text-gray-500">({{ ctrl.get('location_type')?.value || 'ไม่ระบุ' }})</span>
+                </li>
+              </ul>
+          </div>
+
+          <!-- 6. ตำแหน่งหอพัก (แผนที่) -->
+          <div class="mb-8 mt-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+              ตำแหน่งหอพัก
+            </h3>
+            <div class="w-full h-96 rounded-lg overflow-hidden border border-gray-300 mb-4">
+              <div id="preview-map" class="w-full h-full"></div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div class="grid grid-cols-2 gap-6">
+                <div>
+                  <div class="text-xs text-gray-500 font-medium mb-1">ละติจูด</div>
+                  <div class="text-sm font-semibold text-gray-800">{{ dormForm.get('location.latitude')?.value || '—' }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-gray-500 font-medium mb-1">ลองจิจูด</div>
+                  <div class="text-sm font-semibold text-gray-800">{{ dormForm.get('location.longitude')?.value || '—' }}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+      </div>
+      <!-- /card -->
+    </div>
+
+    <!-- Image Fullscreen Modal -->
+    <div *ngIf="imageModalOpen" class="fixed inset-0 z-50">
+      <div
+        class="absolute inset-0 bg-black/70"
+        (click)="closeImageModal()"
+      ></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <button
+          type="button"
+          (click)="closeImageModal()"
+          class="absolute top-4 right-4 bg-white/80 hover:bg-white text-gray-800 px-3 py-1 shadow"
+        >
+          ปิด
+        </button>
+
+        <!-- Prev -->
+        <button
+          type="button"
+          (click)="prevModalImage()"
+          class="absolute left-6 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-3 shadow"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+
+        <!-- Next -->
+        <button
+          type="button"
+          (click)="nextModalImage()"
+          class="absolute right-6 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-3 shadow"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+
+        <img
+          [src]="imagePreviewUrls[imageModalIndex]"
+          [alt]="'รูปภาพหอพัก ' + (imageModalIndex + 1)"
+          class="max-h-[85vh] max-w-[92vw] object-contain select-none"
+        />
       </div>
     </div>
-    
-    <!-- Step 3: ข้อมูลติดต่อ -->
-    <div *ngIf="currentStep === 3" formGroupName="contactInfo">
-      <h3 class="text-xl font-semibold text-gray-800 mb-8 pb-3 border-b border-gray-200">ข้อมูลติดต่อ</h3>
+    <!-- ==================== /Step 2 ==================== -->
 
-      <div class="space-y-6 max-w-2xl">
-      <!-- Facebook -->
-        <div>
-          <label for="facebook" class="block mb-2 text-sm font-medium text-gray-700">ชื่อผู้ติดต่อ</label>
-        <input 
-          type="text" 
-          id="facebook" 
-          formControlName="facebook"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-            placeholder="กรอกชื่อผู้ติดต่อ">
-      </div>
-
-        <!-- Email -->
-        <div>
-          <label for="email" class="block mb-2 text-sm font-medium text-gray-700">อีเมล</label>
-        <input 
-            type="email" 
-            id="email" 
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-            placeholder="กรอกอีเมล">
-      </div>
-
-        <!-- Phone Numbers -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="phone1" class="block mb-2 text-sm font-medium text-gray-700">เบอร์ติดต่อ *</label>
-        <input 
-          type="tel" 
-          id="phone1" 
-          formControlName="phone1"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-              placeholder="กรอกเบอร์โทรศัพท์">
-      </div>
-
-          <div>
-            <label for="phone2" class="block mb-2 text-sm font-medium text-gray-700">เบอร์ติดต่อ (สำรอง)</label>
-        <input 
-          type="tel" 
-          id="phone2" 
-          formControlName="phone2"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-              placeholder="กรอกเบอร์โทรศัพท์สำรอง">
-          </div>
-        </div>
-
-        <!-- Line ID -->
-        <div>
-          <label for="lineId" class="block mb-2 text-sm font-medium text-gray-700">Line ID</label>
-          <input 
-            type="text" 
-            id="lineId" 
-            formControlName="lineId"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#007AFF] focus:border-[#007AFF] transition-colors"
-            placeholder="กรอกไลน์ไอดี">
-        </div>
-      </div>
-    </div>
-    
-    <!-- Step 4: สำเร็จ -->
-    <div *ngIf="currentStep === 4" class="text-center py-16">
-      <div class="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
-        <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    <!-- ==================== Step 3 ==================== -->
+    <div *ngIf="currentStep === 3" class="text-center py-16">
+      <div
+        class="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center"
+      >
+        <svg
+          class="w-12 h-12 text-green-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          ></path>
         </svg>
       </div>
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">ข้อมูลหอพักของคุณถูกเพิ่มเข้าสู่ระบบเรียบร้อยแล้ว</h2>
-      <p class="text-gray-600 mb-8">ระบบจะตรวจสอบข้อมูลและแจ้งผลภายใน 1-2 วันทำการ</p>
-      <button 
-        type="button" 
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">
+        ข้อมูลหอพักของคุณถูกเพิ่มเข้าสู่ระบบเรียบร้อยแล้ว
+      </h2>
+      <p class="text-gray-600 mb-8">
+        ระบบจะตรวจสอบข้อมูลและแจ้งผลภายใน 1-2 วันทำการ
+      </p>
+      <button
+        type="button"
         class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px]"
-        (click)="goToMainPage()">
-        กลับสู่หน้าหลัก
+        (click)="goToOwnerPage()"
+      >
+        กลับหน้า Owner
       </button>
     </div>
-    
-    <!-- Navigation Buttons -->
-    <div *ngIf="currentStep < 4" class="flex justify-center gap-4 mt-12 pt-8 border-t border-gray-200">
-      <button 
-        type="button" 
-        class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors min-w-[120px]">
+    <!-- ==================== /Step 3 ==================== -->
+
+    <!-- Navigation -->
+    <div
+      *ngIf="currentStep < 3"
+      class="flex justify-center gap-4 mt-12 pt-8 border-t border-gray-200"
+    >
+      <button
+        type="button"
+        class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed"
+        (click)="cancelForm()"
+        [disabled]="isSubmitting"
+      >
         ยกเลิก
       </button>
-      
-      <button 
-        type="button" 
-        *ngIf="currentStep > 1" 
-        (click)="prevStep()" 
-        class="px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors min-w-[120px]">
+      <button
+        type="button"
+        *ngIf="currentStep > 1"
+        (click)="prevStep()"
+        class="px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed"
+        [disabled]="isSubmitting"
+      >
         ย้อนกลับ
       </button>
-      
-      <button 
-        type="button" 
-        *ngIf="currentStep < 3" 
-        (click)="nextStep()" 
-        class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px]">
+      <button
+        type="button"
+        *ngIf="currentStep < 2"
+        (click)="nextStep()"
+        class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed"
+        [disabled]="isSubmitting"
+      >
         ถัดไป
       </button>
-      
-      <button 
-        type="submit" 
-        *ngIf="currentStep === 3" 
-        class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px]">
-        บันทึก
+      <button
+        type="button"
+        *ngIf="currentStep === 2"
+        (click)="onSubmit()"
+        class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed"
+        [disabled]="isSubmitting"
+      >
+        <span *ngIf="!isSubmitting">บันทึก</span>
+        <span *ngIf="isSubmitting">กำลังบันทึก...</span>
       </button>
     </div>
   </div>
 </form>
+
+<!-- Custom Popup Modal -->
+<div *ngIf="showPopup" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95">
+    <!-- Header -->
+    <div class="flex items-center justify-center p-8 pb-6 relative">
+      <div class="flex items-center">
+        <!-- Icon based on type -->
+        <div *ngIf="popupType === 'error'" class="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mr-4 shadow-lg">
+          <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div *ngIf="popupType === 'warning'" class="w-12 h-12 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-full flex items-center justify-center mr-4 shadow-lg">
+          <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div *ngIf="popupType === 'success'" class="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mr-4 shadow-lg">
+          <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800">
+          <span *ngIf="popupType === 'error'">ข้อผิดพลาด</span>
+          <span *ngIf="popupType === 'warning'">คำเตือน</span>
+          <span *ngIf="popupType === 'success'">สำเร็จ</span>
+        </h3>
+      </div>
+      <button 
+        (click)="closePopup()" 
+        class="absolute right-6 top-6 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+      >
+        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div class="px-8 pb-8 text-center">
+      <p class="text-gray-600 text-lg leading-relaxed whitespace-pre-line">{{ popupMessage }}</p>
+    </div>
+    
+    <!-- Footer -->
+    <div class="flex justify-center pb-8 px-8">
+      <button 
+        (click)="closePopup()" 
+        class="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+      >
+        ตกลง
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div
+  *ngIf="showErrorModal"
+  class="fixed inset-0 z-50 flex items-center justify-center"
+>
+  <div class="absolute inset-0 bg-black/40"></div>
+  <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+    <div class="flex items-start gap-3">
+      <div
+        class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          class="w-6 h-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-gray-800 mb-1">
+          บันทึกไม่สำเร็จ
+        </h3>
+        <p class="text-gray-600">{{ submitErrorMessage }}</p>
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-3">
+      <button
+        (click)="closeErrorModal()"
+        class="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+      >
+        ปิด
+      </button>
+    </div>
+  </div>
+</div>

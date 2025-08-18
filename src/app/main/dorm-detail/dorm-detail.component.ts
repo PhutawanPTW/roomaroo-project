@@ -151,8 +151,12 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy(): void {
-    // ใช้ MapService ในการ destroy map
-    this.mapService.destroyMap();
+    // ใช้ MapService ในการ destroy map - ปรับปรุงให้ใช้ container-specific destroy
+    if (this.mapContainer) {
+      this.mapService.destroyMapByContainer('dorm-detail-map');
+    } else {
+      this.mapService.destroyMap();
+    }
     this.mapInitialized = false;
   }
 
@@ -358,15 +362,6 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       }, 200);
     }
-  }
-
-  // Zoom controls - ใช้ MapService
-  zoomIn(): void {
-    this.mapService.zoomIn();
-  }
-
-  zoomOut(): void {
-    this.mapService.zoomOut();
   }
 
   // Image gallery methods

@@ -23,8 +23,8 @@ export function initializeAuthFactory(authService: AuthService) {
   return () => new Promise<void>((resolve) => {
     console.log('[APP_INITIALIZER] Waiting for auth state to be determined...');
     
-    // Use the checkAuthState method to initialize auth state
-    authService.checkAuthState()
+    // ใช้ waitForAuthState แทน checkAuthState เพื่อรอให้ auth state พร้อม
+    authService.waitForAuthState()
       .then(() => {
         console.log('[APP_INITIALIZER] Auth state initialized');
         resolve();
@@ -34,11 +34,11 @@ export function initializeAuthFactory(authService: AuthService) {
         resolve(); // Resolve anyway to prevent app from hanging
       });
     
-    // Set a timeout to resolve anyway after 5 seconds to prevent hanging
+    // เพิ่ม timeout เป็น 10 วินาทีเพื่อให้ auth state มีเวลาพร้อม
     setTimeout(() => {
       console.log('[APP_INITIALIZER] Auth state timeout, proceeding anyway');
       resolve();
-    }, 5000);
+    }, 10000);
   });
 }
 

@@ -22,9 +22,9 @@ export class AdminComponent {
   currentPage = 1;
   totalPages = 5;
 
-  selectedTab: 'all' | 'pending' = 'pending';
+  selectedTab: 'all' | 'รออนุมัติ' = 'รออนุมัติ';
 
-  setTab(tab: 'all' | 'pending') {
+  setTab(tab: 'all' | 'รออนุมัติ') {
     this.selectedTab = tab;
   }
 }

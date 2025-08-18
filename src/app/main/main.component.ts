@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService, UserProfile } from '../services/auth.service';
 import { DormitoryService, Dorm } from '../services/dormitory.service';
 import { NavbarComponent } from './navbar/navbar.component';
+import { Subscription } from 'rxjs';
 
 // UI model used in template (all required)
 interface UIDorm {
@@ -27,7 +28,7 @@ interface UIDorm {
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.css'],
 })
-export class MainComponent implements OnInit {
+export class MainComponent implements OnInit, OnDestroy {
   currentRoute: string = '';
 
   // Banner slider images - ใช้รูปภาพจากอินเทอร์เน็ต
@@ -50,7 +51,11 @@ export class MainComponent implements OnInit {
     }
   ];
   currentSlide = 0;
-  slideInterval: any;
+  private slideInterval: number | undefined;
+
+  // Subscriptions สำหรับจัดการ memory leak
+  private routerSubscription: Subscription | undefined;
+  private authSubscription: Subscription | undefined;
 
   // Full lists
   recommendedDorms: UIDorm[] = [];
@@ -61,7 +66,8 @@ export class MainComponent implements OnInit {
   displayedLatest: UIDorm[] = [];
 
   constructor(private router: Router, private authService: AuthService, private dormSvc: DormitoryService) {
-    this.router.events.pipe(
+    // แทนที่การ subscribe โดยตรง ด้วยการเก็บ subscription เพื่อ unsubscribe ใน ngOnDestroy
+    this.routerSubscription = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.currentRoute = event.url;
@@ -72,7 +78,7 @@ export class MainComponent implements OnInit {
     this.startSlideshow();
     this.loadDormitories();
 
-    this.authService.currentUser$.subscribe((user: UserProfile | null | undefined) => {
+    this.authSubscription = this.authService.currentUser$.subscribe((user: UserProfile | null | undefined) => {
       if (user) {
         if (user.memberType === 'owner') {
           this.router.navigate(['/owner']);
@@ -106,9 +112,33 @@ export class MainComponent implements OnInit {
   }
 
   startSlideshow(): void {
-    this.slideInterval = setInterval(() => {
+    // ปิด slideshow เดิมก่อน (ถ้ามี) เพื่อป้องกัน memory leak
+    this.stopSlideshow();
+    
+    this.slideInterval = window.setInterval(() => {
       this.nextSlide();
     }, 3000);
+  }
+
+  stopSlideshow(): void {
+    if (this.slideInterval) {
+      clearInterval(this.slideInterval);
+      this.slideInterval = undefined;
+    }
+  }
+
+  ngOnDestroy(): void {
+    // ลบ slideshow interval เพื่อป้องกัน memory leak
+    this.stopSlideshow();
+    
+    // ยกเลิก subscriptions เพื่อป้องกัน memory leak
+    if (this.routerSubscription) {
+      this.routerSubscription.unsubscribe();
+    }
+    
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
   }
 
   goToSlide(index: number): void {

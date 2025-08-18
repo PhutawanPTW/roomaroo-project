@@ -4,7 +4,7 @@
     <!-- ซ้ายสุด: โลโก้ -->
     <a class="flex items-center cursor-pointer" [routerLink]="getHomeLink()">
       <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo" class="w-auto object-contain"
-        style="height: 60px;" />
+        style="height: 60px;" loading="eager" />
       <span class="text-xl font-thai flex items-center ml-2">
         <span class="font-bold">Room</span><span class="font-normal">aroo</span>
       </span>
@@ -85,15 +85,22 @@
         <button class="flex items-center space-x-2 bg-transparent border-0 outline-none cursor-pointer px-2 py-1"
           (click)="toggleProfileDropdown()" [attr.aria-expanded]="profileDropdownOpen" [attr.aria-haspopup]="true"
           type="button">
-          <img *ngIf="getUserPhotoURL()" [src]="getUserPhotoURL()" alt="avatar"
+          
+          <!-- แสดงรูปโปรไฟล์ -->
+          <img *ngIf="getUserPhotoURL()" 
+            [src]="getUserPhotoURL()" 
+            alt="avatar"
             class="w-8 h-8 rounded-full object-cover bg-blue-200"
-            (load)="onPhotoLoad()" (error)="onPhotoError()" [hidden]="isPhotoLoading" />
-          <div *ngIf="!getUserPhotoURL()" class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-white font-bold text-lg">
+            (load)="onPhotoLoad()" 
+            (error)="onPhotoError()" 
+            loading="lazy" />
+          
+          <!-- แสดง placeholder เมื่อไม่มีรูป -->
+          <div *ngIf="!getUserPhotoURL()" 
+            class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-white font-bold text-lg">
             <span>{{ (getUserDisplayName() || 'U').charAt(0) }}</span>
           </div>
-          <div *ngIf="isPhotoLoading && getUserPhotoURL()" class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center">
-            <span class="loader"></span>
-          </div>
+          
           <div class="flex flex-col items-start ml-2">
             <span class="text-sm text-gray-800 font-thai font-normal">{{ getUserDisplayName() }}</span>
           </div>
@@ -133,4 +140,4 @@
 </mat-toolbar>
 
 <!-- เพิ่ม spacer เพื่อป้องกันเนื้อหาเลื่อนไปอยู่ใต้ navbar -->
-<div style="height: 60px;"></div>
+<div style="height: 40px;"></div>

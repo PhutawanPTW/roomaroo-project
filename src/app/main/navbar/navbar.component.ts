@@ -1,12 +1,12 @@
 // src/app/main/navbar/navbar.component.ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
-import { filter, take } from 'rxjs/operators';
+import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { NavigationEnd } from '@angular/router';
 
 @Component({
@@ -15,6 +15,7 @@ import { NavigationEnd } from '@angular/router';
   imports: [MatToolbarModule, MatButtonModule, CommonModule, RouterLink],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NavbarComponent implements OnInit, OnDestroy {
   menuOpen = false;
@@ -22,7 +23,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   profileDropdownOpen = false;
   currentUser: UserProfile | null = null;
   private authSubscription: Subscription | undefined;
-  isPhotoLoading = true;
   userType: 'owner' | 'member' | null = null;
   currentPath: string = '';
   isOwner: boolean = false;
@@ -32,46 +32,51 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
-    this.authService.currentUser$.subscribe(user => {
-      console.log('[NavbarComponent] User state changed:', {
-        hasUser: !!user,
-        memberType: user?.memberType,
-        provider: user?.provider,
-        needsProfileSetup: user?.needsProfileSetup,
-        isTemporaryUser: this.authService.isTemporaryUser()
+    // ใช้ distinctUntilChanged เพื่อป้องกันการ trigger ซ้ำ แต่ไม่ใช้ take(1)
+    this.authSubscription = this.authService.currentUser$
+      .pipe(
+        filter(user => user !== undefined),
+        distinctUntilChanged((prev, curr) => {
+          // เปรียบเทียบเฉพาะข้อมูลที่จำเป็น
+          return prev?.uid === curr?.uid && 
+                 prev?.memberType === curr?.memberType &&
+                 prev?.photoURL === curr?.photoURL;
+        })
+      )
+      .subscribe(user => {
+        // ไม่แสดงข้อมูล user ถ้าเป็น temporary user หรือยังไม่สมบูรณ์
+        if (user && !this.authService.isTemporaryUser() && !user.needsProfileSetup) {
+          this.currentUser = user;
+          this.userType = user?.memberType ?? null;
+          this.isOwner = user?.memberType === 'owner';
+        } else {
+          this.currentUser = null;
+          this.userType = null;
+          this.isOwner = false;
+        }
+        this.isLoading = false;
+        this.cdr.markForCheck();
       });
-
-      // ไม่แสดงข้อมูล user ถ้าเป็น temporary user หรือยังไม่สมบูรณ์
-      if (user && !this.authService.isTemporaryUser() && !user.needsProfileSetup) {
-        this.currentUser = user;
-        this.userType = user?.memberType ?? null;
-        this.isOwner = user?.memberType === 'owner';
-        this.isLoading = false;
-        console.log('[NavbarComponent] Showing user info:', user.displayName);
-      } else {
-        this.currentUser = null;
-        this.userType = null;
-        this.isOwner = false;
-        this.isLoading = false;
-        console.log('[NavbarComponent] Hiding user info - temporary or incomplete profile');
-      }
-    });
       
-    this.router.events.subscribe(() => {
-      this.currentPath = this.router.url;
-    });
+    // ตั้งค่า currentPath เริ่มต้น
     this.currentPath = this.router.url;
 
     // Listen to route changes to update menu if needed
     this.routerSub = this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        distinctUntilChanged((prev, curr) => {
+          return (prev as NavigationEnd)?.url === (curr as NavigationEnd)?.url;
+        })
+      )
       .subscribe(() => {
-        // Optionally, you can add logic here if you want to check path for more control
-        // For now, we rely on userType only
+        this.currentPath = this.router.url;
+        this.cdr.markForCheck();
       });
   }
 
@@ -163,8 +168,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.closeProfileDropdown();
   }
 
-  onPhotoLoad() { this.isPhotoLoading = false; }
-  onPhotoError() { this.isPhotoLoading = false; }
+  onPhotoLoad() { 
+    this.cdr.markForCheck();
+  }
+  
+  onPhotoError() { 
+    this.cdr.markForCheck();
+  }
 
   shouldShowDormAndMapMenu(): boolean {
     if (this.userType === 'owner' && !this.currentPath.startsWith('/main')) {
