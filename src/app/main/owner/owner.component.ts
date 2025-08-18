@@ -289,9 +289,10 @@ export class OwnerComponent implements OnInit, OnDestroy {
   }
 
   viewDormDetail(dorm: any) {
-    // สมมติว่าในอนาคตจะมี id หรือ slug สามารถส่ง param ได้
-    // ตอนนี้นำทางไป dorm-detail เฉย ๆ
-    window.location.href = '/main/dorm-detail';
+    console.log('[Owner] viewDormDetail called with dorm:', dorm);
+    console.log('[Owner] Navigating to:', `/dorm-detail/${dorm.dorm_id}`);
+    // นำทางไป dorm-detail พร้อมส่ง dorm_id (standalone route)
+    this.router.navigate(['/dorm-detail', dorm.dorm_id]);
   }
 
   // Helper to format price string like main page

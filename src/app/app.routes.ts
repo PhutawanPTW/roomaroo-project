@@ -58,7 +58,7 @@ export const routes: Routes = [
     canActivate: [AuthRedirectGuard],
     children: [
       { path: '', component: DormListComponent },
-      { path: 'dorm-detail', component: DormDetailComponent },
+
       { path: 'dorm-map', component: DormMapComponent },
       { path: 'dorm-compare', component: DormCompareComponent },
       { path: 'tenant-list', component: TenantListComponent, canActivate: [AuthRedirectGuard] },
@@ -72,10 +72,11 @@ export const routes: Routes = [
     component: AdminComponent
   },
 
-  // Dorm detail route with ID
+
+  // Dorm detail route - standalone (ไม่ใช่ child ของ main)
   {
     path: 'dorm-detail/:id',
-    loadComponent: () => import('./main/dorm-detail/dorm-detail.component').then(c => c.DormDetailComponent)
+    component: DormDetailComponent
   },
 
   // Wildcard route - redirect to main (but owner will be redirected to /owner by guard)

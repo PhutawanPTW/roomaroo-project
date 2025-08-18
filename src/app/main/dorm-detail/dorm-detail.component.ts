@@ -83,6 +83,8 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   // Auth related
   isLoggedIn: boolean = false;
   userAvatar: string = '';
+  isOwner: boolean = false;
+  currentUserId: number | null = null;
   
   // Review related
   sentimentResult: SentimentType | null = null;
@@ -199,6 +201,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // ตั้งค่าแผนที่
       this.setupMapData(detail);
+
+      // ตรวจสอบว่า user เป็น owner ของหอพักนี้หรือไม่
+      this.checkIfUserIsOwner(detail);
 
       this.isLoading = false;
 
@@ -406,6 +411,20 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.isLoggedIn = !!user;
       if (user) {
         this.userAvatar = user.photoURL || '../../../assets/images/image-removebg-preview.png';
+        this.currentUserId = user.id;
+      } else {
+        this.currentUserId = null;
+      }
+    });
+  }
+
+  private checkIfUserIsOwner(detail: DormDetail): void {
+    // ตรวจสอบว่า user เป็น owner หรือไม่
+    this.authService.currentUser$.subscribe(user => {
+      if (user && user.memberType === 'owner') {
+        this.isOwner = true;
+      } else {
+        this.isOwner = false;
       }
     });
   }
