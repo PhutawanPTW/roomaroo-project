@@ -21,6 +21,9 @@ export const routes: Routes = [
   // Add dorm-list as a top-level route
   { path: 'dorm-list', component: DormListComponent },
 
+  // Dorm map route - accessible to everyone (no login required)
+  { path: 'dorm-map', component: DormMapComponent },
+
   // Login routes
   {
     path: 'login/:type',
@@ -46,9 +49,30 @@ export const routes: Routes = [
     canActivate: [OwnerGuard],
     children: [
       { path: 'dorm-add', component: DormAddComponent },
-      { path: 'tenant-list', component: TenantListComponent },
-      { path: 'profile', component: ProfileComponent },
     ]
+  },
+
+  // Owner profile route - standalone
+  {
+    path: 'owner/profile',
+    component: ProfileComponent,
+    canActivate: [OwnerGuard],
+    data: { userType: 'owner' }
+  },
+
+  // Tenant list route - standalone (ไม่ใช่ child ของ owner)
+  {
+    path: 'owner/tenant-list',
+    component: TenantListComponent,
+    canActivate: [OwnerGuard]
+  },
+
+  // Member profile route - standalone
+  {
+    path: 'main/profile',
+    component: ProfileComponent,
+    canActivate: [AuthRedirectGuard],
+    data: { userType: 'member' }
   },
 
   // Main routes
@@ -59,10 +83,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: DormListComponent },
 
-      { path: 'dorm-map', component: DormMapComponent },
       { path: 'dorm-compare', component: DormCompareComponent },
-      { path: 'tenant-list', component: TenantListComponent, canActivate: [AuthRedirectGuard] },
-      { path: 'profile', component: ProfileComponent },
     ]
   },
 

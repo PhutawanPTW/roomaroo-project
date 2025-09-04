@@ -68,10 +68,14 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   description: string = '';
   amenities: AmenityDisplay[] = [];
 
-  ownerProfile = {
+  // Owner contact information from API
+  ownerContact = {
     name: '',
-    image: '../../../assets/images/image-removebg-preview.png',
-    lineId: ''
+    phone: '',
+    secondaryPhone: '',
+    lineId: '',
+    email: '',
+    image: '../../../assets/images/image-removebg-preview.png'
   };
 
   // Map properties
@@ -162,6 +166,11 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.mapInitialized = false;
   }
 
+  // Public method for retry loading
+  retryLoad(): void {
+    this.loadDormitoryDetail();
+  }
+
   private async loadDormitoryDetail() {
     try {
       this.isLoading = true;
@@ -176,6 +185,34 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       if (!detail) {
         throw new Error('ไม่พบข้อมูลหอพัก');
       }
+
+      // Debug: ดูข้อมูลทั้งหมดที่ได้จาก API
+      console.log('[DormDetail] Full API response:', detail);
+      
+      // Debug: ดูข้อมูล owner ที่มีใน response
+      console.log('[DormDetail] Owner fields in response:', {
+        owner_name: detail.owner_name,
+        owner_manager_name: detail.owner_manager_name,
+        owner_phone: detail.owner_phone,
+        owner_secondary_phone: detail.owner_secondary_phone,
+        owner_line_id: detail.owner_line_id,
+        owner_email: detail.owner_email,
+        owner_photo_url: detail.owner_photo_url
+      });
+      
+      // Debug: ตรวจสอบ field names อื่นๆ ที่อาจเป็นรูปภาพ owner
+      console.log('[DormDetail] Checking for photo fields:', {
+        owner_photo_url: detail.owner_photo_url,
+        owner_photo: (detail as any).owner_photo,
+        owner_image: (detail as any).owner_image,
+        owner_avatar: (detail as any).owner_avatar,
+        photo_url: (detail as any).photo_url,
+        image_url: (detail as any).image_url
+      });
+      
+      // Debug: ดู keys ทั้งหมดใน response เพื่อหาชื่อ field ที่อาจเป็นรูปภาพ
+      console.log('[DormDetail] All keys in response:', Object.keys(detail));
+      console.log('[DormDetail] All values in response:', detail);
 
       // จัดการข้อมูลหอพัก
       this.dormDetail = detail;
@@ -198,6 +235,18 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       if (allAmenities && detail.amenities) {
         this.amenities = this.processAmenities(allAmenities, detail.amenities);
       }
+
+      // จัดการข้อมูล contact เจ้าของหอ
+      this.ownerContact = {
+        name: detail.owner_manager_name || detail.owner_name || 'เจ้าของหอพัก',
+        phone: detail.owner_phone || '',
+        secondaryPhone: detail.owner_secondary_phone || '',
+        lineId: detail.owner_line_id || '',
+        email: detail.owner_email || '',
+        image: detail.owner_photo_url || '../../../assets/images/image-removebg-preview.png'
+      };
+      
+      console.log('[DormDetail] Processed owner contact:', this.ownerContact);
 
       // ตั้งค่าแผนที่
       this.setupMapData(detail);
@@ -398,11 +447,76 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Contact owner method
   contactOwner(): void {
-    if (this.dormDetail?.manager_phone) {
-      window.location.href = `tel:${this.dormDetail.manager_phone}`;
+    if (this.ownerContact.phone) {
+      window.location.href = `tel:${this.ownerContact.phone}`;
     } else {
       alert('ไม่พบข้อมูลการติดต่อ');
     }
+  }
+
+  // Contact owner via secondary phone
+  contactOwnerSecondary(): void {
+    if (this.ownerContact.secondaryPhone) {
+      window.location.href = `tel:${this.ownerContact.secondaryPhone}`;
+    } else {
+      alert('ไม่พบเบอร์โทรสำรอง');
+    }
+  }
+
+  // Contact owner via email
+  contactOwnerEmail(): void {
+    if (this.ownerContact.email) {
+      window.location.href = `mailto:${this.ownerContact.email}`;
+    } else {
+      alert('ไม่พบอีเมล');
+    }
+  }
+
+  // Utility rate display methods
+  getWaterRateDisplay(): string {
+    if (!this.dormDetail?.water_type) return '';
+    
+    // ถ้าเป็นตามมิเตอร์ ให้แสดงเป็นตามอัตราการประปา
+    if (this.dormDetail.water_type === 'ตามมิเตอร์') {
+      return 'ตามอัตราการประปา';
+    }
+    
+    // กรณีอื่นๆ แสดงตามปกติ
+    return `${this.dormDetail.water_rate} บาท/ยูนิต`;
+  }
+
+  getElectricityRateDisplay(): string {
+    if (!this.dormDetail?.electricity_type) return '';
+    
+    // ถ้าเป็นตามมิเตอร์ ให้แสดงเป็นตามอัตราการไฟฟ้า
+    if (this.dormDetail.electricity_type === 'ตามมิเตอร์') {
+      return 'ตามอัตราการไฟฟ้า';
+    }
+    
+    // กรณีอื่นๆ แสดงตามปกติ
+    return `${this.dormDetail.electricity_rate} บาท/ยูนิต`;
+  }
+
+  getWaterTypeDisplay(): string {
+    if (!this.dormDetail?.water_type) return '';
+    
+    // ถ้าเป็นตามมิเตอร์ ให้แสดงเป็นตามอัตราการประปา
+    if (this.dormDetail.water_type === 'ตามมิเตอร์') {
+      return 'ตามอัตราการประปา';
+    }
+    
+    return this.dormDetail.water_type;
+  }
+
+  getElectricityTypeDisplay(): string {
+    if (!this.dormDetail?.electricity_type) return '';
+    
+    // ถ้าเป็นตามมิเตอร์ ให้แสดงเป็นตามอัตราการไฟฟ้า
+    if (this.dormDetail.electricity_type === 'ตามมิเตอร์') {
+      return 'ตามอัตราการไฟฟ้า';
+    }
+    
+    return this.dormDetail.electricity_type;
   }
 
   // Reviews methods
@@ -502,6 +616,16 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         type: 'recommended',
         from: 'dorm-detail',
         currentDormId: this.dormId
+      }
+    });
+  }
+
+  // เพิ่ม method สำหรับปุ่มเปรียบเทียบหอพัก
+  compareDormitory() {
+    // นำทางไปยังหน้า dorm-compare พร้อม dormId ปัจจุบัน
+    this.router.navigate(['/main/dorm-compare'], {
+      queryParams: {
+        dormId: this.dormId.toString()
       }
     });
   }

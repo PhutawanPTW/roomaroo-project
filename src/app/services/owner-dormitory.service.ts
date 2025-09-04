@@ -75,6 +75,54 @@ export class OwnerDormitoryService {
       );
   }
 
+  // ดึงรายการผู้เช่าทั้งหมดในหอของ owner
+  getOwnerTenants(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/api/dormitories/owner/tenants`)
+      .pipe(
+        tap((resp) => {
+          try {
+            const arr = Array.isArray(resp) ? resp : [resp];
+          } catch { }
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // ยืนยันการสมัครของผู้เช่า
+  approveTenant(dormId: number, userId: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/api/dormitories/${dormId}/tenants/${userId}/approve`, {})
+      .pipe(
+        tap((resp) => {
+          console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/approve -> success', resp);
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // ปฏิเสธการสมัครของผู้เช่า
+  rejectTenant(dormId: number, userId: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/api/dormitories/${dormId}/tenants/${userId}/reject`, {})
+      .pipe(
+        tap((resp) => {
+          console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/reject -> success', resp);
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // ยกเลิกการยืนยันผู้เช่า
+  cancelTenantApproval(dormId: number, userId: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/api/dormitories/${dormId}/tenants/${userId}/cancel`, {})
+      .pipe(
+        tap((resp) => {
+          console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/cancel -> success', resp);
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+
+
   private handleError(error: HttpErrorResponse) {
     console.error('API Error:', error);
 

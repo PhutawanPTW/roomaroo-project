@@ -91,19 +91,19 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private async loadDormitories() {
     try {
-      // Load recommended dorms
       const recommended = await this.dormSvc.getRecommended().toPromise();
+      console.log('Recommended dorms from API:', recommended);
       if (recommended) {
         this.recommendedDorms = recommended.map(d => this.mapDormToUi(d));
-        this.displayedRecommended = this.recommendedDorms.slice(0, 4); // Limit to 4 items
+        this.displayedRecommended = this.recommendedDorms.slice(0, 4);
         this.loadImagesForList(this.displayedRecommended);
       }
-
-      // Load latest dorms
+  
       const latest = await this.dormSvc.getLatest().toPromise();
+      console.log('Latest dorms from API:', latest);
       if (latest) {
         this.latestDorms = latest.map(d => this.mapDormToUi(d));
-        this.displayedLatest = this.latestDorms.slice(0, 4); // Limit to 4 items
+        this.displayedLatest = this.latestDorms.slice(0, 4);
         this.loadImagesForList(this.displayedLatest);
       }
     } catch (error) {

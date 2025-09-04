@@ -1,74 +1,173 @@
 <app-navbar></app-navbar>
 
+<div class="w-full max-w-7xl mx-auto px-4 pb-12 font-thai font-english pt-8">
+  
 <!-- Search filters section -->
-<div class="search-container">
-  <div class="filters">
-    <div class="filter-dropdown">
-      <select class="form-select" [(ngModel)]="selectedZone" (change)="filterByZone(selectedZone)">
-        <option value="">โซน</option>
+<div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+  <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+    <!-- Zone filter -->
+    <div class="w-full sm:w-32">
+      <select 
+        class="w-full h-10 px-3 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors font-thai appearance-none bg-white"
+        style="background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 4 5\'><path fill=\'%23666\' d=\'M2 0L0 2h4zm0 5L0 3h4z\'/></svg>'); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;"
+        [(ngModel)]="selectedZone" 
+        (change)="filterByZone(selectedZone)">
+        <option value="" disabled selected>โซน</option>
         <option *ngFor="let zone of zones" [value]="zone.zone_name">{{ zone.zone_name }}</option>
       </select>
     </div>
-    <div class="filter-dropdown">
-      <button class="filter-btn-price" (click)="togglePriceFilter($event)">
-        <span>ราคา</span>
-        <i class="fa fa-chevron-down"></i>
-      </button>
-      <div class="price-filter-popup" *ngIf="showPriceFilter" (clickOutside)="showPriceFilter = false">
-        <div class="price-inputs">
-          <div class="price-input-group">
-            <label>ราคาต่ำสุด</label>
-            <input type="number" [(ngModel)]="minPrice" placeholder="Min" class="price-input" (click)="$event.stopPropagation()">
-          </div>
-          <div class="price-input-group">
-            <label>ราคาสูงสุด</label>
-            <input type="number" [(ngModel)]="maxPrice" placeholder="Max" class="price-input" (click)="$event.stopPropagation()">
-          </div>
-        </div>
-        <button class="apply-filter-btn" (click)="applyPriceFilter()">ค้นหา</button>
+
+    <!-- Search and Filter Group -->
+    <div class="flex gap-3 items-center">
+      <!-- Search input -->
+      <div class="w-full sm:w-80 relative">
+        <input 
+          type="text" 
+          class="w-full h-10 px-4 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai"
+          placeholder="ค้นหาหอพัก...">
+        <button class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </button>
       </div>
-    </div>
-    <div class="search-input">
-      <input type="text" class="form-control" placeholder="">
-      <button class="search-btn"><i class="fa fa-search"></i></button>
-    </div>
-    <div class="filter-btn">
-      <button (click)="toggleFilterPopup($event)"><i class="fa fa-filter"></i></button>
-      <!-- Filter Popup -->
-      <div class="filter-popup" *ngIf="showFilterPopup" (clickOutside)="showFilterPopup = false">
-        <div class="filter-popup-header">
-          <h3>ตัวกรอง</h3>
-          <button class="close-btn" (click)="showFilterPopup = false">&times;</button>
-        </div>
-        <div class="filter-popup-content">
-          <!-- Filter sections will be added here -->
-          <div class="filter-section">
-            <h4>ประเภทหอพัก</h4>
-            <!-- Content for dormitory type filter -->
+
+      <!-- Filter button -->
+      <div class="relative">
+        <button 
+          class="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+          (click)="toggleFilterPopup($event)">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+          </svg>
+        </button>
+
+        <!-- Filter popup - ลบหัวข้อและปุ่มปิด -->
+        <div 
+          *ngIf="showFilterPopup" 
+          (clickOutside)="showFilterPopup = false"
+          class="absolute top-full right-0 w-[500px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 mt-2 max-h-[80vh] overflow-hidden flex flex-col">
+          
+          <div class="p-6 flex-1 overflow-y-auto">
+            <div class="space-y-6">
+              <!-- ประเภทการเช่า -->
+              <div>
+                <h4 class="font-medium text-gray-900 mb-3 font-thai">ประเภทการเช่า</h4>
+                <div class="flex gap-6">
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.daily" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai">รายวัน</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.monthly" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai">รายเดือน</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- คะแนน -->
+              <div>
+                <h4 class="font-medium text-gray-900 mb-3 font-thai">คะแนน</h4>
+                <div class="flex gap-3">
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.rating5" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai text-sm">5 ดาว</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.rating4" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai text-sm">4 ดาว</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.rating3" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai text-sm">3 ดาว</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.rating2" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai text-sm">2 ดาว</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" [(ngModel)]="filters.rating1" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <span class="font-thai text-sm">1 ดาว</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- ช่วงราคา -->
+              <div>
+                <h4 class="font-medium text-gray-900 mb-3 font-thai">ช่วงราคา (บาท)</h4>
+                <div class="flex gap-3">
+                  <input 
+                    type="number" 
+                    [(ngModel)]="filterMinPrice" 
+                    placeholder="ราคาต่ำสุด" 
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai text-sm">
+                  <input 
+                    type="number" 
+                    [(ngModel)]="filterMaxPrice" 
+                    placeholder="ราคาสูงสุด" 
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai text-sm">
+                </div>
+              </div>
+
+              <!-- สิ่งอำนวยความสะดวก -->
+              <div>
+                <h4 class="font-medium text-gray-900 mb-3 font-thai">สิ่งอำนวยความสะดวก</h4>
+                <div class="grid grid-cols-3 gap-y-2 gap-x-3">
+                  <label 
+                    *ngFor="let amenity of amenities" 
+                    class="flex items-center cursor-pointer"
+                    (click)="toggleAmenity(amenity)">
+                    <div 
+                      class="w-5 h-5 rounded mr-2 flex items-center justify-center"
+                      [ngClass]="amenity.checked ? 'bg-red-500' : 'border border-gray-300'">
+                      <svg 
+                        *ngIf="amenity.checked"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke-width="3" 
+                        stroke="white" 
+                        class="w-3 h-3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    </div>
+                    <span class="font-thai text-sm">{{ amenity.name }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="filter-section">
-            <h4>สิ่งอำนวยความสะดวก</h4>
-            <!-- Content for amenities filter -->
+          
+          <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-white flex-shrink-0">
+            <button 
+              (click)="clearFilters()"
+              class="px-6 py-2 bg-white text-red-500 rounded-lg hover:bg-gray-50 transition-colors font-thai font-medium">
+              ล้าง
+            </button>
+            <button 
+              (click)="applyFilters()"
+              class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-thai font-medium">
+              ตกลง
+            </button>
           </div>
-          <div class="filter-section">
-            <h4>ระยะทาง</h4>
-            <!-- Content for distance filter -->
-          </div>
-        </div>
-        <div class="filter-popup-footer">
-          <button class="reset-btn">รีเซ็ต</button>
-          <button class="apply-btn">นำไปใช้</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Results header -->
-<div class="results-header">
-  <h2>พบข้อมูลหอพัก <span class="dorm-count">({{filteredDorms.length}} ชื่อ)</span></h2>
-  <div class="dropdown">
-    <select class="form-select" [(ngModel)]="sortOrder" (change)="applySelectedSort()">
+<!-- Results header - แก้ส่วนเรียงตามราคา -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+  <h2 class="text-lg md:text-xl font-medium font-thai mb-4 sm:mb-0">
+    พบข้อมูลหอพัก 
+    <span class="text-gray-500 font-normal text-sm">({{filteredDorms.length}} หอพัก)</span>
+  </h2>
+  <div class="w-full sm:w-48">
+    <select 
+      class="w-full h-10 px-3 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors font-thai appearance-none bg-white"
+      style="background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 4 5\'><path fill=\'%23666\' d=\'M2 0L0 2h4zm0 5L0 3h4z\'/></svg>'); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;"
+      [(ngModel)]="sortOrder" 
+      (change)="applySelectedSort()">
       <option value="" disabled selected>เรียงตามราคา</option>
       <option value="asc">ราคาต่ำสุด - สูงสุด</option>
       <option value="desc">ราคาสูงสุด - ต่ำสุด</option>
@@ -76,51 +175,55 @@
   </div>
 </div>
 
-<!-- Dorm grid -->
-<div class="dorm-grid">
-  <!-- Dorm card -->
-  <div class="dorm-card" *ngFor="let dorm of filteredDorms">
-    <div class="card-img">
-      <img [src]="dorm.thumbnail_url || dorm.main_image_url || 'assets/images/dorms/default.jpg'" [alt]="dorm.dorm_name">
-    </div>
-    <div class="card-body">
-      <div class="price" *ngIf="dorm.min_price && dorm.max_price">
-        {{ dorm.min_price | number }} - {{ dorm.max_price | number }} บาท/เดือน
-      </div>
-      <div class="price" *ngIf="dorm.min_price && !dorm.max_price">
-        {{ dorm.min_price | number }} บาท/เดือน
-      </div>
-      <div class="price" *ngIf="dorm.price_display">{{ dorm.price_display }}</div>
-      <div class="monthly-price" *ngIf="dorm.monthly_price">
-        ค่าเช่ารายเดือน: {{ dorm.monthly_price | number }} บาท
-      </div>
-      <div class="daily-price" *ngIf="dorm.daily_price">
-        ค่าเช่ารายวัน: {{ dorm.daily_price }} บาท/วัน
-      </div>
-      <h3 class="dorm-name">{{ dorm.dorm_name }}</h3>
-      <div class="location">{{ dorm.address }}</div>
-      <div class="zone" *ngIf="dorm.zone_name">
-        <i class="fa fa-map-marker"></i> โซน{{ dorm.zone_name }}
-      </div>
-      <div class="availability" *ngIf="dorm.updated_date">
-        อัพเดทล่าสุด: {{ dorm.updated_date | date:'dd/MM/yyyy' }}
-      </div>
-      <div class="rating">
-        <div class="stars-container" *ngIf="dorm.rating">
-          <span class="rating-value">{{ dorm.rating.toFixed(1) }}</span>
-          <div class="stars">
-            <i class="fa fa-star filled" *ngFor="let star of getStars(dorm.rating)"></i>
+  <!-- Dorm grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <ng-container *ngFor="let dorm of filteredDorms">
+      <div
+          class="bg-white shadow hover:shadow-lg transition p-4 flex flex-col border border-black/10 h-full card-hover-effect rounded-lg">
+          <div class="w-full h-48 mb-3 overflow-hidden rounded-lg cursor-pointer"
+            [routerLink]="['/dorm-detail', dorm.id]">
+            <img [src]="dorm.image" alt="dorm"
+              class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+          </div>
+
+          <div class="flex-1 flex flex-col">
+            <div class="text-[#6D6D6D] font-bold text-base flex items-start price-container h-[48px] font-english"
+              [innerHTML]="getPriceHtml(dorm.price)"></div>
+
+            <div class="font-medium text-lg mb-1 font-thai min-h-[28px] line-clamp-2 cursor-pointer"
+              [routerLink]="['/dorm-detail', dorm.id]">
+              {{ dorm.name }}
+            </div>
+
+            <div class="text-gray-500 text-sm mb-1 font-thai min-h-[20px] line-clamp-2">{{ dorm.zone }}</div>
+
+            <div class="text-gray-400 text-xs font-thai mb-3">อัพเดทล่าสุด {{ dorm.date }}</div>
+
+            <div class="mt-auto flex items-end">
+              <div class="flex items-end">
+                <span class="text-sm font-bold text-gray-700 font-english relative top-0.5">5.0</span>
+                <span class="ml-3 flex relative top-[0.05rem]">
+                  <ng-container *ngFor="let star of getStars(dorm.rating)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-5 h-5 inline">
+                      <path
+                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
+                    </svg>
+                  </ng-container>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-        <button class="detail-btn" [routerLink]="['/dorm-detail', dorm.dorm_id]">รายละเอียด</button>
-      </div>
+    </ng-container>
+  </div>
+
+  <!-- No results message -->
+  <div *ngIf="filteredDorms.length === 0" class="text-center py-12">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+      <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <p class="text-lg text-gray-600 font-thai">ไม่พบหอพักที่ตรงกับเงื่อนไข กรุณาปรับเกณฑ์การค้นหา</p>
     </div>
   </div>
 </div>
-
-<!-- No results message -->
-<div class="no-results" *ngIf="filteredDorms.length === 0">
-  <p>ไม่พบหอพักที่ตรงกับเงื่อนไข กรุณาปรับเกณฑ์การค้นหา</p>
-</div>
-
-

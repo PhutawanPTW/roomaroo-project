@@ -35,7 +35,7 @@ export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn):
           });
           try {
             const role = authService.currentUser$.value?.memberType ?? 'unknown';
-            console.log('[AuthInterceptor]', req.method, req.url, '| Attached Authorization Bearer token | role =', role);
+            // console.log('[AuthInterceptor]', req.method, req.url, '| Attached Authorization Bearer token | role =', role);
           } catch {}
           return next(clonedRequest);
         }),

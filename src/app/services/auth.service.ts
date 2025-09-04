@@ -124,9 +124,9 @@ export class AuthService {
 
                 try {
                     if (user) {
-                        console.log('[AuthService] Fetching user profile for:', user.email);
+                        // console.log('[AuthService] Fetching user profile for:', user.email);
                         const profile = await this.fetchUserProfile(user);
-                        console.log('[AuthService] User profile fetched:', profile);
+                        // console.log('[AuthService] User profile fetched:', profile);
                         this.currentUser$.next(profile);
                     } else {
                         console.log('[AuthService] No user, setting currentUser$ to null');

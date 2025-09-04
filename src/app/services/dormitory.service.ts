@@ -92,6 +92,16 @@ export interface DormDetail extends Dorm {
   electricity_type?: string; // Added field from API
   description?: string;
   dorm_description?: string; // Added field from API
+  
+  // Owner contact information
+  owner_name?: string;
+  owner_email?: string;
+  owner_phone?: string;
+  owner_secondary_phone?: string;
+  owner_line_id?: string;
+  owner_manager_name?: string;
+  owner_photo_url?: string;
+  
   images: { image_id?: number; dorm_id?: number; image_url: string; image_type?: string; is_primary?: boolean; upload_date?: string }[];
   amenities: { 
     dorm_amenity_id?: number; 
@@ -239,6 +249,77 @@ export class DormitoryService {
       catchError(err => {
         console.error('[DormitoryService] Error fetching zones:', err);
         return of([]);
+      })
+    );
+  }
+
+  // Map API endpoints
+  /** Get all dormitories for map display with coordinates */
+  getAllDormitoriesForMap(): Observable<{dormitories: Dorm[], total: number}> {
+    return this.http.get<any>(`${this.backendUrl}/dormitories/map/all`).pipe(
+      map(response => {
+        // Handle new API response format
+        const dorms = response.dormitories || [];
+        const mappedDorms = dorms.map((dorm: any) => ({
+          dorm_id: dorm.id,
+          dorm_name: dorm.name,
+          address: dorm.address,
+          latitude: dorm.position?.lat || null,
+          longitude: dorm.position?.lng || null,
+          zone_name: dorm.zone,
+          thumbnail_url: dorm.image_url,
+          main_image_url: dorm.image_url,
+          min_price: dorm.price_range?.min,
+          max_price: dorm.price_range?.max,
+          rating: dorm.rating?.average,
+          price_display: dorm.price_range ? 
+            `${dorm.price_range.min.toLocaleString()} - ${dorm.price_range.max.toLocaleString()} บาท/เดือน` : 
+            'ติดต่อสอบถาม'
+        }));
+        
+        return {
+          dormitories: mappedDorms,
+          total: response.pagination?.total || mappedDorms.length
+        };
+      }),
+      catchError(err => {
+        console.error('[DormitoryService] Error fetching dormitories for map:', err);
+        return of({ dormitories: [], total: 0 });
+      })
+    );
+  }
+
+  /** Get dormitory popup data for map */
+  getDormitoryPopup(dormId: number): Observable<DormDetail> {
+    return this.http.get<any>(`${this.backendUrl}/dormitories/map/popup/${dormId}`).pipe(
+      map(response => {
+        // Handle new API response format
+        const dorm = response;
+        return {
+          dorm_id: dorm.id,
+          dorm_name: dorm.name,
+          address: dorm.address,
+          dorm_description: dorm.description,
+          latitude: dorm.position?.lat || null,
+          longitude: dorm.position?.lng || null,
+          zone_name: dorm.zone,
+          thumbnail_url: dorm.image_url,
+          main_image_url: dorm.image_url,
+          min_price: dorm.price_range?.min,
+          max_price: dorm.price_range?.max,
+          rating: dorm.rating?.average,
+          price_display: dorm.price_range ? 
+            `${dorm.price_range.min.toLocaleString()} - ${dorm.price_range.max.toLocaleString()} บาท/เดือน` : 
+            'ติดต่อสอบถาม',
+          // Add other required fields for DormDetail
+          manager_name: 'เจ้าของหอพัก',
+          images: dorm.image_url ? [{ image_url: dorm.image_url }] : [],
+          amenities: []
+        } as DormDetail;
+      }),
+      catchError(err => {
+        console.error(`[DormitoryService] Error fetching dormitory popup for dorm ${dormId}:`, err);
+        throw err;
       })
     );
   }

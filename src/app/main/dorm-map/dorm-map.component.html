@@ -1,1 +1,177 @@
-<p>dorm-map works!</p>
+<app-navbar></app-navbar>
+
+<div class="min-h-screen bg-gray-50 font-thai">
+  <!-- Header Section -->
+  <div class="mt-4">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+          <p class="text-gray-600">
+            หอพักทั้งหมด 
+            <span class="font-semibold text-red-600">{{ getTotalDormitories() }}</span> 
+            แห่ง
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div class="relative">
+    <!-- Loading Overlay -->
+    <div 
+      *ngIf="isLoading" 
+      class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p class="text-gray-600">กำลังโหลดแผนที่...</p>
+      </div>
+    </div>
+
+    <!-- Error Overlay -->
+    <div 
+      *ngIf="error" 
+      class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+      <div class="text-center max-w-md mx-auto px-4">
+        <div class="text-red-500 mb-4">
+          <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
+        <p class="text-gray-600 mb-6">{{ error }}</p>
+        <button 
+          (click)="retryLoad()"
+          class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+          ลองใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div 
+      #mapContainer 
+      class="w-full h-[calc(100vh-200px)] min-h-[800px] max-w-7xl mx-auto px-4">
+    </div>
+  </div>
+</div>
+
+<!-- Custom CSS for popup styling -->
+<style>
+  .popup-content {
+    font-family: 'Sarabun', sans-serif;
+  }
+
+  .popup-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 12px;
+  }
+
+  .popup-info {
+    padding: 0 4px;
+  }
+
+  .popup-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .popup-price {
+    font-size: 14px;
+    font-weight: 600;
+    color: #059669;
+    margin-bottom: 6px;
+  }
+
+  .popup-zone {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
+
+  .popup-description {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  .popup-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rating-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .stars {
+    display: flex;
+    gap: 1px;
+  }
+
+  .star {
+    font-size: 14px;
+  }
+
+  .star.full {
+    color: #fbbf24;
+  }
+
+  .star.half {
+    color: #fbbf24;
+    opacity: 0.7;
+  }
+
+  .star.empty {
+    color: #d1d5db;
+  }
+
+  /* MapTiler popup customization */
+  .maplibregl-popup-content {
+    padding: 0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+  }
+
+  .maplibregl-popup-close-button {
+    color: #6b7280 !important;
+    font-size: 18px !important;
+    padding: 8px !important;
+  }
+
+  .maplibregl-popup-close-button:hover {
+    color: #374151 !important;
+    background-color: #f3f4f6 !important;
+  }
+
+  .maplibregl-popup-tip {
+    border-top-color: white !important;
+  }
+
+  /* Custom map controls - ก๊อปมาจาก map.service.ts */
+  .maplibregl-ctrl-group {
+    border-radius: 8px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+  }
+
+  .maplibregl-ctrl-icon {
+    border-radius: 6px !important;
+    transition: background-color 0.2s ease !important;
+  }
+
+  .maplibregl-ctrl-icon:hover {
+    background-color: #f3f4f6 !important;
+  }
+</style>
