@@ -5,7 +5,9 @@ import { filter } from 'rxjs/operators';
 import { AuthService, UserProfile } from '../services/auth.service';
 import { DormitoryService, Dorm } from '../services/dormitory.service';
 import { NavbarComponent } from './navbar/navbar.component';
+import { ComparePopupComponent } from './shared/compare-popup/compare-popup.component';
 import { Subscription } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 // UI model used in template (all required)
 interface UIDorm {
@@ -24,7 +26,7 @@ interface UIDorm {
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavbarComponent],
+  imports: [CommonModule, RouterModule, NavbarComponent, ComparePopupComponent],
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.css'],
 })
@@ -61,11 +63,20 @@ export class MainComponent implements OnInit, OnDestroy {
   recommendedDorms: UIDorm[] = [];
   latestDorms: UIDorm[] = [];
   
+  // Loading states
+  isLoadingRecommended = true;
+  isLoadingLatest = true;
+  
   // Displayed lists (limited to 4)
   displayedRecommended: UIDorm[] = [];
   displayedLatest: UIDorm[] = [];
 
-  constructor(private router: Router, private authService: AuthService, private dormSvc: DormitoryService) {
+  constructor(
+    private router: Router, 
+    private authService: AuthService, 
+    private dormSvc: DormitoryService,
+    private sanitizer: DomSanitizer
+  ) {
     // แทนที่การ subscribe โดยตรง ด้วยการเก็บ subscription เพื่อ unsubscribe ใน ngOnDestroy
     this.routerSubscription = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
@@ -90,6 +101,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private async loadDormitories() {
+    this.isLoadingRecommended = true;
+    this.isLoadingLatest = true;
+
     try {
       const recommended = await this.dormSvc.getRecommended().toPromise();
       console.log('Recommended dorms from API:', recommended);
@@ -98,7 +112,13 @@ export class MainComponent implements OnInit, OnDestroy {
         this.displayedRecommended = this.recommendedDorms.slice(0, 4);
         this.loadImagesForList(this.displayedRecommended);
       }
-  
+    } catch (error) {
+      console.error('Error loading recommended dormitories:', error);
+    } finally {
+      this.isLoadingRecommended = false;
+    }
+
+    try {
       const latest = await this.dormSvc.getLatest().toPromise();
       console.log('Latest dorms from API:', latest);
       if (latest) {
@@ -107,7 +127,9 @@ export class MainComponent implements OnInit, OnDestroy {
         this.loadImagesForList(this.displayedLatest);
       }
     } catch (error) {
-      console.error('Error loading dormitories:', error);
+      console.error('Error loading latest dormitories:', error);
+    } finally {
+      this.isLoadingLatest = false;
     }
   }
 
@@ -208,6 +230,11 @@ export class MainComponent implements OnInit, OnDestroy {
     return html;
   }
 
+  getSafePriceHtml(price: string | undefined): SafeHtml {
+    const html = this.getPriceHtml(price);
+    return this.sanitizer.sanitize(1, html) || '';
+  }
+
   viewAllRecommended() {
     this.router.navigate(['/dorm-list'], { queryParams: { type: 'recommended' } });
   }
@@ -225,7 +252,9 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   onRegister() {
-    this.router.navigate(['/register']);
+    // Require explicit type; do not navigate with null
+    const type = 'member';
+    this.router.navigate(['/register', type], { queryParams: { userType: type } });
   }
 
   private mapDormToUi(d: Dorm): UIDorm {

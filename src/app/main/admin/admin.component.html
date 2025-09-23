@@ -1,58 +1,147 @@
-<div class="admin-container">
-  <aside class="sidebar">
-    <img src="assets/images/logo.png" alt="Roomaroo Logo" class="logo" />
-    <nav>
-      <ul>
-        <li class="font-thai" [class.active]="selectedTab === 'all'" (click)="setTab('all')">รายการหอพักทั้งหมด</li>
-        <li class="font-thai" [class.active]="selectedTab === 'รออนุมัติ'" (click)="setTab('รออนุมัติ')">รายการรอการอนุมัติ</li>
-      </ul>
+<div class="w-full min-h-screen bg-[#F5F7FA] flex font-thai">
+  <!-- Sidebar -->
+  <aside class="w-72 bg-white border-r border-black/10 p-6 flex-shrink-0">
+    <!-- Logo -->
+    <div class="mb-8">
+      <a class="flex items-center cursor-pointer">
+        <img
+          src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png"
+          alt="Roomaroo Logo"
+          class="w-auto object-contain"
+          style="height: 60px"
+          loading="eager"
+        />
+        <span class="text-xl font-thai flex items-center ml-2">
+          <span class="font-bold">Room</span>
+          <span class="font-normal">aroo</span>
+        </span>
+      </a>
+    </div>
+
+    <!-- เมนู -->
+    <nav class="space-y-3">
+      <button
+        (click)="setTab('all')"
+        class="w-full text-center px-4 py-3 rounded-md transition-colors"
+        [ngClass]="
+          selectedTab === 'all'
+            ? 'bg-[#45A9EA] text-white'
+            : 'bg-white text-[#45A9EA] border border-[#45A9EA]'
+        "
+      >
+        รายการหอพักทั้งหมด
+      </button>
+
+      <button
+        (click)="setTab('รออนุมัติ')"
+        class="w-full text-center px-4 py-3 rounded-md transition-colors"
+        [ngClass]="
+          selectedTab === 'รออนุมัติ'
+            ? 'bg-[#45A9EA] text-white'
+            : 'bg-white text-[#45A9EA] border border-[#45A9EA]'
+        "
+      >
+        รายการรอการอนุมัติ
+      </button>
     </nav>
   </aside>
-  <main class="main-content">
-    <header class="header">
-      <div></div>
-      <div class="profile">
-        <img src="assets/images/image-removebg-preview.png" alt="Admin Profile" class="profile-img" />
-        <div class="profile-info">
-          <span class="font-english">Admin1</span>
-          <span class="font-english uid">UID: 23545</span>
-        </div>
-      </div>
+
+  <!-- Main -->
+  <main class="flex-1 p-6">
+    <!-- Header (เหมือนของคุณเดิม) -->
+    <header class="flex items-center justify-end mb-6">
+      <button
+        class="px-4 py-2 bg-[#45A9EA] text-white rounded-md text-sm font-english"
+        routerLink="/admin/login"
+      >
+        เข้าสู่ระบบ
+      </button>
     </header>
-    <section class="content">
-      <h2 class="font-thai">รายการหอพัก</h2>
-      <div class="table-responsive">
-        <table class="dorm-table">
-          <thead>
+
+    <!-- Title -->
+    <div class="max-w-6xl mx-auto">
+      <h2 class="mb-4 text-lg font-medium">รายการหอพัก</h2>
+    </div>
+
+    <!-- Table Card -->
+    <div
+      class="bg-white border border-black/10 rounded-lg overflow-hidden w-full max-w-6xl mx-auto"
+    >
+      <div class="overflow-x-auto">
+        <table class="min-w-full border-separate [border-spacing:0]">
+          <thead class="bg-gray-100">
             <tr>
-              <th class="font-thai">ชื่อหอพัก</th>
-              <th class="font-english">USER ID</th>
-              <th class="font-thai">เจ้าของหอพัก</th>
-              <th></th>
+              <th class="px-4 py-2.5 text-left text-sm font-medium">ชื่อหอพัก</th>
+              <th class="px-4 py-2.5 text-left text-sm font-medium">Username</th>
+              <th class="px-4 py-2.5 text-left text-sm font-medium">
+                เจ้าของหอพัก
+              </th>
+              <th class="py-2.5 pr-6 text-center text-sm font-medium w-[160px]">
+                การจัดการ
+              </th>
             </tr>
           </thead>
+
           <tbody>
-            <tr *ngFor="let dorm of dorms; let i = index" [class.alt-row]="i % 2 === 1">
-              <td class="font-thai">{{ dorm.name }}</td>
-              <td class="font-english">{{ dorm.userId }}</td>
-              <td class="font-thai">{{ dorm.owner }}</td>
-              <td>
-                <ng-container *ngIf="selectedTab === 'รออนุมัติ'; else editDeleteBtns">
-                  <button class="check-btn font-thai">ตรวจสอบ</button>
-                </ng-container>
-                <ng-template #editDeleteBtns>
-                  <button class="check-btn font-thai" style="background:#f59e42; margin-right:8px;">แก้ไข</button>
-                  <button class="check-btn font-thai" style="background:#ef4444;">ลบ</button>
-                </ng-template>
+            <tr
+              *ngFor="let dorm of dorms; let i = index"
+              class="odd:bg-white even:bg-gray-50"
+            >
+              <td class="px-4 py-2.5 text-sm">{{ dorm.name }}</td>
+              <td class="px-4 py-2.5 text-sm">{{ dorm.userId }}</td>
+              <td class="px-4 py-2.5 text-sm">{{ dorm.owner }}</td>
+              <td class="py-2.5 pr-6">
+                <div class="relative flex justify-end w-[160px]">
+                  <!-- โหมด 'ทั้งหมด' = แก้ไข/ลบ -->
+                  <div
+                    class="grid grid-cols-2 gap-2 w-full"
+                    [class.invisible]="selectedTab === 'รออนุมัติ'"
+                  >
+                    <button
+                      class="min-w-[72px] h-8 px-3 py-1 rounded text-white text-xs bg-[#1D4ED8]"
+                    >
+                      แก้ไข
+                    </button>
+                    <button
+                      class="min-w-[72px] h-8 px-3 py-1 rounded text-white text-xs bg-[#E72020]"
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                  <!-- โหมด 'รออนุมัติ' = ตรวจสอบ -->
+                  <button
+                    *ngIf="selectedTab === 'รออนุมัติ'"
+                    class="absolute inset-0 w-full h-8 rounded text-white text-xs bg-[#3B9DFF] inline-flex items-center justify-center"
+                  >
+                    ตรวจสอบ
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div class="pagination">
-        <button *ngFor="let page of [1,2,3,4,5]" [class.active-page]="page === currentPage" class="page-btn font-english">{{ page }}</button>
-        <button class="page-btn font-english">Next</button>
-      </div>
-    </section>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-4 flex items-center justify-center gap-2 font-thai">
+      <button
+        *ngFor="let page of [1, 2, 3, 4, 5]"
+        (click)="currentPage = page"
+        class="w-9 h-9 grid place-items-center rounded border border-black/10 text-sm"
+        [ngClass]="
+          page === currentPage
+            ? 'bg-[#E02828] text-white border-transparent'
+            : 'bg-white'
+        "
+      >
+        {{ page }}
+      </button>
+      <button
+        class="h-9 px-3 rounded border border-black/10 bg-white text-sm"
+      >
+        ถัดไป
+      </button>
+    </div>
   </main>
 </div>

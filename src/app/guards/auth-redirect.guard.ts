@@ -35,9 +35,38 @@ export class AuthRedirectGuard implements CanActivate {
               console.log('[AuthRedirectGuard] Google user needs profile setup, allowing register access');
               return true;
             }
+            
+            // ถ้าผู้ใช้พยายามไปหน้า login หรือ main ให้อนุญาตให้ไปได้
+            if (isLoginPage || isMainPage) {
+              console.log('[AuthRedirectGuard] Google user needs profile setup but trying to access login/main, allowing access');
+              return true;
+            }
+            
             console.log('[AuthRedirectGuard] Google user needs profile setup, redirecting to register');
-            return this.router.createUrlTree(['/register', user.memberType], {
-              queryParams: { fromGoogle: 'true' }
+            
+            // อ่าน userType จาก URL ปัจจุบันหรือ queryParams เพื่อรักษาค่าเดิม
+            let targetUserType: 'member' | 'owner' = 'member'; // default
+            
+            // 1. ลองอ่านจาก path parameter ของ URL ปัจจุบัน
+            const currentPath = route.url.join('/');
+            const pathMatch = currentPath.match(/\/register\/(member|owner)/);
+            if (pathMatch) {
+              targetUserType = pathMatch[1] as 'member' | 'owner';
+              console.log('[AuthRedirectGuard] Using userType from current path:', targetUserType);
+            }
+            // 2. ถ้าไม่มีใน path ลองอ่านจาก queryParams
+            else if (queryParams['userType'] === 'owner' || queryParams['userType'] === 'member') {
+              targetUserType = queryParams['userType'] as 'member' | 'owner';
+              console.log('[AuthRedirectGuard] Using userType from queryParams:', targetUserType);
+            }
+            // 3. ถ้าไม่มีทั้งคู่ ลองอ่านจาก user.memberType
+            else if (user.memberType === 'member' || user.memberType === 'owner') {
+              targetUserType = user.memberType;
+              console.log('[AuthRedirectGuard] Using userType from user.memberType:', targetUserType);
+            }
+            
+            return this.router.createUrlTree(['/register', targetUserType], {
+              queryParams: { fromGoogle: 'true', userType: targetUserType }
             });
           }
 
@@ -74,13 +103,27 @@ export class AuthRedirectGuard implements CanActivate {
               return true;
             }
             console.log('[AuthRedirectGuard] User needs profile setup, redirecting to register');
-            return this.router.createUrlTree(['/register', user.memberType]);
+            // ตรวจสอบว่า user.memberType เป็น 'member' หรือ 'owner' เท่านั้น
+            const validUserType = (user.memberType === 'member' || user.memberType === 'owner') 
+              ? user.memberType 
+              : 'member'; // fallback เป็น member
+            return this.router.createUrlTree(['/register', validUserType]);
           }
         }
         
         // User not logged in - allow access to login/register pages, redirect main to login
         if (isLoginPage || isRegisterPage) {
           console.log('[AuthRedirectGuard] No user, allowing access to login/register pages');
+          
+          // ถ้าเป็น register page แต่ไม่มี type parameter หรือ type เป็น null
+          if (isRegisterPage) {
+            const typeParam = route.params['type'];
+            if (!typeParam || typeParam === 'null' || typeParam === 'undefined') {
+              console.log('[AuthRedirectGuard] Register page with invalid type, redirecting to main');
+              return this.router.createUrlTree(['/main']);
+            }
+          }
+          
           return true;
         }
         

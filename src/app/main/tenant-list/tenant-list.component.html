@@ -1,176 +1,339 @@
 <app-navbar></app-navbar>
 
 <!-- แสดงรายการผู้เช่า -->
-<div class="w-full max-w-6xl mx-auto px-4 py-6 font-thai font-english pt-[60px]">
-    <!-- Header Section -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-lg font-thai font-medium flex items-end gap-2 font-normal">
-        รายการผู้เช่า
-        <span class="text-gray-400 text-sm font-normal mb-1">({{ filteredTenants.length }})</span>
-      </h2>
-      
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm"
-            (input)="onSearch()"
-            class="py-2 pl-3 pr-10 border border-gray-300 rounded-md w-72 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50" 
-            placeholder="ค้นหาผู้เช่า..."
+<div
+  class="w-full max-w-6xl mx-auto px-4 py-6 font-thai font-english pt-[60px]"
+>
+  <!-- Header Section -->
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-lg font-thai font-medium flex items-end gap-2 font-normal">
+      รายการผู้เช่า
+      <span class="text-gray-400 text-sm font-normal mb-1"
+        >({{ filteredTenants.length }})</span
+      >
+    </h2>
+
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+          class="py-2 pl-3 pr-10 border border-gray-300 rounded-md w-72 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+          placeholder="ค้นหาผู้เช่า..."
+        />
+        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500">
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-          </span>
-        </div>
-        <select [(ngModel)]="sortBy" (change)="onSort()" class="py-2 px-3 border border-gray-300 rounded-md text-sm bg-gray-50 font-thai">
-          <option value="">เรียงลำดับตาม</option>
-          <option value="วันที่สมัครล่าสุด">วันที่สมัครล่าสุด</option>
-          <option value="วันที่สมัครเก่าสุด">วันที่สมัครเก่าสุด</option>
-          <option value="ชื่อผู้เช่า (ก-ฮ)">ชื่อผู้เช่า (ก-ฮ)</option>
-          <option value="ชื่อผู้เช่า (ฮ-ก)">ชื่อผู้เช่า (ฮ-ก)</option>
-          <option value="สถานะการยืนยัน">สถานะการยืนยัน</option>
-          <option value="สถานะรอการยืนยัน">สถานะรอการยืนยัน</option>
-        </select>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            ></path>
+          </svg>
+        </span>
       </div>
+      <select
+        [(ngModel)]="sortBy"
+        (change)="onSort()"
+        class="py-2 px-3 border border-gray-300 rounded-md text-sm bg-gray-50 font-thai"
+      >
+        <option value="">เรียงลำดับตาม</option>
+        <option value="วันที่สมัครล่าสุด">วันที่สมัครล่าสุด</option>
+        <option value="วันที่สมัครเก่าสุด">วันที่สมัครเก่าสุด</option>
+        <option value="ชื่อผู้เช่า (ก-ฮ)">ชื่อผู้เช่า (ก-ฮ)</option>
+        <option value="ชื่อผู้เช่า (ฮ-ก)">ชื่อผู้เช่า (ฮ-ก)</option>
+        <option value="สถานะการยืนยัน">สถานะการยืนยัน</option>
+        <option value="สถานะรอการยืนยัน">สถานะรอการยืนยัน</option>
+      </select>
     </div>
+  </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-      <div class="flex justify-center items-center">
-        <div class="text-center">
-          <div class="loader mx-auto mb-4"></div>
-          <p class="text-gray-600 font-thai">กำลังโหลดรายการผู้เช่า...</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error State -->
-    <div *ngIf="errorMessage && !isLoading" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+  <!-- Loading State -->
+  <div
+    *ngIf="isLoading"
+    class="bg-white rounded-xl shadow-sm border border-gray-200 p-8"
+  >
+    <div class="flex justify-center items-center">
       <div class="text-center">
-        <div class="text-red-500 mb-4">
-          <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 font-thai mb-2">เกิดข้อผิดพลาด</h3>
-        <p class="text-gray-500 font-thai">{{ errorMessage }}</p>
+        <div class="loader mx-auto mb-4"></div>
+        <p class="text-gray-600 font-thai">กำลังโหลดรายการผู้เช่า...</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div
+    *ngIf="errorMessage && !isLoading"
+    class="bg-white rounded-xl shadow-sm border border-gray-200 p-8"
+  >
+    <div class="text-center">
+      <div class="text-red-500 mb-4">
+        <svg
+          class="w-12 h-12 mx-auto"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 font-thai mb-2">
+        เกิดข้อผิดพลาด
+      </h3>
+      <p class="text-gray-500 font-thai">{{ errorMessage }}</p>
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div
+    *ngIf="!isLoading && !errorMessage"
+    class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+  >
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th
+              class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai"
+            >
+              ชื่อผู้เช่า
+            </th>
+            <th
+              class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai"
+            >
+              หอพัก
+            </th>
+            <th
+              class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai"
+            >
+              เบอร์โทรศัพท์
+            </th>
+            <th
+              class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai"
+            >
+              อีเมล
+            </th>
+            <th
+              class="text-center py-4 px-6 font-semibold text-gray-700 text-sm font-thai"
+            >
+              สถานะ
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr
+            *ngFor="let tenant of filteredTenants"
+            class="hover:bg-gray-50 transition-colors"
+          >
+            <td class="py-4 px-6">
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full mr-3 overflow-hidden">
+                  <img
+                    *ngIf="tenant.profile_image_url"
+                    [src]="tenant.profile_image_url"
+                    [alt]="tenant.display_name || tenant.username"
+                    class="w-full h-full object-cover"
+                    (error)="onImageError($event)"
+                  />
+                  <div
+                    *ngIf="!tenant.profile_image_url"
+                    class="w-full h-full bg-blue-100 flex items-center justify-center"
+                  >
+                    <span class="text-blue-600 font-semibold text-sm">{{
+                      tenant.display_name?.charAt(0) ||
+                        tenant.username?.charAt(0) ||
+                        "?"
+                    }}</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-900 font-thai">
+                    {{ tenant.display_name || tenant.username }}
+                  </div>
+                  <div class="text-sm text-gray-500 font-thai">
+                    {{ tenant.time_ago || getTimeAgo(tenant.created_at) }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="py-4 px-6">
+              <div class="font-medium text-gray-900 font-thai">
+                {{ tenant.dorm_name }}
+              </div>
+            </td>
+            <td class="py-4 px-6">
+              <div class="font-medium text-gray-900 font-english">
+                {{ tenant.phone_number }}
+              </div>
+            </td>
+            <td class="py-4 px-6">
+              <div class="font-medium text-gray-900 font-english">
+                {{ tenant.email }}
+              </div>
+            </td>
+            <td class="py-4 px-6">
+              <div class="flex flex-col items-center space-y-2">
+                <!-- สำหรับผู้เช่าที่รออนุมัติ -->
+                <ng-container
+                  *ngIf="
+                    tenant.status === 'รออนุมัติ' || tenant.status === 'pending'
+                  "
+                >
+                  <div class="flex gap-2">
+                    <button
+                      (click)="onConfirmTenant(tenant)"
+                      [disabled]="
+                        processingTenantId === tenant.id &&
+                        processingAction === 'approve'
+                      "
+                      class="px-4 py-2 text-sm rounded-lg bg-green-100 border border-green-200 text-green-700 font-medium font-thai hover:bg-green-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span
+                        *ngIf="
+                          processingTenantId === tenant.id &&
+                          processingAction === 'approve'
+                        "
+                        class="inline-block w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin mr-2"
+                      ></span>
+                      {{
+                        processingTenantId === tenant.id &&
+                        processingAction === "approve"
+                          ? ""
+                          : "ยืนยัน"
+                      }}
+                    </button>
+                    <button
+                      (click)="onRejectTenant(tenant)"
+                      [disabled]="
+                        processingTenantId === tenant.id &&
+                        processingAction === 'reject'
+                      "
+                      class="px-4 py-2 text-base rounded-lg bg-red-100 border border-red-200 text-red-700 font-medium font-thai hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span
+                        *ngIf="
+                          processingTenantId === tenant.id &&
+                          processingAction === 'reject'
+                        "
+                        class="inline-block w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2"
+                      ></span>
+                      {{
+                        processingTenantId === tenant.id &&
+                        processingAction === "reject"
+                          ? ""
+                          : "ปฏิเสธ"
+                      }}
+                    </button>
+                  </div>
+                </ng-container>
+
+                <!-- สำหรับผู้เช่าที่อนุมัติแล้ว -->
+                <ng-container
+                  *ngIf="
+                    tenant.status === 'อนุมัติ' ||
+                    tenant.status === 'อนุมัติแล้ว' ||
+                    tenant.status === 'approved'
+                  "
+                >
+                  <button
+                    (click)="onCancelConfirmation(tenant)"
+                    [disabled]="
+                      processingTenantId === tenant.id &&
+                      processingAction === 'cancel'
+                    "
+                    class="px-4 py-2 text-sm rounded-lg bg-red-100 border border-red-200 text-red-700 font-medium font-thai hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span
+                      *ngIf="
+                        processingTenantId === tenant.id &&
+                        processingAction === 'cancel'
+                      "
+                      class="inline-block w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2"
+                    ></span>
+                    {{
+                      processingTenantId === tenant.id &&
+                      processingAction === "cancel"
+                        ? ""
+                        : "ยกเลิกการยืนยัน"
+                    }}
+                  </button>
+                </ng-container>
+
+                <!-- สำหรับผู้เช่าที่ปฏิเสธแล้ว -->
+                <ng-container
+                  *ngIf="
+                    tenant.status === 'ปฏิเสธแล้ว' ||
+                    tenant.status === 'rejected' ||
+                    tenant.status === 'ปฏิเสธ'
+                  "
+                >
+                  <span
+                    class="px-4 py-2 text-sm rounded-lg bg-red-100 border border-red-200 text-red-700 font-medium font-thai"
+                  >
+                    ปฏิเสธแล้ว
+                  </span>
+                </ng-container>
+
+                <!-- Fallback สำหรับ status ที่ไม่รู้จัก -->
+                <ng-container
+                  *ngIf="
+                    tenant.status &&
+                    tenant.status !== 'รออนุมัติ' &&
+                    tenant.status !== 'pending' &&
+                    tenant.status !== 'ยืนยันแล้ว' &&
+                    tenant.status !== 'confirmed' &&
+                    tenant.status !== 'ปฏิเสธแล้ว' &&
+                    tenant.status !== 'rejected' &&
+                    tenant.status !== 'ปฏิเสธ'
+                  "
+                >
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- Table Section -->
-    <div *ngIf="!isLoading && !errorMessage" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai">ชื่อผู้เช่า</th>
-              <th class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai">หอพัก</th>
-              <th class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai">เบอร์โทรศัพท์</th>
-              <th class="text-left py-4 px-6 font-semibold text-gray-700 text-sm font-thai">อีเมล</th>
-              <th class="text-center py-4 px-6 font-semibold text-gray-700 text-sm font-thai">สถานะ</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr *ngFor="let tenant of filteredTenants" class="hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-6">
-                <div class="flex items-center">
-                  <div class="w-10 h-10 rounded-full mr-3 overflow-hidden">
-                    <img 
-                      *ngIf="tenant.profile_image_url" 
-                      [src]="tenant.profile_image_url" 
-                      [alt]="tenant.display_name || tenant.username"
-                      class="w-full h-full object-cover"
-                      (error)="onImageError($event)"
-                    >
-                    <div 
-                      *ngIf="!tenant.profile_image_url" 
-                      class="w-full h-full bg-blue-100 flex items-center justify-center"
-                    >
-                      <span class="text-blue-600 font-semibold text-sm">{{ tenant.display_name?.charAt(0) || tenant.username?.charAt(0) || '?' }}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="font-medium text-gray-900 font-thai">{{ tenant.display_name || tenant.username }}</div>
-                    <div class="text-sm text-gray-500 font-thai">{{ tenant.time_ago || getTimeAgo(tenant.created_at) }}</div>
-                  </div>
-                </div>
-              </td>
-              <td class="py-4 px-6">
-                <div class="font-medium text-gray-900 font-thai">{{ tenant.dorm_name }}</div>
-              </td>
-              <td class="py-4 px-6">
-                <div class="font-medium text-gray-900 font-english">{{ tenant.phone_number }}</div>
-              </td>
-              <td class="py-4 px-6">
-                <div class="font-medium text-gray-900 font-english">{{ tenant.email }}</div>
-              </td>
-              <td class="py-4 px-6">
-                <div class="flex flex-col items-center space-y-2">
-                  <!-- สถานะ -->
-                  <div class="text-sm font-medium text-gray-700 font-thai mb-2">สถานะ</div>
-                  
-                  <!-- สำหรับผู้เช่าที่รออนุมัติ -->
-                  <ng-container *ngIf="tenant.status === 'รออนุมัติ' || tenant.status === 'pending'">
-                    <div class="flex gap-2">
-                      <button 
-                        (click)="onConfirmTenant(tenant)"
-                        [disabled]="processingTenantId === tenant.id && processingAction === 'approve'"
-                        class="px-4 py-2 text-sm rounded-lg bg-green-100 border border-green-200 text-green-700 font-medium font-thai hover:bg-green-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span *ngIf="processingTenantId === tenant.id && processingAction === 'approve'" class="inline-block w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin mr-2"></span>
-                        {{ processingTenantId === tenant.id && processingAction === 'approve' ? '' : 'ยืนยัน' }}
-                      </button>
-                      <button 
-                        (click)="onRejectTenant(tenant)"
-                        [disabled]="processingTenantId === tenant.id && processingAction === 'reject'"
-                        class="px-4 py-2 text-sm rounded-lg bg-red-100 border border-red-200 text-red-700 font-medium font-thai hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span *ngIf="processingTenantId === tenant.id && processingAction === 'reject'" class="inline-block w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2"></span>
-                        {{ processingTenantId === tenant.id && processingAction === 'reject' ? '' : 'ปฏิเสธ' }}
-                      </button>
-                    </div>
-                  </ng-container>
-                  
-                  <!-- สำหรับผู้เช่าที่ยืนยันแล้ว -->
-                  <ng-container *ngIf="tenant.status === 'ยืนยันแล้ว' || tenant.status === 'confirmed'">
-                    <button 
-                      (click)="onCancelConfirmation(tenant)"
-                      [disabled]="processingTenantId === tenant.id && processingAction === 'cancel'"
-                      class="px-4 py-2 text-sm rounded-lg bg-orange-100 border border-orange-200 text-orange-700 font-medium font-thai hover:bg-orange-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                      <span *ngIf="processingTenantId === tenant.id && processingAction === 'cancel'" class="inline-block w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin mr-2"></span>
-                      {{ processingTenantId === tenant.id && processingAction === 'cancel' ? '' : 'ยกเลิกการยืนยัน' }}
-                    </button>
-                  </ng-container>
-                  
-                  <!-- สำหรับผู้เช่าที่ปฏิเสธแล้ว -->
-                  <ng-container *ngIf="tenant.status === 'ปฏิเสธแล้ว' || tenant.status === 'rejected' || tenant.status === 'ปฏิเสธ'">
-                    <span class="px-4 py-2 text-sm rounded-lg bg-red-100 border border-red-200 text-red-700 font-medium font-thai">
-                      ปฏิเสธแล้ว
-                    </span>
-                  </ng-container>
-                  
-                  <!-- Fallback สำหรับ status ที่ไม่รู้จัก -->
-                  <ng-container *ngIf="tenant.status && tenant.status !== 'รออนุมัติ' && tenant.status !== 'pending' && tenant.status !== 'ยืนยันแล้ว' && tenant.status !== 'confirmed' && tenant.status !== 'ปฏิเสธแล้ว' && tenant.status !== 'rejected' && tenant.status !== 'ปฏิเสธ'">
-                    <span class="px-4 py-2 text-sm rounded-lg bg-gray-100 border border-gray-200 text-gray-700 font-medium font-thai">
-                      {{ tenant.status }}
-                    </span>
-                  </ng-container>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Empty State (จะแสดงเมื่อไม่มีข้อมูล) -->
+    <div
+      *ngIf="filteredTenants.length === 0 && !isLoading && !errorMessage"
+      class="text-center py-12"
+    >
+      <div
+        class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
+      >
+        <svg
+          class="w-8 h-8 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          ></path>
+        </svg>
       </div>
-      
-      <!-- Empty State (จะแสดงเมื่อไม่มีข้อมูล) -->
-      <div *ngIf="filteredTenants.length === 0 && !isLoading && !errorMessage" class="text-center py-12">
-        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 font-thai mb-2">ยังไม่มีผู้เช่า</h3>
-        <p class="text-gray-500 font-thai">เมื่อมีผู้เช่าสมัครเข้ามา จะแสดงในรายการนี้</p>
-      </div>
+      <h3 class="text-lg font-medium text-gray-900 font-thai mb-2">
+        ยังไม่มีผู้เช่า
+      </h3>
+      <p class="text-gray-500 font-thai">
+        เมื่อมีผู้เช่าสมัครเข้ามา จะแสดงในรายการนี้
+      </p>
     </div>
-  </div> 
+  </div>
+</div>

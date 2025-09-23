@@ -1,197 +1,273 @@
 <app-navbar></app-navbar>
-<div class="compare-container">
-  <div class="compare-header-row">
-    <h2 class="font-thai" style="display:inline-block; margin:0;">รายการเปรียบเทียบหอพัก</h2>
-    <div class="sort-controls">
-      <select class="font-thai sort-dropdown" (change)="sortBy($any($event.target).value)">
-        <option value="" disabled selected>เรียงตาม</option>
-        <option value="price">ราคาหอพัก</option>
-        <option value="electricity">ค่าไฟ</option>
+
+<div class="min-h-screen bg-gray-50 font-thai">
+  <!-- Header Section -->
+  <div class="bg-white shadow-sm border-b mt-6">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <h1 class="text-lg md:text-xl font-medium font-thai mb-4 sm:mb-0">
+            รายการเปรียบเทียบหอพัก
+          </h1>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <!-- Sort Controls -->
+          <div class="flex items-center space-x-2">
+            <label class="text-sm font-medium text-gray-700">เรียงตาม:</label>
+            <select
+              [(ngModel)]="sortBy"
+              (change)="onSortChange()"
+              class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="rating">คะแนน</option>
+              <option value="price">ราคา</option>
       </select>
-      
-      <select class="font-thai zone-dropdown" (change)="filterByZone($any($event.target).value)">
-        <option value="" selected>เลือกโซนที่ตั้ง</option>
-        <option *ngFor="let zone of zoneOptions" [value]="zone">{{zone}}</option>
-      </select>
+          </div>
+
+          <!-- Clear All Icon Button -->
+          <button
+            (click)="clearAll()"
+            class="relative group p-2 text-gray-600 hover:text-gray-800"
+            aria-label="ล้างทั้งหมด"
+          >
+            <i class="material-icons">playlist_remove</i>
+
+            <!-- Tooltip: ขวาล่าง + ต่ำลงเล็กน้อย -->
+            <span
+              class="pointer-events-none absolute top-full left-full -translate-x-2 -translate-y-2 whitespace-nowrap rounded-md bg-black/80 px-2 py-1 text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-50 font-thai"
+            >
+              ล้างทั้งหมด
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="compare-table-wrapper">
-    <table class="compare-table">
-      <tbody>
-        <!-- แถวที่ 1: รูปภาพ + ดาว -->
-        <tr>
-          <td class="font-thai"></td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">
-            <img [src]="dorm.image" alt="{{dorm.name}}" class="dorm-img" />
-            <div class="star-row">
-              <ng-container *ngFor="let star of [1,2,3,4,5]; let i = index">
-                <span class="star" [class.filled]="i < dorm.rating">★</span>
-              </ng-container>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Empty State -->
+    <div *ngIf="compareDorms.length === 0" class="text-center py-12">
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <svg
+          class="w-16 h-16 text-gray-400 mx-auto mb-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          ></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+          ไม่มีหอพักสำหรับเปรียบเทียบ
+        </h3>
+        <p class="text-gray-600 mb-4">
+          เลือกหอพักที่ต้องการเปรียบเทียบจากหน้าหลักหรือรายการหอพัก
+        </p>
+        <button
+          (click)="goBack()"
+          class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        >
+          กลับไปเลือกหอพัก
+        </button>
+      </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div
+      *ngIf="compareDorms.length > 0"
+      class="bg-white rounded-lg shadow-lg overflow-hidden"
+    >
+      <!-- Table Content -->
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[1000px] border-collapse">
+          <!-- Header Row with Dorm Info -->
+          <tr class="bg-gray-50">
+            <td class="min-w-[200px]"></td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-4 text-center border border-gray-200 align-middle">
+              <div class="flex flex-col items-center space-y-3">
+                <!-- Image with Remove Button -->
+                <div class="relative w-full h-30 rounded-md overflow-hidden">
+                  <img
+                    [src]="dorm.image"
+                    [alt]="dorm.name"
+                    class="w-full h-full object-cover"
+                  />
+                  <button
+                    (click)="removeFromCompare(dorm.id)"
+                    class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <!-- Name -->
+                <h3 class="font-semibold text-gray-900 text-sm text-center">
+                  {{ dorm.name }}
+                </h3>
+
+                <!-- Star Rating -->
+                <div class="flex items-center justify-center">
+                  <div class="flex">
+                    <svg
+                      *ngFor="let star of getStars(dorm.rating)"
+                      class="w-4 h-4 text-yellow-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                      ></path>
+                    </svg>
+                  </div>
+                </div>
             </div>
           </td>
         </tr>
-        <!-- แถวที่ 2: ราคาหอพัก -->
-        <tr class="font-thai">
-          <td>ราคาหอพัก</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">
-            <div>
-              {{ dorm.price.split(' บาท/เดือน')[0] }}<br>บาท/เดือน
-              <div *ngIf="lowestPriceDorm === dorm" class="lowest-price-badge font-thai">
-                ราคาถูกที่สุด
+
+          <!-- Price Row -->
+          <tr class="border-b bg-white">
+            <td class="px-12 py-4 font-medium text-gray-700 border border-gray-200 align-middle">ราคาห้องพัก</td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-4 text-center border border-gray-200 align-middle">
+              <div class="text-sm space-y-1">
+                <div class="text-gray-600">
+                  <span class="font-semibold">{{
+                    dorm.dailyPrice | number
+                  }}</span>
+                  บาท/วัน
+                </div>
+                <div class="font-semibold text-blue-600">
+                  {{ dorm.price }}
+                </div>
+                <div class="text-gray-500">
+                  <span class="font-semibold">{{
+                    dorm.termPrice | number
+                  }}</span>
+                  บาท/เทอม
+                </div>
               </div>
+            </td>
+          </tr>
+
+          <!-- Location Zone Row -->
+          <tr class="border-b bg-gray-50">
+            <td class="px-12 py-4 font-medium text-gray-700 border border-gray-200 align-middle">
+              โซนที่ตั้ง
+            </td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-4 text-center border border-gray-200 align-middle">
+              <div class="text-sm text-gray-900">{{ dorm.zone }}</div>
+          </td>
+        </tr>
+
+          <!-- Electricity Cost Row -->
+          <tr class="border-b bg-white">
+            <td class="px-12 py-4 font-medium text-gray-700 border border-gray-200 align-middle">
+              ค่าไฟ
+            </td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-4 text-center border border-gray-200 align-middle">
+              <div class="text-sm text-gray-900">
+                {{ getMockElectricityCost(dorm.id) }}
             </div>
           </td>
         </tr>
-        <!-- แถวที่ 3: โซนที่ตั้ง -->
-        <tr class="font-thai">
-          <td>โซนที่ตั้ง</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">
-            <div>
-              {{ dorm.zone }}
-              <div *ngIf="bestZoneDorm === dorm" class="best-zone-badge font-thai">
-                โซนแรกตามตัวอักษร
-              </div>
+
+          <!-- Water Cost Row -->
+          <tr class="border-b bg-gray-50">
+            <td class="px-12 py-4 font-medium text-gray-700 border border-gray-200 align-middle">
+              ค่าน้ำ
+            </td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-4 text-center border border-gray-200 align-middle">
+              <div class="text-sm text-gray-900">
+                {{ getMockWaterCost(dorm.id) }}
             </div>
           </td>
         </tr>
-        <!-- แถวที่ 4: ค่าไฟ -->
-        <tr class="font-thai">
-          <td>ค่าไฟ</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">
-            <div>
-              {{ dorm.electricity }}
-              <div *ngIf="lowestElectricityDorm === dorm" class="lowest-electricity-badge font-thai">
-                ค่าไฟถูกที่สุด
-              </div>
-            </div>
-          </td>
+
+          <!-- Internal Amenities Section -->
+          <tr class="border-b bg-gray-100">
+            <td
+              class="px-6 py-4 font-semibold text-gray-900 text-center border border-gray-200"
+              [attr.colspan]="compareDorms.length + 1"
+            >
+              สิ่งอำนวยความสะดวกภายใน
+            </td>
         </tr>
-        <!-- แถวที่ 5: ค่าน้ำ -->
-        <tr class="font-thai">
-          <td>ค่าน้ำ</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.water }}</td>
+
+          <!-- Internal Amenities Rows -->
+          <tr *ngFor="let amenity of internalAmenities" class="bg-white">
+            <td class="px-6 py-3 text-sm text-gray-700 border border-gray-200 align-middle">
+              <i
+                class="fas {{ getAmenityIcon(amenity) }} mr-2 text-gray-500"
+              ></i>
+              {{ amenity }}
+            </td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-3 text-center border border-gray-200 align-middle">
+              <span
+                *ngIf="hasAmenity(dorm.id, amenity)"
+                class="text-green-600 font-bold text-lg"
+                >✓</span
+              >
+              <span
+                *ngIf="!hasAmenity(dorm.id, amenity)"
+                class="text-gray-400 font-bold text-lg"
+                >-</span
+              >
+            </td>
         </tr>
-        <!-- แถวที่ 6: แอร์ -->
-        <tr>
-          <td class="font-thai">แอร์</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.air ? '✓' : '-' }}</td>
+
+          <!-- External Amenities Section -->
+          <tr class="border-b bg-gray-100">
+            <td
+              class="px-6 py-4 font-semibold text-gray-900 text-center border border-gray-200"
+              [attr.colspan]="compareDorms.length + 1"
+            >
+              สิ่งอำนวยความสะดวกภายนอก
+            </td>
         </tr>
-        <!-- แถวที่ 7: พัดลม -->
-        <tr>
-          <td class="font-thai">พัดลม</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.fan ? '✓' : '-' }}</td>
+
+          <!-- External Amenities Rows -->
+          <tr *ngFor="let amenity of externalAmenities" class="border-b bg-gray-50">
+            <td class="px-6 py-3 text-sm text-gray-700 border border-gray-200 align-middle">
+              <i
+                class="fas {{ getAmenityIcon(amenity) }} mr-2 text-gray-500"
+              ></i>
+              {{ amenity }}
+            </td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-3 text-center border border-gray-200 align-middle">
+              <span
+                *ngIf="hasAmenity(dorm.id, amenity)"
+                class="text-green-600 font-bold text-lg"
+                >✓</span
+              >
+              <span
+                *ngIf="!hasAmenity(dorm.id, amenity)"
+                class="text-gray-400 font-bold text-lg"
+                >-</span
+              >
+            </td>
         </tr>
-        <!-- แถวที่ 8: TV -->
-        <tr>
-          <td class="font-thai">TV</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.tv ? '✓' : '-' }}</td>
+
+          <!-- Action Row -->
+          <tr class="bg-white">
+            <td class="px-6 py-4 font-semibold text-gray-900 border border-gray-200 align-middle">
+              รายละเอียดเพิ่มเติม
+            </td>
+            <td *ngFor="let dorm of compareDorms" class="px-6 py-4 text-center border border-gray-200 align-middle">
+              <button
+                (click)="viewDormDetail(dorm.id)"
+                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
+              >
+                ดูรายละเอียด
+              </button>
+            </td>
         </tr>
-        <!-- แถวที่ 9: เครื่องทำน้ำอุ่น -->
-        <tr>
-          <td class="font-thai">เครื่องทำน้ำอุ่น</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.waterHeater ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 10: ไมโครเวฟ -->
-        <tr>
-          <td class="font-thai">ไมโครเวฟ</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.microwave ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 11: ตู้เย็น -->
-        <tr>
-          <td class="font-thai">ตู้เย็น</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.refrigerator ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 12: ตู้เสื้อผ้า -->
-        <tr>
-          <td class="font-thai">ตู้เสื้อผ้า</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.wardrobe ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 13: เตียงนอน -->
-        <tr>
-          <td class="font-thai">เตียงนอน</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.bed ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 14: โต๊ะทำงาน -->
-        <tr>
-          <td class="font-thai">โต๊ะทำงาน</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.desk ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 15: โต๊ะเครื่องแป้ง -->
-        <tr>
-          <td class="font-thai">โต๊ะเครื่องแป้ง</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.dressingTable ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 16: โซฟา -->
-        <tr>
-          <td class="font-thai">โซฟา</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.sofa ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 17: ซิงค์ล้างจาน -->
-        <tr>
-          <td class="font-thai">ซิงค์ล้างจาน</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.sink ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 18: อนุญาตให้เลี้ยงสัตว์ได้ -->
-        <tr>
-          <td class="font-thai">อนุญาตให้เลี้ยงสัตว์ได้</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.petAllowed ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 19: เครื่องซักผ้า -->
-        <tr>
-          <td class="font-thai">เครื่องซักผ้า</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.washingMachine ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 20: ศึกษารัตน์ -->
-        <tr>
-          <td class="font-thai">ศึกษารัตน์</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.studyRoom ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 21: กล้องวงจรปิด -->
-        <tr>
-          <td class="font-thai">กล้องวงจรปิด</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.cctv ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 22: ลิฟต์ -->
-        <tr>
-          <td class="font-thai">ลิฟต์</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.elevator ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 23: WIFI -->
-        <tr>
-          <td class="font-thai">WIFI</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.wifi ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 24: รปภ. -->
-        <tr>
-          <td class="font-thai">รปภ.</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.security ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 25: ฟิตเนส -->
-        <tr>
-          <td class="font-thai">ฟิตเนส</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.fitness ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 26: ตู้กดน้ำหยอดเหรียญ -->
-        <tr>
-          <td class="font-thai">ตู้กดน้ำหยอดเหรียญ</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.waterDispenser ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 27: สระว่ายน้ำ -->
-        <tr>
-          <td class="font-thai">สระว่ายน้ำ</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.swimmingPool ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 28: ที่จอดรถ -->
-        <tr>
-          <td class="font-thai">ที่จอดรถ</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.parking ? '✓' : '-' }}</td>
-        </tr>
-        <!-- แถวที่ 29: Lobby -->
-        <tr>
-          <td class="font-thai">Lobby</td>
-          <td *ngFor="let dorm of dorms" [class.highlighted-zone]="isDormInSelectedZone(dorm)">{{ dorm.lobby ? '✓' : '-' }}</td>
-        </tr>
-      </tbody>
     </table>
+      </div>
+    </div>
   </div>
 </div>

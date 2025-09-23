@@ -20,9 +20,11 @@ import {
   AbstractControl,
   ValidatorFn,
 } from '@angular/forms';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { MapService } from '../../services/map.service';
+import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
 import { DormitoryService, RoomType } from '../../services/dormitory.service';
@@ -42,7 +44,7 @@ interface ZoneOption {
 @Component({
   selector: 'app-dorm-add',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NavbarComponent, DragDropModule],
   templateUrl: './dorm-add.component.html',
   styleUrls: ['./dorm-add.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +70,10 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
   // images
   selectedImages: File[] = [];
   imagePreviewUrls: string[] = [];
+  
+  // drag & drop
+  isDragOver = false;
+  draggedIndex: number | null = null;
 
   sliderImages: Array<{ src: string; alt: string }> = [];
 
@@ -315,7 +321,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       .get('electricity_type')
       ?.valueChanges.subscribe((type: string) => {
         const rateControl = this.electricity.get('electricity_rate')!;
-        if (type === 'คิดตามหน่วย' || type === 'เหมาจ่าย') {
+        if (type === 'คิดตามหน่วย') {
           rateControl.setValidators([Validators.required, Validators.min(0)]);
         } else {
           // ตามมิเตอร์ = ไม่ต้องใส่ราคา
@@ -342,7 +348,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
   private loadZones(): void {
     this.zonesLoading = true;
     this.zonesError = null;
-    this.http.get<ZoneOption[]>(`http://localhost:3000/api/zones`).subscribe({
+    this.http.get<ZoneOption[]>(`${environment.backendApiUrl}/zones`).subscribe({
       next: (res) => {
         this.zones = Array.isArray(res) ? res : [];
         this.zonesLoading = false;
@@ -480,6 +486,20 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     return z?.zone_name ?? '';
   }
 
+  // Display helpers for room table
+  getRoomDisplayName(rt: any): string {
+    const nameRaw = rt?.type === 'other' ? (rt?.customType || '').trim() : rt?.type || '-';
+    console.log('[DormAdd] Room name:', nameRaw);
+    return nameRaw || '-';
+  }
+
+  formatNumberOrDash(value: any): string {
+    if (value === null || value === undefined || value === '') return '-';
+    const normalized = String(value).replace(/[,\s]/g, '');
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num.toLocaleString('th-TH') : '-';
+  }
+
   addRoomType() {
     this.roomTypes.push(this.createRoomType());
   }
@@ -611,7 +631,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       }
 
       // ตรวจสอบอัตราค่าไฟ
-      if (electricityType === 'คิดตามหน่วย' || electricityType === 'เหมาจ่าย') {
+      if (electricityType === 'คิดตามหน่วย') {
         if (!electricityRate) {
           this.showCustomPopup('กรุณากรอกอัตราค่าไฟ', 'error');
           return;
@@ -774,9 +794,21 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  // *** ป้องกัน multiple submissions ***
+  private isSubmittingGuard = false;
+
   // submit
   onSubmit() {
     console.log('[DormAdd] onSubmit called, currentStep:', this.currentStep);
+    
+    // *** Guard against multiple simultaneous submissions ***
+    if (this.isSubmittingGuard) {
+      console.log('[DormAdd] Submission already in progress, ignoring');
+      return;
+    }
+    
+    // เซ็ต guard flag
+    this.isSubmittingGuard = true;
 
     // ตรวจสอบข้อมูลทั่วไป (Step 1)
     const generalInfoGroup = this.dormForm.get('generalInfo') as FormGroup;
@@ -787,6 +819,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       );
       this.markFormGroupTouched(generalInfoGroup || this.dormForm);
       this.showCustomPopup('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วน', 'error');
+      this.isSubmittingGuard = false; // รีเซ็ต guard
       return;
     }
 
@@ -799,6 +832,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
     if (roomTypesArray.length === 0) {
       this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+      this.isSubmittingGuard = false; // รีเซ็ต guard
       return;
     }
 
@@ -895,6 +929,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
           : 'กรุณากรอกข้อมูลประเภทห้องให้ครบถ้วน';
       console.log('[DormAdd] About to show alert:', errorMessage);
       this.showCustomPopup(errorMessage, 'error');
+      this.isSubmittingGuard = false; // รีเซ็ต guard
       return;
     }
 
@@ -937,6 +972,8 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     };
     console.log('[DormAdd] payload basic ->', payloadBasic);
 
+    // *** Set both guards ***
+    this.isSubmittingGuard = true;
     this.isSubmitting = true;
     this.cdr.markForCheck();
 
@@ -952,6 +989,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
         if (!dormId) {
           console.error('[DormAdd] No dorm ID received from backend');
+          this.isSubmittingGuard = false;
           this.isSubmitting = false;
           this.submitErrorMessage = 'ไม่สามารถสร้างหอพักได้ กรุณาลองอีกครั้ง';
           this.showErrorModal = true;
@@ -981,6 +1019,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
           },
           error: (err2) => {
             console.error('[DormAdd] Save room types error:', err2);
+            this.isSubmittingGuard = false;
             this.isSubmitting = false;
             this.submitErrorMessage =
               'บันทึกประเภทห้องไม่สำเร็จ: ' +
@@ -992,6 +1031,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       },
       error: (err) => {
         console.error('[DormAdd] Add dormitory error:', err);
+        this.isSubmittingGuard = false;
         this.isSubmitting = false;
         this.submitErrorMessage =
           'บันทึกไม่สำเร็จ: ' + (err?.message || 'ไม่ทราบสาเหตุ');
@@ -1191,41 +1231,118 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     }, 300);
   }
 
-  // ---------- Images ----------
-  onFileSelect(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input?.files || input.files.length === 0) return;
+  // ---------- Drag & Drop Methods ----------
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = true;
+  }
 
-    const files = Array.from(input.files);
-    
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.handleFiles(Array.from(files));
+    }
+  }
+
+  triggerFileInput(): void {
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    fileInput?.click();
+  }
+
+  onImageReorder(event: CdkDragDrop<string[]>): void {
+    if (event.previousIndex === event.currentIndex) return;
+
+    // Reorder both arrays using CDK's moveItemInArray
+    moveItemInArray(this.selectedImages, event.previousIndex, event.currentIndex);
+    moveItemInArray(this.imagePreviewUrls, event.previousIndex, event.currentIndex);
+
+    // Update form array
+    this.updateFormArray();
+
+    // Update slider images
+    this.updateSliderImages();
+
+    console.log('[DormAdd] Image reordered:', {
+      from: event.previousIndex,
+      to: event.currentIndex,
+      mainImage: this.imagePreviewUrls[0]
+    });
+  }
+
+  private updateFormArray(): void {
+    // Clear existing form array
+    while (this.imagesArray.length) {
+      this.imagesArray.removeAt(0);
+    }
+
+    // Add images in new order
+    this.selectedImages.forEach((file, index) => {
+      this.imagesArray.push(
+        this.fb.group({
+          file: [file],
+          preview: [this.imagePreviewUrls[index]],
+          image_type: [''],
+        })
+      );
+    });
+  }
+
+  private handleFiles(files: File[]): void {
     // ตรวจสอบจำนวนไฟล์
     if (this.selectedImages.length + files.length > 10) {
       this.showCustomPopup('ไม่สามารถอัปโหลดได้เกิน 10 ภาพ', 'error');
       return;
     }
 
-    files.forEach((file) => {
+    // ตรวจสอบไฟล์ทั้งหมดก่อน
+    const validFiles: File[] = [];
+    for (const file of files) {
       // ตรวจสอบขนาดไฟล์ (5MB = 5 * 1024 * 1024 bytes)
       if (file.size > 5 * 1024 * 1024) {
         this.showCustomPopup(`ไฟล์ ${file.name} มีขนาดเกิน 5MB`, 'error');
-        return;
+        continue;
       }
 
       // ตรวจสอบประเภทไฟล์
       if (!file.type.startsWith('image/')) {
         this.showCustomPopup(`ไฟล์ ${file.name} ไม่ใช่รูปภาพ`, 'error');
-        return;
+        continue;
       }
 
-      this.selectedImages.push(file);
+      validFiles.push(file);
+    }
 
-      const reader = new FileReader();
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        const url = (e.target?.result as string) ?? '';
+    if (validFiles.length === 0) return;
+
+    // เพิ่มไฟล์ทั้งหมดในครั้งเดียว
+    this.selectedImages.push(...validFiles);
+
+    // สร้าง preview URLs แบบ async เพื่อไม่ให้ UI block
+    this.createImagePreviews(validFiles);
+  }
+
+  private createImagePreviews(files: File[]): void {
+    let processedCount = 0;
+    const totalFiles = files.length;
+
+    files.forEach((file, index) => {
+      // ใช้ createObjectURL แทน readAsDataURL เพื่อความเร็ว
+      const url = URL.createObjectURL(file);
         this.imagePreviewUrls.push(url);
         this.imageError = false;
 
-        // เก็บไฟล์ในฟอร์ม (ถ้าต้องอัปโหลด)
+      // เก็บไฟล์ในฟอร์ม
         this.imagesArray.push(
           this.fb.group({
             file: [file],
@@ -1234,22 +1351,39 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
           })
         );
 
-        this.cdr.markForCheck();
-      };
-      reader.readAsDataURL(file);
-    });
+      processedCount++;
 
-    // อัปเดตรูปในแถบแสดง
-    this.updateSliderImages();
+      // อัปเดต UI เมื่อประมวลผลเสร็จครบทุกไฟล์
+      if (processedCount === totalFiles) {
+        this.cdr.markForCheck();
+        this.updateSliderImages();
+      }
+    });
+  }
+
+  // ---------- Images ----------
+  onFileSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input?.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    this.handleFiles(files);
   }
 
   removeImage(index: number): void {
     if (index < 0 || index >= this.imagePreviewUrls.length) return;
 
+    // Cleanup object URL ก่อนลบ
+    const urlToRemove = this.imagePreviewUrls[index];
+    if (urlToRemove && urlToRemove.startsWith('blob:')) {
+      URL.revokeObjectURL(urlToRemove);
+    }
+
     this.imagePreviewUrls.splice(index, 1);
     this.selectedImages.splice(index, 1);
 
-    this.imagesArray.removeAt(index);
+    // Update form array
+    this.updateFormArray();
 
     this.updateSliderImages();
   }
@@ -1275,7 +1409,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
     // ส่งไป backend
     this.http
-      .post(`http://localhost:3000/api/dormitories/${dormId}/images`, formData)
+      .post(`${environment.backendApiUrl}/dormitories/${dormId}/images`, formData)
       .subscribe({
         next: (response) => {
           console.log('[DormAdd] Images uploaded successfully:', response);
@@ -1295,6 +1429,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     console.log('[DormAdd] Current step before:', this.currentStep);
     this.currentStep = 3;
     this.maxReachedStep = 3;
+    this.isSubmittingGuard = false;
     this.isSubmitting = false;
     console.log('[DormAdd] Current step after:', this.currentStep);
     console.log('[DormAdd] Calling cdr.markForCheck()');
@@ -1360,6 +1495,13 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     } catch (error) {
       console.log('[DormAdd] Map cleanup error (ignored):', error);
     }
+
+    // Cleanup object URLs เพื่อป้องกัน memory leaks
+    this.imagePreviewUrls.forEach(url => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
   }
 
   // Custom popup methods

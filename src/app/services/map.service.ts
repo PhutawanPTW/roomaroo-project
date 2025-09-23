@@ -38,16 +38,28 @@ export class MapService {
   ): void {
     // ตรวจสอบว่ามี map instance อยู่แล้วสำหรับ container นี้หรือไม่
     const existingInstance = this.mapInstances.get(containerId);
-    if (existingInstance && existingInstance.map) {
-      console.log(`[MapService] Reusing existing map instance for container: ${containerId}`);
-      this.map = existingInstance.map;
-      this.marker = existingInstance.marker;
-      this.currentContainerId = containerId;
+    if (existingInstance && existingInstance.map && existingInstance.map.isStyleLoaded()) {
+      // ตรวจสอบ WebGL context ก่อน reuse
+      const canvas = existingInstance.map.getCanvas();
+      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
       
-      // อัปเดตตำแหน่งและ marker
-      this.map.setCenter([lng, lat]);
-      this.updateMarker(lat, lng, dormName, location);
-      return;
+      if (gl && !gl.isContextLost()) {
+        console.log(`[MapService] Reusing existing map instance for container: ${containerId}`);
+        this.map = existingInstance.map;
+        this.marker = existingInstance.marker;
+        this.currentContainerId = containerId;
+        
+        // อัปเดตตำแหน่งและ marker
+        this.map.setCenter([lng, lat]);
+        this.updateMarker(lat, lng, dormName, location);
+        return;
+      } else {
+        console.log(`[MapService] WebGL context lost, destroying existing map and creating new one`);
+        this.destroyMap();
+      }
+    } else if (existingInstance && existingInstance.map) {
+      console.log(`[MapService] Existing map instance found but not ready, destroying and creating new one`);
+      this.destroyMap();
     }
 
     // ทำลาย map instance เดิม (ถ้ามี) เฉพาะเมื่อเปลี่ยน container
@@ -80,6 +92,15 @@ export class MapService {
     this.map.on('load', () => {
       this.addControls();
       this.addMarker(lat, lng, dormName, location);
+    });
+
+    // จัดการ WebGL context lost event
+    this.map.on('webglcontextlost', () => {
+      console.warn('[MapService] WebGL context lost, map will be recreated on next interaction');
+    });
+
+    this.map.on('webglcontextrestored', () => {
+      console.log('[MapService] WebGL context restored');
     });
 
     // เก็บ instance ไว้ใน Map
@@ -162,12 +183,8 @@ export class MapService {
 
         const renderIcon = () => {
           btn.innerHTML = service.isSatelliteView
-            ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" style="margin:auto">
-                 <path d="M240-160 80-220v-580l160 60 200-80 240 90 200-80v580l-160 60-240-90-200 80ZM280-272l160-64v-496l-160 64v496Zm360 32 160-64v-496l-160 64v496Zm-200-72 160 60v-496l-160-60v496Z"/>
-               </svg>`
-            : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" style="margin:auto">
-                 <path d="M480-80q-83 0-156.5-31.5T197-197q-54-54-85.5-127.5T80-480q0-83 31.5-156.5T197-763q54-54 127.5-85.5T480-880q83 0 156.5 31.5T763-763q54 54 85.5 127.5T880-480q0 83-31.5 156.5T763-197q-54 54-127.5 85.5T480-80Zm0-80q134 0 227-93t93-227q0-7-.5-14t-1.5-14q-6 29-27.5 47.5T717-440h-80q-33 0-56.5-23.5T557-520v-40H400v-80q0-33 23.5-56.5T480-720h40q0-23 12.5-40.5T565-788q-20-5-41-8.5t-44-3.5q-134 0-227 93t-93 227h200q66 0 113 47t47 113v40H400v110q19 5 38.5 7.5T480-160Z"/>
-               </svg>`;
+            ? '<span class="material-symbols-outlined">streetview</span>'
+            : '<span class="material-symbols-outlined">globe</span>';
         };
 
         renderIcon();
@@ -294,20 +311,24 @@ export class MapService {
       this.marker.remove();
       this.marker = null;
     }
-    if (this.map) {
-      if (this.satelliteControl) {
-        this.map.removeControl(this.satelliteControl);
-        this.satelliteControl = null;
+    if (this.map && typeof this.map.remove === 'function') {
+      try {
+        if (this.satelliteControl) {
+          this.map.removeControl(this.satelliteControl);
+          this.satelliteControl = null;
+        }
+        if (this.geoControl) {
+          this.map.removeControl(this.geoControl);
+          this.geoControl = null;
+        }
+        if (this.pickHandler) {
+          this.map.off('click', this.pickHandler as any);
+          this.pickHandler = null;
+        }
+        this.map.remove();
+      } catch (error) {
+        console.warn('[MapService] Error destroying map:', error);
       }
-      if (this.geoControl) {
-        this.map.removeControl(this.geoControl);
-        this.geoControl = null;
-      }
-      if (this.pickHandler) {
-        this.map.off('click', this.pickHandler as any);
-        this.pickHandler = null;
-      }
-      this.map.remove();
       this.map = null;
     }
     this.controlsAttached = false;

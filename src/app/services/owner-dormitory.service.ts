@@ -1,20 +1,21 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OwnerDormitoryService {
-  private apiUrl = 'http://localhost:3000'; // Your backend URL
+  private apiUrl = environment.backendApiUrl; // Use environment configuration
 
   constructor(private http: HttpClient) { }
 
   // สำหรับ production หรือหลัง login จริง
   getMyDormitorySubmissions(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/api/dormitories/my/submissions`)
+    return this.http.get(`${this.apiUrl}/dormitories/my/submissions`)
       .pipe(
         tap((resp) => {
           try {
@@ -46,7 +47,7 @@ export class OwnerDormitoryService {
       description?: string;
     }>;  // แนบได้เลยถ้าต้องการบันทึกพร้อมกัน
   }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/add-dormitory/`, payload)
+    return this.http.post(`${this.apiUrl}/add-dormitory/`, payload)
       .pipe(
         tap((resp) => {
           try {
@@ -59,7 +60,7 @@ export class OwnerDormitoryService {
 
   // ดึงหอพักที่ userId เป็นเจ้าของ (API ใหม่)
   getDormsByUserId(userId: string | number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/api/add-dormitory/owner/dormitories`)
+    return this.http.get(`${this.apiUrl}/add-dormitory/owner/dormitories`)
       .pipe(
         tap((resp) => {
           try {
@@ -75,9 +76,40 @@ export class OwnerDormitoryService {
       );
   }
 
+  // ใช้ API ใหม่ตามสเปค: GET /api/dormitories/owner (ต้องส่ง Firebase ID Token)
+  getOwnerDormsWithPrice(): Observable<any> {
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.get(`${this.apiUrl}/dormitories/owner`, { headers })
+            .pipe(catchError(this.handleError))
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
+  }
+
   // ดึงรายการผู้เช่าทั้งหมดในหอของ owner
   getOwnerTenants(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/api/dormitories/owner/tenants`)
+    return this.http.get(`${this.apiUrl}/dormitories/owner/tenants`)
       .pipe(
         tap((resp) => {
           try {
@@ -90,7 +122,7 @@ export class OwnerDormitoryService {
 
   // ยืนยันการสมัครของผู้เช่า
   approveTenant(dormId: number, userId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/api/dormitories/${dormId}/tenants/${userId}/approve`, {})
+    return this.http.put(`${this.apiUrl}/dormitories/${dormId}/tenants/${userId}/approve`, {})
       .pipe(
         tap((resp) => {
           console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/approve -> success', resp);
@@ -101,7 +133,7 @@ export class OwnerDormitoryService {
 
   // ปฏิเสธการสมัครของผู้เช่า
   rejectTenant(dormId: number, userId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/api/dormitories/${dormId}/tenants/${userId}/reject`, {})
+    return this.http.put(`${this.apiUrl}/dormitories/${dormId}/tenants/${userId}/reject`, {})
       .pipe(
         tap((resp) => {
           console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/reject -> success', resp);
@@ -112,7 +144,7 @@ export class OwnerDormitoryService {
 
   // ยกเลิกการยืนยันผู้เช่า
   cancelTenantApproval(dormId: number, userId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/api/dormitories/${dormId}/tenants/${userId}/cancel`, {})
+    return this.http.put(`${this.apiUrl}/dormitories/${dormId}/tenants/${userId}/cancel`, {})
       .pipe(
         tap((resp) => {
           console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/cancel -> success', resp);

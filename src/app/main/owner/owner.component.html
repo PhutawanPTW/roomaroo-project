@@ -22,10 +22,10 @@
         (click)="viewDormDetail(dorm)">
         <img [src]="dorm.main_image_url || dorm.thumbnail_url || dorm.image || 'assets/images/photo led.png'" alt="dorm"
           class="w-full h-40 object-cover mb-3" />
-        <div class="text-[#6D6D6D] font-bold text-base font-english min-h-[44px]"
-          [innerHTML]="getPriceHtml(formatPriceString(dorm))"></div>
-        <div class="font-semibold text-base mb-1 font-thai">{{ dorm.dorm_name }}</div>
-        <div class="flex items-center mb-2">
+        <div class="text-[#6D6D6D] font-bold text-base font-english"
+          [innerHTML]="getSafePriceHtml(formatPriceString(dorm))"></div>
+        <div #nameEl class="font-semibold text-base mb-1 font-thai line-clamp-2" [class.h-[48px]]="anyNameWrapsTwoLines">{{ dorm.dorm_name }}</div>
+        <div class="flex items-center mb-2 h-[40px]">
           <button *ngIf="dorm.approval_status === 'อนุมัติ'"
             class="flex items-center gap-2 bg-[#4CAF50] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
             <span class="">
@@ -60,7 +60,7 @@
             <span class="font-thai text-sm font-normal">ยังไม่อนุมัติ</span>
           </button>
         </div>
-        <div class="text-gray-400 text-sm font-thai mb-2">อัพเดตล่าสุด: {{ formatUpdatedDateThai(dorm.updated_date) }}</div>
+        <div class="text-gray-400 text-sm font-thai mb-2 h-[24px]">อัพเดตล่าสุด: {{ formatUpdatedDateThai(dorm.updated_date) }}</div>
         <div class="flex items-center justify-between mt-auto w-full">
           <div class="flex items-center">
             <span class="text-base font-bold text-black font-english mr-2">{{ (dorm.rating || 5.0).toFixed(1) }}</span>
@@ -158,7 +158,7 @@
     <!-- Confirmation Message -->
     <div *ngIf="!deleteSuccessMessage && !deleteErrorMessage"
       class="text-base text-gray-700 mb-6 text-center leading-relaxed font-thai">
-      <span [innerHTML]="deleteWarningMessage"></span>
+      <span [innerHTML]="getSafeDeleteWarningMessage()"></span>
     </div>
 
 

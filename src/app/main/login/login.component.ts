@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService, UserProfile as BaseUserProfile } from '../../services/auth.service';
+import { GoogleAuthService } from '../../services/google-auth.service';
 import { Subscription } from 'rxjs';
 
 interface UserProfile extends BaseUserProfile {
@@ -40,7 +41,8 @@ export class LoginComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private authService: AuthService
+    private authService: AuthService,
+    private googleAuthService: GoogleAuthService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -128,7 +130,7 @@ export class LoginComponent implements OnInit, OnDestroy {
             return;
         }
 
-        const userProfile = await this.authService.signInWithGoogle(this.userType);
+        const userProfile = await this.googleAuthService.signInWithGoogle(this.userType);
         console.log('[LoginComponent] Google sign-in successful:', userProfile);
         
         // รอให้ auth state update เสร็จก่อน redirect
@@ -170,24 +172,56 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     } catch (error: any) {
       console.error('[LoginComponent] Email login error:', error);
-      this.errorMessage = this.authService.errorMessageHandler(error);
+      // ปิดบังรายละเอียดสาเหตุความผิดพลาดทั้งหมดด้วยข้อความทั่วไป เพื่อกันเดางาน
+      this.errorMessage = this.getGenericLoginError(error);
     } finally {
       this.isLoginLoading = false;
     } 
+  }
+
+  private getGenericLoginError(error: any): string {
+    const generic = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    const code: string | undefined = error?.code;
+    const message: string = (error?.message || '').toString().toLowerCase();
+
+    // รายการโค้ด/ข้อความผิดพลาดที่ควรถูก mask เป็นข้อความเดียวกัน
+    const codesToMask = new Set([
+      'auth/wrong-password',
+      'auth/user-not-found',
+      'auth/invalid-credential',
+      'auth/invalid-email',
+      'auth/too-many-requests',
+    ]);
+
+    if (code && codesToMask.has(code)) return generic;
+
+    // กรณีข้อความมาจาก backend ภาษาไทย/อังกฤษ เช่น บัญชีนี้ถูกลงทะเบียนเป็นสมาชิกแล้ว, role mismatch ฯลฯ
+    if (
+      message.includes('บัญชีนี้ถูกลงทะเบียนเป็นสมาชิกแล้ว') ||
+      message.includes('ไม่ใช่เจ้าของหอพัก') ||
+      message.includes('ไม่ใช่สมาชิก') ||
+      message.includes('role') ||
+      message.includes('not owner') ||
+      message.includes('not member')
+    ) {
+      return generic;
+    }
+
+    // ดีฟอลต์ให้เป็นข้อความทั่วไปเสมอ เพื่อความปลอดภัย
+    return generic;
   }
 
   onRegister(): void {
     console.log('[LoginComponent] Navigating to register page for userType:', this.userType);
     // ตรวจสอบว่าอยู่ในหน้า login/owner หรือ login/member
     const currentPath = this.router.url;
-    if (currentPath.includes('/login/owner')) {
-      this.router.navigate(['/register', 'owner']);
-    } else if (currentPath.includes('/login/member')) {
-      this.router.navigate(['/register', 'member']);
-    } else {
-      // fallback ใช้ userType จาก parameter
-      this.router.navigate(['/register', this.userType]);
-    }
+    let type: 'member' | 'owner' | null = null;
+    if (currentPath.includes('/login/owner')) type = 'owner';
+    else if (currentPath.includes('/login/member')) type = 'member';
+    else if (this.userType === 'owner' || this.userType === 'member') type = this.userType;
+
+    if (!type) return;
+    this.router.navigate(['/register', type], { queryParams: { userType: type } });
   }
 
   goToSlide(index: number): void {
@@ -203,6 +237,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   private startSlideshow(): void {
-    this.slideInterval = setInterval(() => this.nextSlide(), 5000);
+    const intervalId = window.setInterval(() => this.nextSlide(), 5000);
+    this.slideInterval = intervalId;
   }
 }

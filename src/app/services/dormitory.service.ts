@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Zone {
   zone_id: number;
@@ -123,7 +124,10 @@ export interface Amenity {
 
 @Injectable({ providedIn: 'root' })
 export class DormitoryService {
-  private backendUrl = 'http://localhost:3000/api';
+  private backendUrl = environment.backendApiUrl;
+  // Short-lived cache for eligibility checks (key: `${dormId}:${userId}`)
+  private eligibilityCache = new Map<string, { value: {canReview: boolean, message?: string}, expiresAt: number }>();
+  private readonly eligibilityTtlMs = 5 * 60 * 1000; // 5 minutes
 
   constructor(private http: HttpClient) {}
 
@@ -319,6 +323,72 @@ export class DormitoryService {
       }),
       catchError(err => {
         console.error(`[DormitoryService] Error fetching dormitory popup for dorm ${dormId}:`, err);
+        throw err;
+      })
+    );
+  }
+
+  /** Check if user can review this dormitory (with short-lived cache) */
+  checkReviewEligibility(dormId: number, userId?: number | string): Observable<{canReview: boolean, message?: string}> {
+    const cacheKey = `${dormId}:${userId ?? 'anon'}`;
+
+    // Return cached value if valid
+    const now = Date.now();
+    const cached = this.eligibilityCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return of(cached.value);
+    }
+
+    return this.http.get<any>(`${this.backendUrl}/reviews/dormitory/${dormId}/eligibility`).pipe(
+      map(response => ({
+        canReview: response.can_review || response.canReview || false,
+        message: response.reason || response.message
+      })),
+      tap(result => {
+        this.eligibilityCache.set(cacheKey, { value: result, expiresAt: now + this.eligibilityTtlMs });
+      }),
+      catchError(err => {
+        console.error(`[DormitoryService] Error checking review eligibility for dorm ${dormId}:`, err);
+        return of({ canReview: false, message: 'ไม่สามารถตรวจสอบสิทธิ์การรีวิวได้' });
+      })
+    );
+  }
+
+  /** Get reviews for a dormitory */
+  getDormitoryReviews(dormId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.backendUrl}/reviews/dormitory/${dormId}`).pipe(
+      catchError(err => {
+        console.error(`[DormitoryService] Error fetching reviews for dorm ${dormId}:`, err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Create a new review - ส่งเฉพาะ comment (AI จะทำการ auto-rating) */
+  createReview(dormId: number, reviewData: {comment: string}): Observable<any> {
+    return this.http.post<any>(`${this.backendUrl}/reviews/dormitory/${dormId}`, reviewData).pipe(
+      catchError(err => {
+        console.error(`[DormitoryService] Error creating review for dorm ${dormId}:`, err);
+        throw err;
+      })
+    );
+  }
+
+  /** Update an existing review */
+  updateReview(reviewId: number, reviewData: {comment: string}): Observable<any> {
+    return this.http.put<any>(`${this.backendUrl}/reviews/${reviewId}`, reviewData).pipe(
+      catchError(err => {
+        console.error(`[DormitoryService] Error updating review ${reviewId}:`, err);
+        throw err;
+      })
+    );
+  }
+
+  /** Delete a review */
+  deleteReview(reviewId: number): Observable<any> {
+    return this.http.delete<any>(`${this.backendUrl}/reviews/${reviewId}`).pipe(
+      catchError(err => {
+        console.error(`[DormitoryService] Error deleting review ${reviewId}:`, err);
         throw err;
       })
     );

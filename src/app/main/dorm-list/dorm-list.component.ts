@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { DormitoryService, Dorm as APIDorm, Zone } from '../../services/dormitory.service';
 import { RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ComparePopupComponent } from '../shared/compare-popup/compare-popup.component';
 
 // Click outside directive
 @Directive({
@@ -41,7 +43,7 @@ interface UIDorm {
 @Component({
   selector: 'app-dorm-list',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FormsModule, ClickOutsideDirective, RouterModule],
+  imports: [CommonModule, NavbarComponent, FormsModule, ClickOutsideDirective, RouterModule, ComparePopupComponent],
   templateUrl: './dorm-list.component.html',
   styleUrls: ['./dorm-list.component.css']
 })
@@ -103,8 +105,14 @@ export class DormListComponent {
   filteredDorms: UIDorm[] = [];
   recommendedDorms: UIDorm[] = [];
   latestDorms: UIDorm[] = [];
+  isLoading = true;
 
-  constructor(private dormitoryService: DormitoryService) {
+  private pendingLoads = 0;
+
+  constructor(
+    private dormitoryService: DormitoryService,
+    private sanitizer: DomSanitizer
+  ) {
     this.loadZones();
     this.loadDormitories();
   }
@@ -121,6 +129,8 @@ export class DormListComponent {
   }
 
   loadDormitories() {
+    this.isLoading = true;
+    this.pendingLoads = 2;
     // ดึงข้อมูล recommended และ latest เหมือนใน main
     this.dormitoryService.getRecommended().subscribe({
       next: (recommended: APIDorm[]) => {
@@ -128,9 +138,11 @@ export class DormListComponent {
         this.recommendedDorms = recommended.map(d => this.mapDormToUi(d));
         this.dorms = [...this.recommendedDorms]; // ใช้ recommended เป็นฐานข้อมูลเริ่มต้น
         this.applyFilters();
+        this.markLoadDone();
       },
       error: (error) => {
         console.error('Error fetching recommended dorms:', error);
+        this.markLoadDone();
       }
     });
 
@@ -147,11 +159,20 @@ export class DormListComponent {
         
         this.dorms = uniqueDorms;
         this.applyFilters();
+        this.markLoadDone();
       },
       error: (error) => {
         console.error('Error fetching latest dorms:', error);
+        this.markLoadDone();
       }
     });
+  }
+
+  private markLoadDone() {
+    this.pendingLoads = Math.max(0, this.pendingLoads - 1);
+    if (this.pendingLoads === 0) {
+      this.isLoading = false;
+    }
   }
 
   private mapDormToUi(d: APIDorm): UIDorm {
@@ -234,6 +255,11 @@ export class DormListComponent {
     }
 
     return html;
+  }
+
+  getSafePriceHtml(price: string | undefined): SafeHtml {
+    const html = this.getPriceHtml(price);
+    return this.sanitizer.sanitize(1, html) || '';
   }
 
   getStars(rating: number | undefined): number[] {

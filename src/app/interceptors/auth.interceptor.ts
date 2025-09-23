@@ -13,6 +13,7 @@ import { switchMap, catchError, retryWhen, mergeMap, delay, take } from 'rxjs/op
 import { Auth } from '@angular/fire/auth'; // Import Auth from @angular/fire/auth
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../environments/environment';
 
 // Function-based interceptor for use with withInterceptors
 export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> {
@@ -21,7 +22,7 @@ export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn):
   const authService = inject(AuthService);
 
   // ถ้า request ไปยัง backend ของเรา
-  if (req.url.startsWith('http://localhost:3000/api')) {
+  if (req.url.startsWith(environment.backendApiUrl)) {
     const currentUser = auth.currentUser;
     
     if (currentUser) {
@@ -35,7 +36,10 @@ export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn):
           });
           try {
             const role = authService.currentUser$.value?.memberType ?? 'unknown';
-            // console.log('[AuthInterceptor]', req.method, req.url, '| Attached Authorization Bearer token | role =', role);
+            // Only log in development mode and without sensitive data
+            if (!environment.production) {
+              console.log('[AuthInterceptor]', req.method, req.url, '| Attached Authorization Bearer token | role =', role);
+            }
           } catch {}
           return next(clonedRequest);
         }),
@@ -80,7 +84,7 @@ export class AuthInterceptor implements HttpInterceptor {
     }
     
     // ถ้า request ไปยัง backend ของเรา
-    if (request.url.startsWith('http://localhost:3000/api')) { // ตรวจสอบ URL ของ Backend
+    if (request.url.startsWith(environment.backendApiUrl)) { // ตรวจสอบ URL ของ Backend
       const currentUser = this.auth.currentUser;
       
       if (currentUser) {
@@ -94,7 +98,10 @@ export class AuthInterceptor implements HttpInterceptor {
             });
             try {
               const role = this.authService.currentUser$.value?.memberType ?? 'unknown';
-              console.log('[AuthInterceptor:class]', request.method, request.url, '| Attached Authorization Bearer token | role =', role);
+              // Only log in development mode and without sensitive data
+              if (!environment.production) {
+                console.log('[AuthInterceptor:class]', request.method, request.url, '| Attached Authorization Bearer token | role =', role);
+              }
             } catch {}
             return next.handle(clonedRequest);
           }),

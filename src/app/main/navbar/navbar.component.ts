@@ -6,6 +6,7 @@ import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { GoogleAuthService } from '../../services/google-auth.service';
 import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { NavigationEnd } from '@angular/router';
 
@@ -33,6 +34,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private authService: AuthService,
+    private googleAuthService: GoogleAuthService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -50,7 +52,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       )
       .subscribe(user => {
         // ไม่แสดงข้อมูล user ถ้าเป็น temporary user หรือยังไม่สมบูรณ์
-        if (user && !this.authService.isTemporaryUser() && !user.needsProfileSetup) {
+        if (user && !this.googleAuthService.isTemporaryUser() && !user.needsProfileSetup) {
           this.currentUser = user;
           this.userType = user?.memberType ?? null;
           this.isOwner = user?.memberType === 'owner';

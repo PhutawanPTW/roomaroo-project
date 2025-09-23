@@ -1,31 +1,53 @@
 <!-- Loading state -->
-<div *ngIf="isLoading" class="min-h-screen bg-gray-50 flex items-center justify-center">
+<div
+  *ngIf="isLoading"
+  class="min-h-screen bg-gray-50 flex items-center justify-center"
+>
   <div class="text-center">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+    <div
+      class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"
+    ></div>
     <p class="text-gray-600">กำลังโหลดข้อมูลหอพัก...</p>
   </div>
 </div>
 
 <!-- Error state -->
-<div *ngIf="error" class="min-h-screen bg-gray-50 flex items-center justify-center">
+<div
+  *ngIf="error"
+  class="min-h-screen bg-gray-50 flex items-center justify-center"
+>
   <div class="text-center max-w-md mx-auto px-4">
     <div class="text-red-500 mb-4">
-      <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+      <svg
+        class="w-16 h-16 mx-auto"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+        ></path>
       </svg>
     </div>
     <h3 class="text-lg font-semibold text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
     <p class="text-gray-600 mb-6">{{ error }}</p>
     <button 
       (click)="retryLoad()"
-      class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+      class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+    >
       ลองใหม่
     </button>
   </div>
 </div>
 
 <!-- Main content -->
-<div *ngIf="!isLoading && !error" class="max-w-7xl mx-auto p-6 font-thai min-h-screen">
+<div
+  *ngIf="!isLoading && !error"
+  class="max-w-7xl mx-auto p-6 font-thai min-h-screen"
+>
   <app-navbar></app-navbar>
 
   <!-- Main Content Grid -->
@@ -36,102 +58,144 @@
       <div class="mb-6 pt-6">
         <div class="flex justify-between items-start mb-4">
           <div>
-            <h1 class="text-3xl font-bold mb-2" style="color: #4F5356;">{{ dormName }}</h1>
+            <h1 class="text-3xl font-bold mb-2" style="color: #4f5356">
+              {{ dormName }}
+            </h1>
             <div class="flex flex-col gap-1">
               <div class="text-gray-600 font-medium">
                 <span>{{ location }}</span>
               </div>
               <div class="text-gray-600">
-                <span class="font-medium">โซน:</span> {{ dormDetail?.zone_name || 'โซน 1' }}
+                <span class="font-medium">โซน:</span>
+                {{ dormDetail?.zone_name || "โซน 1" }}
               </div>
               <!-- ปุ่มเปรียบเทียบหอพัก -->
-              <button (click)="compareDormitory()" 
-                class="mt-2 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200 w-32">
+              <button
+                (click)="compareDormitory()"
+                class="mt-2 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200 w-32"
+              >
                 <i class="fas fa-code-compare w-4 h-4 mr-2"></i>
                 เปรียบเทียบ
               </button>
             </div>
           </div>
           <div class="text-right font-thai">
-            <!-- แสดงราคารายวัน -->
-            <div *ngIf="dormDetail?.daily_price" class="text-right">
-              <div class="price-daily text-3xl font-bold text-[#6D6D6D]">
-                <span class="font-english">{{ dormDetail?.daily_price }}</span> บาท/วัน
-              </div>
+            <!-- ช่วงราคา: ใช้ priceRange หรือ dormPrice เท่านั้น -->
+            <div *ngIf="priceRange || dormPrice" class="text-2xl font-bold text-[#6D6D6D]">
+              <span class="font-english">{{ priceRange || dormPrice }}</span>
             </div>
-            
-            <!-- แสดงราคารายเดือน -->
-            <div *ngIf="dormDetail?.monthly_price && !dormDetail?.daily_price" class="text-right">
-              <div class="price-monthly text-3xl font-bold text-[#6D6D6D]">
-                <span class="font-english">{{ dormDetail?.monthly_price }}</span> บาท/เดือน
-              </div>
+            <!-- สถานะห้อง (ว่าง/เต็ม) ใต้ราคา -->
+            <div *ngIf="statusDorm" class="mt-2">
+              <span
+                class="inline-block px-3 py-1 rounded-md border text-sm font-medium select-none"
+                [ngClass]="{
+                  'text-[#1E9E57] border-[#1E9E57] bg-[#E7F6EE]': statusDorm === 'ว่าง' || statusDorm?.toLowerCase() === 'available',
+                  'text-[#B91C1C] border-[#B91C1C] bg-[#FDECEC]': statusDorm === 'เต็ม' || statusDorm?.toLowerCase() === 'full'
+                }"
+              >
+                {{ (statusDorm === 'ว่าง' || statusDorm?.toLowerCase() === 'available') ? 'ว่าง' : 'เต็ม' }}
+              </span>
             </div>
-
-            <!-- แสดงทั้งราคารายวันและรายเดือน -->
-            <ng-container *ngIf="dormDetail?.monthly_price && dormDetail?.daily_price">
-              <div class="price-container">
-                <div class="price-daily text-3xl font-bold text-[#6D6D6D]">
-                  <span class="font-english">{{ dormDetail?.daily_price }}</span> บาท/วัน
-                </div>
-                <div class="price-monthly text-lg text-gray-600 mb-1">
-                  <span class="font-english">{{ dormDetail?.monthly_price }}</span> บาท/เดือน
-                </div>
-              </div>
-            </ng-container>
           </div>
         </div>
       </div>
 
       <!-- Main Images Section -->
-      <div *ngIf="images.length > 0" class="bg-white overflow-hidden shadow-sm mb-6">
+      <div
+        *ngIf="images.length > 0"
+        class="bg-white overflow-hidden shadow-sm mb-6"
+      >
         <!-- Main image -->
         <div class="relative h-[460px] overflow-hidden">
           <button
             class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/70 hover:bg-white/80 rounded-full p-3 z-10 shadow-lg transition-all duration-200"
-            (click)="prevImage()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              class="w-6 h-6 text-gray-800">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            (click)="prevImage()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="w-6 h-6 text-gray-800"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
-          <img [src]="images[currentImageIndex]" alt="Dorm Image" class="w-full h-full object-cover">
+          <img
+            [src]="images[currentImageIndex]"
+            alt="Dorm Image"
+            class="w-full h-full object-cover"
+          />
           <button
             class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/70 hover:bg-white/80 rounded-full p-3 z-10 shadow-lg transition-all duration-200"
-            (click)="nextImage()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              class="w-6 h-6 text-gray-800">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            (click)="nextImage()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="w-6 h-6 text-gray-800"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>
         <!-- Thumbnails -->
         <div class="flex border-t border-gray-200 bg-white p-2 space-x-2">
-          <div *ngFor="let image of images; let i = index" (click)="setCurrentImage(i)"
+          <div
+            *ngFor="let image of images; let i = index"
+            (click)="setCurrentImage(i)"
             class="w-32 h-20 object-cover cursor-pointer transition-all duration-200"
-            [class.ring-2]="i === currentImageIndex" [class.ring-blue-500]="i === currentImageIndex"
-            [class.opacity-60]="i !== currentImageIndex">
-            <img [src]="image" alt="Thumbnail" class="w-full h-full object-cover" />
+            [class.ring-2]="i === currentImageIndex"
+            [class.ring-blue-500]="i === currentImageIndex"
+            [class.opacity-60]="i !== currentImageIndex"
+          >
+            <img
+              [src]="image"
+              alt="Thumbnail"
+              class="w-full h-full object-cover"
+            />
           </div>
         </div>
       </div>
 
       <!-- General Info -->
       <div class="bg-white shadow-sm mb-6 overflow-hidden">
-        <div class="bg-gray-50 border-b border-gray-200">
-          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">ข้อมูลทั่วไป</h3>
-        </div>
         <div class="p-6">
           <!-- Basic Information -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div class="flex flex-col">
-              <span class="text-[#4F5356] font-bold text-sm mb-1">ชื่อหอพัก</span>
-              <span class="font-medium text-[#4F5356] text-lg">{{ dormName }}</span>
+              <span class="text-[#4F5356] font-bold text-sm mb-1"
+                >ชื่อหอพัก</span
+              >
+              <span class="font-medium text-[#4F5356] text-lg">{{
+                dormName
+              }}</span>
             </div>
 
             <div class="flex flex-col">
               <span class="text-[#4F5356] font-bold text-sm mb-1">ราคา</span>
-              <span class="font-medium text-[#4F5356] text-lg">{{ priceRange || dormPrice }}</span>
+              <span class="font-medium text-[#4F5356] text-lg">{{
+                priceRange || dormPrice
+              }}</span>
             </div>
+          </div>
+
+          <!-- Dorm Description -->
+          <div *ngIf="dormDetail?.dorm_description || dormDetail?.description" class="mb-6">
+            <span class="text-[#4F5356] font-bold text-sm mb-2 block">รายละเอียดหอพัก</span>
+            <p class="text-[#4F5356] leading-relaxed">{{ dormDetail?.dorm_description || dormDetail?.description }}</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -142,14 +206,99 @@
 
             <div class="flex flex-col">
               <span class="text-[#4F5356] font-bold text-sm mb-1">โซน</span>
-              <span class="font-medium text-[#4F5356]">{{ dormDetail?.zone_name || 'ไม่ระบุ' }}</span>
+              <span class="font-medium text-[#4F5356]">{{
+                dormDetail?.zone_name || "ไม่ระบุ"
+              }}</span>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <h4 class="font-bold text-[#4F5356] mb-4 text-lg">ประเภทห้อง</h4>
+            <!-- Room Types Table -->
+            <div class="overflow-x-auto rounded-lg shadow-sm border border-gray-200">
+              <table class="min-w-full text-left">
+                <thead class="bg-gradient-to-r from-blue-50 to-indigo-50 text-[#4F5356]">
+                  <tr>
+                    <th class="px-6 py-4 font-semibold text-sm uppercase tracking-wider">ชื่อห้อง</th>
+                    <th class="px-6 py-4 font-semibold text-sm uppercase tracking-wider">ประเภทเตียง</th>
+                    <th class="px-6 py-4 font-semibold text-sm uppercase tracking-wider text-center">รายเดือน</th>
+                    <th class="px-6 py-4 font-semibold text-sm uppercase tracking-wider text-center">รายวัน</th>
+                    <th class="px-6 py-4 font-semibold text-sm uppercase tracking-wider text-center">รายเทอม</th>
+                    <th class="px-6 py-4 font-semibold text-sm uppercase tracking-wider text-center">ซัมเมอร์</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr *ngFor="let rt of roomTypes; let i = index" 
+                      [class.bg-gray-50]="i % 2 === 1">
+                    <td class="px-6 py-4 font-medium text-gray-600">
+                      <span *ngIf="rt.name && rt.name.trim(); else noName">{{ rt.name }}</span>
+                      <ng-template #noName>
+                        <span>
+                          {{ rt.bed_type ? 'ห้อง' + rt.bed_type : 'ห้อง ' + rt.room_type_id }}
+                        </span>
+                      </ng-template>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                      <span *ngIf="rt.bed_type; else noBedType">{{ rt.bed_type }}</span>
+                      <ng-template #noBedType>
+                        <span class="italic">ไม่ระบุ</span>
+                      </ng-template>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <span *ngIf="rt.monthly_price; else noPrice" class="text-gray-600">
+                        {{ rt.monthly_price | number }} บาท
+                      </span>
+                      <ng-template #noPrice>
+                        <span class="text-gray-600">ติดต่อสอบถาม</span>
+                      </ng-template>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <span *ngIf="rt.daily_price; else noPrice" class="text-gray-600">
+                        {{ rt.daily_price | number }} บาท
+                      </span>
+                      <ng-template #noPrice>
+                        <span class="text-gray-600">ติดต่อสอบถาม</span>
+                      </ng-template>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <span *ngIf="rt.term_price; else noPrice" class="text-gray-600">
+                        {{ rt.term_price | number }} บาท
+                      </span>
+                      <ng-template #noPrice>
+                        <span class="text-gray-600">ติดต่อสอบถาม</span>
+                      </ng-template>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      <span *ngIf="rt.summer_price; else noPrice" class="text-gray-600">
+                        {{ rt.summer_price | number }} บาท
+                      </span>
+                      <ng-template #noPrice>
+                        <span class="text-gray-600">ติดต่อสอบถาม</span>
+                      </ng-template>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!roomTypes || roomTypes.length === 0">
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                      <div class="flex flex-col items-center">
+                        <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <span class="text-sm">ไม่มีข้อมูลประเภทห้อง</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           <div class="mt-6">
             <h4 class="font-bold text-[#4F5356] mb-4">ค่าใช้จ่าย</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div *ngIf="dormDetail?.water_rate" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div
+                *ngIf="dormDetail?.water_rate"
+                class="bg-blue-50 p-4 rounded-lg border border-blue-200"
+              >
                 <div class="flex flex-col">
                   <span class="text-[#4F5356] font-medium mb-2">ค่าน้ำ</span>
                   <div class="font-bold text-[#4F5356] text-lg">
@@ -157,7 +306,10 @@
                   </div>
                 </div>
               </div>
-              <div *ngIf="dormDetail?.electricity_rate" class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div
+                *ngIf="dormDetail?.electricity_rate"
+                class="bg-yellow-50 p-4 rounded-lg border border-yellow-200"
+              >
                 <div class="flex flex-col">
                   <span class="text-[#4F5356] font-medium mb-2">ค่าไฟ</span>
                   <div class="font-bold text-[#4F5356] text-lg">
@@ -171,7 +323,9 @@
           <!-- Description -->
           <div *ngIf="dormDetail && dormDetail.description" class="mt-6">
             <h4 class="font-semibold text-[#4F5356] mb-3">รายละเอียดหอพัก</h4>
-            <p class="text-[#4F5356] leading-relaxed">{{ dormDetail.description }}</p>
+            <p class="text-[#4F5356] leading-relaxed">
+              {{ dormDetail.description }}
+            </p>
           </div>
         </div>
       </div>
@@ -179,18 +333,36 @@
       <!-- Amenities -->
       <div class="bg-white shadow-sm mb-6">
         <div class="bg-gray-50 border-b border-gray-200">
-          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">สิ่งอำนวยความสะดวก</h3>
+          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">
+            สิ่งอำนวยความสะดวก
+          </h3>
         </div>
         <div class="p-6">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             <div *ngFor="let amenity of amenities" class="flex items-center">
-              <div *ngIf="amenity.available" class="w-5 h-5 rounded bg-red-500 flex items-center justify-center mr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="white"
-                  class="w-3 h-3">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              <div
+                *ngIf="amenity.available"
+                class="w-5 h-5 rounded bg-red-500 flex items-center justify-center mr-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="3"
+                  stroke="white"
+                  class="w-3 h-3"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M4.5 12.75l6 6 9-13.5"
+                  />
                 </svg>
               </div>
-              <div *ngIf="!amenity.available" class="w-5 h-5 rounded border border-gray-300 mr-2"></div>
+              <div
+                *ngIf="!amenity.available"
+                class="w-5 h-5 rounded border border-gray-300 mr-2"
+              ></div>
               <span class="text-[#4F5356] text-sm">{{ amenity.name }}</span>
             </div>
           </div>
@@ -198,9 +370,14 @@
       </div>
 
       <!-- Map Section -->
-      <div *ngIf="showMap" class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+      <div
+        *ngIf="showMap"
+        class="bg-white rounded-lg shadow-sm overflow-hidden mb-6"
+      >
         <div class="flex justify-between items-center border-b border-gray-200">
-          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">ตำแหน่งที่พัก</h3>
+          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">
+            ตำแหน่งที่พัก
+          </h3>
         </div>
 
         <!-- Map Container -->
@@ -208,16 +385,24 @@
           <div id="map" class="w-full h-full"></div>
 
           <!-- Loading State -->
-          <div *ngIf="!mapLatitude || !mapLongitude" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <div
+            *ngIf="!mapLatitude || !mapLongitude"
+            class="absolute inset-0 flex items-center justify-center bg-gray-100"
+          >
             <div class="text-center">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <div
+                class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"
+              ></div>
               <span class="text-gray-600 text-sm">กำลังโหลดแผนที่...</span>
             </div>
           </div>
 
           <!-- Custom Marker Popup -->
           <div class="hidden">
-            <div id="marker-popup" class="bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
+            <div
+              id="marker-popup"
+              class="bg-white rounded-lg shadow-lg p-4 min-w-[200px]"
+            >
               <h4 class="font-medium text-[#3c4043] mb-2">ตำแหน่งหอพัก</h4>
               <div class="text-sm text-[#5f6368] space-y-1">
                 <p>ละติจูด: {{ mapLatitude?.toFixed(6) }}</p>
@@ -231,139 +416,344 @@
       <!-- Reviews Section -->
       <div class="bg-white shadow-sm mb-6">
         <div class="bg-gray-50 border-b border-gray-200">
-          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">รีวิวจากผู้เช่า</h3>
+          <h3 class="font-bold text-xl px-6 py-4 text-[#4F5356]">
+            รีวิวจากผู้เช่า
+          </h3>
         </div>
 
         <!-- Review Stats -->
         <div class="p-6 border-b border-gray-200">
           <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <span class="text-3xl font-bold text-[#4F5356]">{{ overallRating.toFixed(1) }}</span>
-              <div class="ml-3 flex">
+            <h3 class="text-lg font-semibold text-gray-900">
+              ความคิดเห็นของผู้ใช้หอพัก
+            </h3>
+            <div class="flex items-center gap-2">
+              <!-- ลูกศร: ขยับลง 1px -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5 text-green-500 fill-current translate-y-[1px]"
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd"
+                  d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"/>
+              </svg>
+            
+              <!-- เลข: สูงเท่าไอคอน + ขยับลง 1px -->
+              <span class="text-lg font-bold text-gray-900 leading-[20px] translate-y-[2px]">
+                {{ overallRating.toFixed(1) }}
+              </span>
+            
+              <!-- ดาว: คงเดิม -->
+              <div class="flex items-center gap-1">
                 <ng-container *ngFor="let star of getStars(overallRating)">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-6 h-6">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5 inline-block"
+                    viewBox="0 0 20 20" fill="#FDD836"
+                  >
+                    <path
+                      d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"/>
                   </svg>
                 </ng-container>
               </div>
             </div>
-            <div class="text-sm text-gray-500">
-              จากทั้งหมด {{ reviews.length }} รีวิว
-            </div>
+            
           </div>
         </div>
 
         <!-- Add Review Section -->
         <div class="p-6 border-b border-gray-200">
-          <div *ngIf="isLoggedIn && !isOwner; else loginPrompt" class="space-y-4">
-            <div class="flex items-start space-x-4">
-              <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 overflow-hidden">
-                <img [src]="userAvatar || '../../../assets/images/image-removebg-preview.png'" alt="User" class="w-full h-full object-cover">
+          <div
+            *ngIf="isLoggedIn && !isOwner && canReview; else reviewPrompt"
+            class="space-y-4"
+          >
+            <div class="flex items-center space-x-4">
+              <div
+                class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 overflow-hidden relative bottom-0.5"
+              >
+                <img
+                  [src]="
+                    userAvatar ||
+                    '../../../assets/images/image-removebg-preview.png'
+                  "
+                  alt="User"
+                  class="w-full h-full object-cover"
+                />
               </div>
-              <div class="flex-1">
+              <div class="flex-1 relative">
                 <textarea 
                   [(ngModel)]="newComment"
                   placeholder="แสดงความคิดเห็นของคุณ..."
-                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition duration-200"
-                  rows="3"
-                  (keydown.enter)="$event.preventDefault(); addComment(newComment)"
+                  class="w-full p-3 pr-12 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition duration-200"
+                  rows="1"
+                  (keydown.enter)="
+                    $event.preventDefault(); addComment(newComment)
+                  "
                   (keyup.enter)="$event.preventDefault()"
                 ></textarea>
+                <!-- Send Icon Button inside textarea -->
+                <button
+                  type="button"
+                  class="absolute right-3 top-1/2 -translate-y-[60%] text-white bg-blue-600 hover:bg-blue-700 rounded-md h-8 w-8 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed outline-none focus:outline-none"
+                  [disabled]="!(newComment && newComment.trim())"
+                  (click)="addComment(newComment)"
+                  aria-label="ส่งความคิดเห็น"
+                >
+                  <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
                 
                 <!-- Sentiment Analysis Result -->
-                <div *ngIf="newComment && sentimentResult" class="mt-2 p-3 rounded-lg" 
+                <div
+                  *ngIf="newComment && sentimentResult"
+                  class="mt-2 p-3 rounded-lg"
                      [ngClass]="{
-                       'bg-green-50 text-green-700': sentimentResult === 'positive',
+                    'bg-green-50 text-green-700':
+                      sentimentResult === 'positive',
                        'bg-red-50 text-red-700': sentimentResult === 'negative',
-                       'bg-yellow-50 text-yellow-700': sentimentResult === 'neutral'
-                     }">
+                    'bg-yellow-50 text-yellow-700':
+                      sentimentResult === 'neutral'
+                  }"
+                >
                   <div class="flex items-center space-x-2">
-                    <svg *ngIf="sentimentResult === 'positive'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-3 5a3 3 0 01-6 0h6z" clip-rule="evenodd"/>
+                    <svg
+                      *ngIf="sentimentResult === 'positive'"
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-3 5a3 3 0 01-6 0h6z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
-                    <svg *ngIf="sentimentResult === 'negative'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-3 6a3 3 0 01-6 0h6z" clip-rule="evenodd"/>
+                    <svg
+                      *ngIf="sentimentResult === 'negative'"
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-3 6a3 3 0 01-6 0h6z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
-                    <svg *ngIf="sentimentResult === 'neutral'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-4 3a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    <svg
+                      *ngIf="sentimentResult === 'neutral'"
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-4 3a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
                     <span class="font-medium">
                       {{ 
-                        sentimentResult === 'positive' ? 'ความคิดเห็นเชิงบวก' :
-                        sentimentResult === 'negative' ? 'ความคิดเห็นเชิงลบ' : 'ความคิดเห็นเป็นกลาง'
+                        sentimentResult === "positive"
+                          ? "ความคิดเห็นเชิงบวก"
+                          : sentimentResult === "negative"
+                          ? "ความคิดเห็นเชิงลบ"
+                          : "ความคิดเห็นเป็นกลาง"
                       }}
                     </span>
                   </div>
                 </div>
 
-                <!-- Submit Button - ซ่อนปุ่มส่ง -->
-                <div class="hidden">
-                  <button 
-                    (click)="addComment(newComment)"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    [disabled]="!newComment.trim()">
-                    <span>ส่งความคิดเห็น</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                    </svg>
-                  </button>
-                </div>
+                <!-- Submit button replaced by icon button above -->
               </div>
             </div>
           </div>
 
-          <!-- Login Prompt Template -->
-          <ng-template #loginPrompt>
+          <!-- Review Prompt Template -->
+          <ng-template #reviewPrompt>
+            <!-- ถ้าเป็นสถานะรออนุมัติจริง ให้แสดงเฉพาะการ์ดเหลือง ไม่ต้องมีกล่องเทา -->
+            <ng-container *ngIf="isPendingApproval; else defaultReviewPrompt">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-yellow-800 font-medium">รอการอนุมัติ</span>
+                </div>
+                <p class="text-yellow-700 text-sm mt-1">
+                  รีวิวของคุณกำลังรอการอนุมัติจากเจ้าของหอพัก
+                </p>
+              </div>
+            </ng-container>
+
+            <!-- ดีฟอลต์: กล่องเทา + ข้อความกรณีอื่น ๆ -->
+            <ng-template #defaultReviewPrompt>
             <div class="bg-gray-50 p-6 rounded-lg text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-12 w-12 mx-auto text-gray-400 mb-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
               </svg>
-              <p class="text-gray-600 mb-4" *ngIf="!isOwner">กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น</p>
-              <p class="text-gray-600 mb-4" *ngIf="isOwner">เจ้าของหอพักไม่สามารถแสดงความคิดเห็นได้</p>
+                <p class="text-gray-600 mb-4" *ngIf="!isLoggedIn">
+                  กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น
+                </p>
+                <p class="text-gray-600 mb-4" *ngIf="isOwner">
+                  เจ้าของหอพักไม่สามารถแสดงความคิดเห็นได้
+                </p>
+                <p
+                  class="text-gray-600 mb-4"
+                  *ngIf="isLoggedIn && !isOwner && !canReview"
+                >
+                  {{
+                    reviewEligibilityMessage ||
+                      "เฉพาะสมาชิกที่อยู่อาศัยในหอพักนี้เท่านั้นที่สามารถแสดงความคิดเห็นได้"
+                  }}
+                </p>
               <button 
-                *ngIf="!isOwner"
+                  *ngIf="!isLoggedIn"
                 (click)="navigateToLogin()"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center space-x-2 transition duration-200">
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center space-x-2 transition duration-200"
+                >
                 <span>เข้าสู่ระบบ</span>
               </button>
             </div>
+            </ng-template>
           </ng-template>
         </div>
 
         <!-- Reviews List -->
         <div class="divide-y divide-gray-200">
           <!-- Review Items -->
-          <div *ngFor="let review of reviews" class="p-6">
+          <div *ngFor="let review of reviews; let i = index" class="p-6">
             <div class="flex">
-              <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-4 overflow-hidden">
-                <img [src]="review.avatar" alt="User" class="w-full h-full object-cover">
+              <div
+                class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-4 overflow-hidden"
+              >
+                <img
+                  [src]="review.avatar"
+                  alt="User"
+                  class="w-full h-full object-cover"
+                />
               </div>
               <div class="flex-1">
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center">
-                    <span class="font-bold text-[#4F5356] text-sm">{{ review.username }}</span>
-                    <span class="text-gray-500 text-xs ml-2">{{ review.date | date:'dd/MM/yyyy' }}</span>
+                    <span class="font-bold text-[#4F5356] text-sm">{{
+                      review.username
+                    }}</span>
+                    <span
+                      *ngIf="review.isResident"
+                      class="ml-2 text-xs text-green-600 font-medium"
+                      >(สมาชิกหอพัก)</span
+                    >
+                    <span class="text-gray-500 text-xs ml-2">{{
+                      review.date | date : "dd/MM/yyyy"
+                    }}</span>
                   </div>
                   <div class="flex items-center space-x-3">
+                    <!-- Edit Button (for current user's reviews) -->
+                    <button
+                      *ngIf="review.isCurrentUser"
+                      (click)="editReview(i)"
+                      class="text-blue-500 hover:text-blue-700 text-xs font-medium flex items-center"
+                    >
+                      <i class="fa-regular fa-pen-to-square mr-1"></i>
+                      <span class="sr-only">แก้ไข</span>
+                    </button>
+
+                    <!-- Rating Display -->
+                    <div class="flex items-center">
+                      <!-- Sentiment Icon (Font Awesome) -->
+                      <i
+                        *ngIf="review.isPositive"
+                        class="fa-solid fa-arrow-up text-green-500 mr-1 text-xs"
+                      ></i>
+                      <i
+                        *ngIf="!review.isPositive"
+                        class="fa-solid fa-arrow-down text-red-500 mr-1 text-xs"
+                      ></i>
+
+                      <!-- Stars -->
                     <div class="flex">
-                      <ng-container *ngFor="let star of getStars(review.rating)">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20" class="w-4 h-4">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
+                        <ng-container
+                          *ngFor="let star of getStars(review.rating)"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="#FDD836"
+                            viewBox="0 0 20 20"
+                            class="w-4 h-4"
+                          >
+                            <path
+                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                            />
+                          </svg>
+                        </ng-container>
+                        <ng-container
+                          *ngFor="let emptyStar of getEmptyStars(review.rating)"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            stroke="#D1D5DB"
+                            viewBox="0 0 20 20"
+                            class="w-4 h-4"
+                          >
+                            <path
+                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                            />
                         </svg>
                       </ng-container>
                     </div>
-                    <div class="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        [class.text-green-500]="review.isPositive"
-                        [class.text-red-500]="!review.isPositive"
-                        stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" 
-                          [attr.d]="review.isPositive ? 'M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18' : 'M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3'" />
-                      </svg>
                     </div>
                   </div>
                 </div>
-                <p class="text-[#4F5356] text-sm">{{ review.comment }}</p>
+
+                <!-- Review Content -->
+                <div *ngIf="!review.isEditing; else editMode">
+                  <p class="text-gray-700 text-sm leading-relaxed">
+                    {{ review.comment }}
+                  </p>
+                </div>
+
+                <!-- Edit Mode -->
+                <ng-template #editMode>
+                  <div class="space-y-3">
+                    <textarea
+                      [(ngModel)]="review.editComment"
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows="3"
+                      placeholder="แก้ไขความคิดเห็นของคุณ..."
+                    >
+                    </textarea>
+                    <div class="flex space-x-2">
+                      <button
+                        (click)="saveReview(i)"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                      >
+                        บันทึก
+                      </button>
+                      <button
+                        (click)="cancelEdit(i)"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium"
+                      >
+                        ยกเลิก
+                      </button>
+                    </div>
+                  </div>
+                </ng-template>
               </div>
             </div>
           </div>
@@ -371,9 +761,11 @@
 
         <!-- View All Button -->
         <div class="p-4 text-center border-t border-gray-200">
-          <button (click)="viewAllComments()"
-            class="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline transition-colors duration-200">
-            ดูความคิดเห็นทั้งหมด
+          <button
+            (click)="viewAllComments()"
+            class="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline transition-colors duration-200"
+          >
+            ดูความคิดเห็นทั้งหมด ({{ reviews.length }} รีวิว)
           </button>
         </div>
       </div>
@@ -385,82 +777,153 @@
       <div class="bg-white shadow-sm p-4 mb-4">
         <div class="flex flex-col items-center">
           <!-- Profile Image with Yellow Border -->
-          <div class="w-24 h-24 rounded-full overflow-hidden mb-3 border-2" style="border-color: #FBBF24;">
-            <img [src]="ownerContact.image" alt="Owner Profile" class="w-full h-full object-cover">
+          <div
+            class="w-24 h-24 rounded-full overflow-hidden mb-3 border-2"
+            style="border-color: #fbbf24"
+          >
+            <img
+              [src]="ownerContact.image"
+              alt="Owner Profile"
+              class="w-full h-full object-cover"
+            />
           </div>
 
           <!-- Owner Name -->
-          <h3 class="font-semibold text-lg text-[#4F5356] mb-3">{{ ownerContact.name }}</h3>
+          <h3 class="font-semibold text-lg text-[#4F5356] mb-3">
+            {{ ownerContact.name }}
+          </h3>
 
           <!-- Phone Button -->
-          <button (click)="contactOwner()"
-            class="w-60 bg-[#31AA52] hover:bg-[#289244] text-[14px] text-white py-2.5 rounded-lg mb-2 font-medium flex items-center justify-center transition-colors duration-200 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5 mr-2">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+          <button
+            (click)="contactOwner()"
+            class="w-60 bg-[#31AA52] hover:bg-[#289244] text-[14px] text-white py-2.5 rounded-lg mb-2 font-medium flex items-center justify-center transition-colors duration-200 shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="w-5 h-5 mr-2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"
+              />
             </svg>
-            {{ ownerContact.phone || 'ติดต่อสอบถาม' }}
+            {{ ownerContact.phone || "ติดต่อสอบถาม" }}
           </button>
 
           <!-- Secondary Phone Button (if exists) -->
-          <button *ngIf="ownerContact.secondaryPhone" (click)="contactOwnerSecondary()"
-            class="w-60 bg-[#4A90E2] hover:bg-[#357ABD] text-[14px] text-white py-2.5 rounded-lg mb-2 font-medium flex items-center justify-center transition-colors duration-200 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" class="w-5 h-5 mr-2">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+          <button
+            *ngIf="ownerContact.secondaryPhone"
+            (click)="contactOwnerSecondary()"
+            class="w-60 bg-[#4A90E2] hover:bg-[#357ABD] text-[14px] text-white py-2.5 rounded-lg mb-2 font-medium flex items-center justify-center transition-colors duration-200 shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="w-5 h-5 mr-2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"
+              />
             </svg>
             {{ ownerContact.secondaryPhone }}
           </button>
 
           <!-- Line ID Box -->
           <div
-            class="w-60 border border-[#434FAA] text-center text-[14px] py-2.5 rounded-lg flex items-center justify-center font-medium text-[#434FAA]">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="Line"
-              class="w-5 h-5 mr-2" />
-            Line ID : {{ ownerContact.lineId || 'ไม่มี' }}
+            class="w-60 border border-[#434FAA] text-center text-[14px] py-2.5 rounded-lg flex items-center justify-center font-medium text-[#434FAA]"
+          >
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg"
+              alt="Line"
+              class="w-5 h-5 mr-2"
+            />
+            Line ID : {{ ownerContact.lineId || "ไม่มี" }}
           </div>
         </div>
       </div>
 
       <!-- Similar Properties -->
       <div class="bg-white shadow-sm">
-        <h3 class="font-bold text-lg px-4 py-3 border-b border-gray-200 text-[#4F5356]">หอพักที่คล้ายกัน</h3>
+        <h3
+          class="font-bold text-lg px-4 py-3 border-b border-gray-200 text-[#4F5356]"
+        >
+          หอพักที่คล้ายกัน
+        </h3>
         <div class="p-3 space-y-3">
-          <div *ngFor="let property of similarProperties" (click)="viewSimilarDorm(property.id)"
-            class="border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer max-w-[300px]">
+          <div
+            *ngFor="let property of similarProperties"
+            (click)="viewSimilarDorm(property.id)"
+            class="border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer max-w-[300px]"
+          >
             <!-- Image section -->
             <div class="w-full h-36">
-              <img [src]="property.image" alt="Similar Property" class="w-full h-full object-cover">
+              <img
+                [src]="property.image"
+                alt="Similar Property"
+                class="w-full h-full object-cover"
+              />
             </div>
             <!-- Content section -->
             <div class="p-3">
               <!-- ราคารายวัน -->
-              <div *ngIf="property.dailyPrice" class="text-sm font-semibold text-[#4F5356] mb-1">
+              <div
+                *ngIf="property.dailyPrice"
+                class="text-sm font-semibold text-[#4F5356] mb-1"
+              >
                 {{ property.dailyPrice }}
               </div>
               <!-- ราคารายเดือน -->
-              <div *ngIf="property.monthlyPrice" class="text-lg font-bold text-[#4F5356] mb-1">
+              <div
+                *ngIf="property.monthlyPrice"
+                class="text-lg font-bold text-[#4F5356] mb-1"
+              >
                 {{ property.monthlyPrice }}
               </div>
               <!-- Fallback ราคาเดิม -->
-              <div *ngIf="!property.dailyPrice && !property.monthlyPrice" class="text-lg font-bold text-[#4F5356] mb-1">
+              <div
+                *ngIf="!property.dailyPrice && !property.monthlyPrice"
+                class="text-lg font-bold text-[#4F5356] mb-1"
+              >
                 {{ property.price }}
               </div>
-              <div class="text-lg font-medium text-[#4F5356] mb-1 line-clamp-1">{{ property.name }}</div>
-              <div class="text-sm text-[#4F5356] mb-1 line-clamp-1">{{ property.zone }}</div>
-              <div class="text-xs text-[#4F5356] mb-2">อัพเดทล่าสุด {{ property.date }}</div>
+              <div class="text-lg font-medium text-[#4F5356] mb-1 line-clamp-1">
+                {{ property.name }}
+              </div>
+              <div class="text-sm text-[#4F5356] mb-1 line-clamp-1">
+                {{ property.zone }}
+              </div>
+              <div class="text-xs text-[#4F5356] mb-2">
+                อัพเดทล่าสุด {{ property.date }}
+              </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                  <span class="text-sm font-bold text-[#4F5356] relative top-0.5">{{ property.rating.toFixed(1)
-                    }}</span>
+                  <span
+                    class="text-sm font-bold text-[#4F5356] relative top-0.5"
+                    >{{ property.rating.toFixed(1) }}</span
+                  >
                   <div class="ml-2 flex relative top-[0.05rem]">
-                    <ng-container *ngFor="let star of getStars(property.rating)">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="#FDD836" viewBox="0 0 20 20"
-                        class="w-4 h-4 relative">
+                    <ng-container
+                      *ngFor="let star of getStars(property.rating)"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="#FDD836"
+                        viewBox="0 0 20 20"
+                        class="w-4 h-4 relative"
+                      >
                         <path
-                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
+                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                        />
                       </svg>
                     </ng-container>
                   </div>
@@ -471,13 +934,47 @@
 
           <!-- ปุ่มดูเพิ่มเติม -->
           <div class="text-center pt-2">
-            <button (click)="viewMoreSimilarDorms()"
-              class="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline transition-colors duration-200">
+            <button
+              (click)="viewMoreSimilarDorms()"
+              class="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline transition-colors duration-200"
+            >
               ดูหอพักที่คล้ายกันเพิ่มเติม
             </button>
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Compare Popup -->
+  <app-compare-popup></app-compare-popup>
+
+  <!-- Inline Popup / Toast -->
+  <div *ngIf="isPopupVisible" class="fixed bottom-6 right-6 z-50">
+    <div
+      class="min-w-[260px] max-w-sm px-4 py-3 rounded-lg shadow-lg text-white flex items-start space-x-3"
+      [ngClass]="{
+        'bg-green-600': popupType === 'success',
+        'bg-red-600': popupType === 'error',
+        'bg-yellow-600': popupType === 'warning',
+        'bg-blue-600': popupType === 'info'
+      }"
+    >
+      <i
+        class="mt-0.5"
+        [ngClass]="{
+          'fa-solid fa-circle-check': popupType === 'success',
+          'fa-solid fa-triangle-exclamation': popupType === 'warning',
+          'fa-solid fa-circle-info': popupType === 'info',
+          'fa-solid fa-circle-xmark': popupType === 'error'
+        }"
+      ></i>
+      <div class="flex-1 text-sm leading-5">
+        {{ popupMessage }}
+      </div>
+      <button class="ml-2 text-white/80 hover:text-white" (click)="hidePopup()" aria-label="ปิด">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
 </div>

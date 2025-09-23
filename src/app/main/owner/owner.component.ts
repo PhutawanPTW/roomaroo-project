@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChildren, QueryList, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
@@ -8,11 +8,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { RegisterService } from '../../services/register.service';
 import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
 import { DormitoryService, RoomType } from '../../services/dormitory.service';
 import { filter, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { forkJoin, throwError } from 'rxjs';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { environment } from '../../../environments/environment';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 // Interface สำหรับ response จาก check-members API
 interface DeleteCheckResponse {
@@ -58,19 +61,36 @@ interface DeleteCheckResponse {
   styleUrls: ['./owner.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class OwnerComponent implements OnInit, OnDestroy {
+export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
   currentUser: UserProfile | null = null;
   private subscription: any;
-  uploadLoading = false;
+  // uploadLoading moved to loadingState
   uploadError: string | null = null;
 
   myDorms: any[] = [];
+  // ใช้ตัดสินใจว่าจะล็อกความสูงชื่อหอหรือไม่ (ถ้ามีชื่อยาว 2 บรรทัดแม้แต่ใบเดียว -> true)
+  anyNameWrapsTwoLines = false;
+  @ViewChildren('nameEl') nameEls!: QueryList<ElementRef<HTMLDivElement>>;
 
   // เพิ่ม property เพื่อตรวจสอบว่าอยู่ในหน้า dorm-add หรือไม่
   isDormAddPage = false;
   
-  // เพิ่ม loading state สำหรับการโหลดข้อมูลหอพัก
-  isLoadingDorms = false;
+  // ป้องกัน loading race conditions
+  private loadingState = {
+    dorms: false,
+    user: false,
+    upload: false,
+    loadDormsPromise: null as Promise<void> | null
+  };
+
+  // Getter สำหรับ UI
+  get isLoadingDorms(): boolean {
+    return this.loadingState.dorms;
+  }
+
+  get isUploadLoading(): boolean {
+    return this.loadingState.upload;
+  }
 
   // Modal state for delete confirmation
   showDeleteModal = false;
@@ -87,7 +107,9 @@ export class OwnerComponent implements OnInit, OnDestroy {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog,
-    private http: HttpClient
+    private http: HttpClient,
+    private sanitizer: DomSanitizer,
+    private registerService: RegisterService
   ) { }
 
   ngOnInit() {
@@ -118,56 +140,98 @@ export class OwnerComponent implements OnInit, OnDestroy {
 
         // โหลดข้อมูลหอพักเฉพาะเมื่อไม่ได้อยู่ในหน้า dorm-add
         if (user && (user as any).id && !this.isDormAddPage) {
-          this.loadUserDorms((user as any).id);
+          this.loadUserDormsSafely((user as any).id);
         }
         this.cdr.markForCheck();
       });
   }
 
-  // แยก method สำหรับโหลดข้อมูลหอพัก
+  // *** Safe loading method - ป้องกัน race conditions ***
+  private loadUserDormsSafely(userId: number): void {
+    // Return existing promise if already loading
+    if (this.loadingState.loadDormsPromise) {
+      return;
+    }
+
+    if (this.loadingState.dorms) {
+      return;
+    }
+
+    this.loadingState.loadDormsPromise = this.loadUserDormsAsync(userId);
+  }
+
+  private async loadUserDormsAsync(userId: number): Promise<void> {
+    try {
+      this.loadingState.dorms = true;
+      this.cdr.markForCheck();
+      // ใช้เส้นใหม่ที่ดึง min_price/max_price จาก DB โดยตรง พร้อม Auth Bearer
+      const data = await this.ownerDormService.getOwnerDormsWithPrice().toPromise();
+      
+      if (data) {
+        this.myDorms = (Array.isArray(data) ? data : [data]).map((dorm: any) => ({
+          ...dorm
+        }));
+        console.log('[Owner] My dorms loaded:', this.myDorms);
+        // ไม่ต้องคำนวณราคาเองอีกต่อไป ราคามาจาก DB แล้ว
+      } else {
+        console.log('[Owner] No dorms found for user:', userId);
+        this.myDorms = [];
+      }
+    } catch (error) {
+      console.error('[Owner] Error loading user dorms:', error);
+      this.myDorms = [];
+    } finally {
+      this.loadingState.dorms = false;
+      this.loadingState.loadDormsPromise = null;
+      this.cdr.markForCheck();
+      // ตรวจว่ามีการตัดชื่อเป็น 2 บรรทัดหรือไม่ เพื่อกำหนดความสูงแบบไดนามิก
+      setTimeout(() => this.detectNameWraps(), 0);
+    }
+  }
+
+  // แยก method สำหรับโหลดข้อมูลหอพัก (legacy method)
   private loadUserDorms(userId: number): void {
-    // แสดง loading state ทันที
-    this.isLoadingDorms = true;
-    this.cdr.markForCheck();
+    this.loadUserDormsSafely(userId);
+  }
 
-    this.ownerDormService.getDormsByUserId(userId).subscribe({
-      next: (data) => {
-        if (data) {
-          this.myDorms = (Array.isArray(data) ? data : [data]).map((dorm: any) => ({
-            ...dorm
-          }));
-          // log ข้อมูลแต่ละหอ: สมาชิก ราคา และวันที่อัปเดต
-          this.myDorms.forEach(d => {
-            try {
-              const priceStr = this.formatPriceString(d);
-              const updatedStr = this.formatUpdatedDate(d);
-            } catch (e) {
-              console.log('[OwnerComponent] log error:', e);
-            }
-          });
-        } else {
-          this.myDorms = [];
-        }
+  ngAfterViewInit(): void {
+    // ตรวจครั้งแรกหลัง view พร้อม และเมื่อรายการเปลี่ยน
+    if (this.nameEls) {
+      setTimeout(() => this.detectNameWraps(), 0);
+      this.nameEls.changes.subscribe(() => setTimeout(() => this.detectNameWraps(), 0));
+    }
+  }
 
-        // ไม่ดึง room types มาใช้คำนวณราคาในหน้านี้อีก ตามสเปคใหม่
-        this.isLoadingDorms = false;
+  private detectNameWraps(): void {
+    try {
+      if (!this.nameEls || this.nameEls.length === 0) {
+        this.anyNameWrapsTwoLines = false;
         this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('API error:', err);
+        return;
+      }
 
-        // Show user-friendly error message
-        if (err.message.includes('API endpoint not found')) {
-          console.error('Backend API endpoint /api/dormitories/user/:userId not found');
-          // You might want to show a message to the user or use mock data
-          this.myDorms = []; // or use mock data for development
-        } else {
-          console.error('Other API error:', err.message);
+      let wraps = false;
+      this.nameEls.forEach(ref => {
+        const el = ref.nativeElement;
+        const computed = window.getComputedStyle(el);
+        const lineHeight = parseFloat(computed.lineHeight || '0');
+        const height = el.getBoundingClientRect().height;
+        if (lineHeight > 0 && height >= lineHeight * 1.9) {
+          wraps = true;
         }
-        this.isLoadingDorms = false;
+      });
+
+      if (this.anyNameWrapsTwoLines !== wraps) {
+        this.anyNameWrapsTwoLines = wraps;
         this.cdr.markForCheck();
       }
-    });
+    } catch {
+      // ถ้าอ่าน style ไม่ได้ ให้ถือว่าไม่ต้องล็อกความสูง
+      if (this.anyNameWrapsTwoLines !== false) {
+        this.anyNameWrapsTwoLines = false;
+        this.cdr.markForCheck();
+      }
+    }
   }
 
   // เพิ่ม method สำหรับตรวจสอบ current route
@@ -297,22 +361,26 @@ export class OwnerComponent implements OnInit, OnDestroy {
 
   // Helper to format price string like main page
   formatPriceString(dorm: any): string {
-    const lines: string[] = [];
+    // แสดงช่วงราคาแบบ min-max ต่อเดือน ถ้ามีข้อมูล
+    const minPriceRaw = dorm?.min_price;
+    const maxPriceRaw = dorm?.max_price;
+    const hasMin = minPriceRaw !== null && minPriceRaw !== undefined && !Number.isNaN(Number(minPriceRaw));
+    const hasMax = maxPriceRaw !== null && maxPriceRaw !== undefined && !Number.isNaN(Number(maxPriceRaw));
 
-    // ราคาแบบรายเดือน (คีย์ใหม่เท่านั้น)
-    const monthlyMinRaw = dorm?.monthly_min_price;
-    if (monthlyMinRaw !== null && monthlyMinRaw !== undefined && !Number.isNaN(Number(monthlyMinRaw))) {
-      lines.push(`${Number(monthlyMinRaw).toLocaleString()} บาท/เดือน`);
+    if (hasMin && hasMax) {
+      const minText = Number(minPriceRaw).toLocaleString();
+      const maxText = Number(maxPriceRaw).toLocaleString();
+      return `${minText} - ${maxText} บาท/เดือน`;
     }
 
-    // ราคาแบบรายวัน (คีย์ใหม่เท่านั้น)
-    const dailyMinRaw = dorm?.daily_min_price;
-    if (dailyMinRaw !== null && dailyMinRaw !== undefined && !Number.isNaN(Number(dailyMinRaw))) {
-      lines.push(`${Number(dailyMinRaw).toLocaleString()} บาท/วัน`);
+    // Fallback: ราคาเดือนไม่เป็นช่วง แต่มีราคาเดียว
+    const monthlySingle = dorm?.monthly_price ?? dorm?.monthly_min_price;
+    if (monthlySingle !== null && monthlySingle !== undefined && !Number.isNaN(Number(monthlySingle))) {
+      return `${Number(monthlySingle).toLocaleString()} บาท/เดือน`;
     }
 
-    // ทั้งคู่เป็น null -> ไม่แสดงราคา (คืนค่าว่าง)
-    return lines.join('\n');
+    // ไม่มีข้อมูล -> แสดงขีดกลางเพื่อคงเลย์เอาต์บรรทัดเดียว
+    return '—';
   }
 
   // ฟอร์แมตวันที่อัปเดตล่าสุดจาก updated_date
@@ -377,6 +445,15 @@ export class OwnerComponent implements OnInit, OnDestroy {
     return html;
   }
 
+  getSafePriceHtml(price: string | undefined): SafeHtml {
+    const html = this.getPriceHtml(price);
+    return this.sanitizer.sanitize(1, html) || '';
+  }
+
+  getSafeDeleteWarningMessage(): SafeHtml {
+    return this.sanitizer.sanitize(1, this.deleteWarningMessage || '') || '';
+  }
+
   onEditDorm(dorm: any) {
     // TODO: implement edit logic
     alert('Edit dorm: ' + dorm.dorm_name);
@@ -409,7 +486,7 @@ export class OwnerComponent implements OnInit, OnDestroy {
     this.deleteSuccessMessage = null;
 
     // Use the correct API endpoint from your routes
-    this.http.delete(`http://localhost:3000/api/delete-dormitory/${this.dormToDelete.dorm_id}`)
+    this.http.delete(`${environment.backendApiUrl}/delete-dormitory/${this.dormToDelete.dorm_id}`)
       .pipe(
         catchError(error => {
           console.error('Delete dorm error:', error);
@@ -478,15 +555,15 @@ export class OwnerComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0 || !this.currentUser) return;
     const file = input.files[0];
-    this.uploadLoading = true;
+    this.loadingState.upload = true;
     this.uploadError = null;
     try {
-      await this.authService.uploadOwnerImage(file, this.currentUser.uid);
+      await this.registerService.uploadOwnerImage(file, this.currentUser.uid);
       // Success: imageUrl is updated in currentUser via BehaviorSubject
     } catch (err: any) {
       this.uploadError = err?.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ';
     } finally {
-      this.uploadLoading = false;
+      this.loadingState.upload = false;
       input.value = '';
     }
   }

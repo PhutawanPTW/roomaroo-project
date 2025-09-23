@@ -21,12 +21,16 @@ import { AuthService } from './services/auth.service';
 // Factory function to initialize auth state
 export function initializeAuthFactory(authService: AuthService) {
   return () => new Promise<void>((resolve) => {
-    console.log('[APP_INITIALIZER] Waiting for auth state to be determined...');
+    if (!environment.production) {
+      console.log('[APP_INITIALIZER] Waiting for auth state to be determined...');
+    }
     
     // ใช้ waitForAuthState แทน checkAuthState เพื่อรอให้ auth state พร้อม
     authService.waitForAuthState()
       .then(() => {
-        console.log('[APP_INITIALIZER] Auth state initialized');
+        if (!environment.production) {
+          console.log('[APP_INITIALIZER] Auth state initialized');
+        }
         resolve();
       })
       .catch(error => {

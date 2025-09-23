@@ -1,9 +1,19 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as maptilersdk from '@maptiler/sdk';
 import { NavbarComponent } from '../navbar/navbar.component';
-import { DormitoryService, Dorm, DormDetail } from '../../services/dormitory.service';
+import {
+  DormitoryService,
+  Dorm,
+  DormDetail,
+} from '../../services/dormitory.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -11,9 +21,37 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './dorm-map.component.html',
-  styleUrl: './dorm-map.component.css'
+  styleUrl: './dorm-map.component.css',
 })
 export class DormMapComponent implements OnInit, OnDestroy {
+  // --- Mock data: ใช้เฉพาะเดโมก่อนเชื่อมจริง ---
+  private mockDorms: Dorm[] = [
+    {
+      dorm_id: 1,
+      dorm_name: 'โฟโมส เรซิเดนท์',
+      min_price: 2600,
+      max_price: 3000,
+      zone_name: 'โซนขามเรียง',
+      rating: 5.0,
+      latitude: 16.2445,
+      longitude: 103.2508,
+      main_image_url:
+        'https://happylongway.com/wp-content/uploads/2018/10/Eiffel-800x500.jpg',
+    },
+    {
+      dorm_id: 2,
+      dorm_name: 'บ้านพักวิวสวน',
+      min_price: 2800,
+      max_price: 3500,
+      zone_name: 'โซนหลัง ม.',
+      rating: 4.7,
+      latitude: 16.246,
+      longitude: 103.2465,
+      main_image_url:
+        'https://images.unsplash.com/photo-1493809842364-78817add7ffb?q=80&w=1200&auto=format&fit=crop',
+    },
+  ] as any;
+
   @ViewChild('mapContainer') mapContainer!: ElementRef;
 
   private map: maptilersdk.Map | null = null;
@@ -53,17 +91,22 @@ export class DormMapComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.dormitoryService.getAllDormitoriesForMap().subscribe({
         next: (result) => {
-          console.log('[DormMap] Loaded dormitories:', result);
-          this.dormitories = result.dormitories.filter(dorm => dorm.latitude && dorm.longitude);
-          this.totalDormitories = result.total || this.dormitories.length;
+          const apiDorms = (result?.dormitories || []).filter(
+            (d: Dorm) => d.latitude && d.longitude
+          );
+          // ถ้า API ไม่มี ใช้ mock ชั่วคราว
+          this.dormitories = apiDorms.length ? apiDorms : this.mockDorms;
+          this.totalDormitories = result?.total || this.dormitories.length;
           this.isLoading = false;
           this.initializeMap();
         },
-        error: (err) => {
-          console.error('[DormMap] Error loading dormitories:', err);
-          this.error = 'ไม่สามารถโหลดข้อมูลหอพักได้';
+        error: () => {
+          // error → ใช้ mock data เพื่อให้เดโมต่อได้
+          this.dormitories = this.mockDorms;
+          this.totalDormitories = this.dormitories.length;
           this.isLoading = false;
-        }
+          this.initializeMap();
+        },
       })
     );
   }
@@ -78,13 +121,15 @@ export class DormMapComponent implements OnInit, OnDestroy {
       // Calculate center from dormitories if available
       let initialCenter = this.defaultCenter;
       let initialZoom = this.defaultZoom;
-      
+
       if (this.dormitories.length > 0) {
         // Calculate center from all dormitories
-        const validDorms = this.dormitories.filter(dorm => dorm.latitude && dorm.longitude);
+        const validDorms = this.dormitories.filter(
+          (dorm) => dorm.latitude && dorm.longitude
+        );
         if (validDorms.length > 0) {
-          const lats = validDorms.map(dorm => dorm.latitude!);
-          const lngs = validDorms.map(dorm => dorm.longitude!);
+          const lats = validDorms.map((dorm) => dorm.latitude!);
+          const lngs = validDorms.map((dorm) => dorm.longitude!);
           const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
           const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
           initialCenter = [centerLng, centerLat];
@@ -99,7 +144,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
         center: initialCenter,
         zoom: initialZoom,
         maxZoom: 20,
-        minZoom: 8
+        minZoom: 8,
       });
 
       // Add only essential controls - ตำแหน่งตัวเองและดาวเทียม
@@ -122,7 +167,6 @@ export class DormMapComponent implements OnInit, OnDestroy {
       this.map.on('styledata', () => {
         console.log('[DormMap] Map style loaded');
       });
-
     } catch (error) {
       console.error('[DormMap] Error initializing map:', error);
       this.error = 'ไม่สามารถโหลดแผนที่ได้';
@@ -132,37 +176,108 @@ export class DormMapComponent implements OnInit, OnDestroy {
   private addMarkers(): void {
     if (!this.map) return;
 
-    // Clear existing markers
-    this.markers.forEach(marker => marker.remove());
+    this.markers.forEach((m) => m.remove());
     this.markers = [];
 
-    console.log('[DormMap] Adding markers for', this.dormitories.length, 'dormitories');
+    const bounds = new maptilersdk.LngLatBounds();
 
-    // Add markers for each dormitory
-    this.dormitories.forEach(dorm => {
-      if (dorm.latitude && dorm.longitude) {
-        const marker = new maptilersdk.Marker({ 
-          color: '#EA4335', // Red color for all dormitories
-          scale: 0.8
-        })
-          .setLngLat([dorm.longitude, dorm.latitude])
-          .addTo(this.map!);
+    this.dormitories.forEach((dorm) => {
+      if (!dorm.latitude || !dorm.longitude) return;
 
-        // Add click event
-        marker.getElement().addEventListener('click', () => {
-          this.onMarkerClick(dorm);
-        });
+      const marker = new maptilersdk.Marker({ color: '#EA4335', scale: 0.9 })
+        .setLngLat([dorm.longitude, dorm.latitude])
+        .addTo(this.map!);
 
-        this.markers.push(marker);
-      }
+      marker.getElement().style.cursor = 'pointer';
+
+      const popup = new maptilersdk.Popup({
+        closeButton: false,
+        closeOnClick: true,
+        maxWidth: 'none',
+      }).setHTML(this.createPopupCard(dorm));
+
+      marker.setPopup(popup);
+
+      bounds.extend([dorm.longitude, dorm.latitude]);
+      this.markers.push(marker);
     });
 
-    // ไม่ต้อง fitBounds อีก เพราะเริ่มต้นที่ตำแหน่งหมุดแล้ว
-    // แต่ถ้าไม่มีหมุด ให้เริ่มต้นที่เชียงใหม่
-    if (this.markers.length === 0 && this.map) {
-      this.map.setCenter(this.defaultCenter);
-      this.map.setZoom(this.defaultZoom);
+    // ถ้ามีหมุด ≥ 1 → ซูมครอบหมุดทั้งหมด
+    if (!bounds.isEmpty() && this.map) {
+      this.map.fitBounds(bounds, {
+        padding: { top: 80, right: 80, bottom: 80, left: 80 },
+        maxZoom: 15,
+        duration: 800,
+      });
+    } else {
+      // ไม่มีหมุด → ใช้ fallback เดิม
+      this.map!.setCenter(this.defaultCenter);
+      this.map!.setZoom(this.defaultZoom);
     }
+  }
+
+  /** การ์ด Popup (ไม่มี rounded, ใช้ tip เดิมของแผนที่) */
+  private createPopupCard(d: Dorm | DormDetail): string {
+    const img = (d as any).main_image_url || (d as any).thumbnail_url || '';
+    const price = this.getPriceDisplay(d);
+    const rating = (d.rating ?? 0).toFixed(1);
+
+    return `
+    <div class="font-thai w-[280px]">
+      <div class="m-4">                       <!-- ระยะห่างจากขอบ popup -->
+        ${
+          img
+            ? `
+          <img src="${img}" alt="${d.dorm_name || ''}"
+               class="w-full h-[140px] object-cover mb-3">`
+            : ''
+        }
+
+        <div class="text-lg leading-7 font-semibold font-thai text-slate-900">
+          ${price}
+        </div>
+
+        <div class="mt-2 text-[15px] leading-6 text-slate-800">
+          ${d.dorm_name || '-'}
+        </div>
+
+        <div class="mt-1 text-[13px] leading-5 text-slate-400">
+          ${d.zone_name || 'ไม่ระบุโซน'}
+        </div>
+
+        <div class="mt-3 flex items-center gap-2">
+  <span class="text-[13px] font-bold text-slate-900 relative top-[1px]">${rating}</span>
+  <div class="flex items-center gap-1">
+    ${this.starRow(5)}
+  </div>
+</div>
+      </div>
+    </div>`;
+  }
+
+  private starRow(count: number): string {
+    const star = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+           class="w-[18px] h-[18px] fill-yellow-400">
+        <path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.78L10 14.95 4.8 17.5l.99-5.78L1.6 7.62l5.82-.85L10 1.5z"/>
+      </svg>`;
+    return new Array(count).fill(star).join('');
+  }
+
+  /** สร้างดาวแบบ Tailwind (เต็ม/ครึ่ง/ว่าง) */
+  private getStarIcons(rating: number): string {
+    const full = Math.floor(rating);
+    const half = rating % 1 >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+
+    const fullStar = '<span class="text-yellow-400 text-xl">★</span>';
+    const halfStar =
+      '<span class="relative text-xl"><span class="text-yellow-400">★</span><span class="absolute inset-y-0 right-0 w-1/2 bg-white"></span></span>';
+    const emptyStar = '<span class="text-gray-300 text-xl">★</span>';
+
+    return `${fullStar.repeat(full)}${half ? halfStar : ''}${emptyStar.repeat(
+      empty
+    )}`;
   }
 
   private onMarkerClick(dorm: Dorm): void {
@@ -183,7 +298,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
           console.error('[DormMap] Error loading dormitory popup:', err);
           // Show basic popup with available data
           this.showBasicPopup(dorm);
-        }
+        },
       })
     );
   }
@@ -198,7 +313,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
     this.popup = new maptilersdk.Popup({
       closeButton: true,
       closeOnClick: false,
-      maxWidth: '300px'
+      maxWidth: '300px',
     })
       .setLngLat([dormDetail.longitude, dormDetail.latitude])
       .setHTML(popupContent)
@@ -213,7 +328,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
     this.popup = new maptilersdk.Popup({
       closeButton: true,
       closeOnClick: false,
-      maxWidth: '300px'
+      maxWidth: '300px',
     })
       .setLngLat([dorm.longitude, dorm.latitude])
       .setHTML(popupContent)
@@ -221,14 +336,19 @@ export class DormMapComponent implements OnInit, OnDestroy {
   }
 
   private createPopupContent(dormDetail: DormDetail): string {
-    const imageUrl = dormDetail.main_image_url || dormDetail.thumbnail_url || '';
+    const imageUrl =
+      dormDetail.main_image_url || dormDetail.thumbnail_url || '';
     const priceDisplay = this.getPriceDisplay(dormDetail);
     const rating = dormDetail.rating || 0;
     const stars = this.getStarRating(rating);
 
     return `
       <div class="popup-content">
-        ${imageUrl ? `<img src="${imageUrl}" alt="${dormDetail.dorm_name}" class="popup-image">` : ''}
+        ${
+          imageUrl
+            ? `<img src="${imageUrl}" alt="${dormDetail.dorm_name}" class="popup-image">`
+            : ''
+        }
         <div class="popup-info">
           <h3 class="popup-title">${dormDetail.dorm_name}</h3>
           <p class="popup-price">${priceDisplay}</p>
@@ -237,7 +357,11 @@ export class DormMapComponent implements OnInit, OnDestroy {
             <span class="rating-text">${rating.toFixed(1)}</span>
             <div class="stars">${stars}</div>
           </div>
-          ${dormDetail.dorm_description ? `<p class="popup-description">${dormDetail.dorm_description}</p>` : ''}
+          ${
+            dormDetail.dorm_description
+              ? `<p class="popup-description">${dormDetail.dorm_description}</p>`
+              : ''
+          }
         </div>
       </div>
     `;
@@ -305,31 +429,45 @@ export class DormMapComponent implements OnInit, OnDestroy {
   /** ลบคอนโทรลเดิมทั้งหมดที่อาจจะมี */
   private clearAllExistingControls(): void {
     if (!this.map) return;
-    
+
     const container = this.map.getContainer() as HTMLElement;
-    
+
     // ลบ zoom controls
-    container.querySelectorAll('.maplibregl-ctrl-zoom, .mapboxgl-ctrl-zoom').forEach(el => {
-      el.parentElement?.removeChild(el);
-    });
-    
+    container
+      .querySelectorAll('.maplibregl-ctrl-zoom, .mapboxgl-ctrl-zoom')
+      .forEach((el) => {
+        el.parentElement?.removeChild(el);
+      });
+
     // ลบ navigation controls เดิม
-    container.querySelectorAll('.maplibregl-ctrl-compass, .mapboxgl-ctrl-compass').forEach(el => {
-      const parent = el.closest('.maplibregl-ctrl-group, .mapboxgl-ctrl-group');
-      if (parent) parent.parentElement?.removeChild(parent);
-    });
-    
+    container
+      .querySelectorAll('.maplibregl-ctrl-compass, .mapboxgl-ctrl-compass')
+      .forEach((el) => {
+        const parent = el.closest(
+          '.maplibregl-ctrl-group, .mapboxgl-ctrl-group'
+        );
+        if (parent) parent.parentElement?.removeChild(parent);
+      });
+
     // ลบ geolocate controls เดิม
-    container.querySelectorAll('.maplibregl-ctrl-geolocate, .mapboxgl-ctrl-geolocate').forEach(el => {
-      const parent = el.closest('.maplibregl-ctrl-group, .mapboxgl-ctrl-group');
-      if (parent) parent.parentElement?.removeChild(parent);
-    });
-    
+    container
+      .querySelectorAll('.maplibregl-ctrl-geolocate, .mapboxgl-ctrl-geolocate')
+      .forEach((el) => {
+        const parent = el.closest(
+          '.maplibregl-ctrl-group, .mapboxgl-ctrl-group'
+        );
+        if (parent) parent.parentElement?.removeChild(parent);
+      });
+
     // ลบ satellite controls เดิม (ถ้ามี)
-    container.querySelectorAll('[title*="ดาวเทียม"], [title*="satellite"]').forEach(el => {
-      const parent = el.closest('.maplibregl-ctrl-group, .mapboxgl-ctrl-group');
-      if (parent) parent.parentElement?.removeChild(parent);
-    });
+    container
+      .querySelectorAll('[title*="ดาวเทียม"], [title*="satellite"]')
+      .forEach((el) => {
+        const parent = el.closest(
+          '.maplibregl-ctrl-group, .mapboxgl-ctrl-group'
+        );
+        if (parent) parent.parentElement?.removeChild(parent);
+      });
   }
 
   private addSatelliteControl(): void {
@@ -349,19 +487,17 @@ export class DormMapComponent implements OnInit, OnDestroy {
 
         const renderIcon = () => {
           btn.innerHTML = component.isSatelliteView
-            ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" style="margin:auto">
-                 <path d="M240-160 80-220v-580l160 60 200-80 240 90 200-80v580l-160 60-240-90-200 80ZM280-272l160-64v-496l-160 64v496Zm360 32 160-64v-496l-160 64v496Zm-200-72 160 60v-496l-160-60v496Z"/>
-               </svg>`
-            : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" style="margin:auto">
-                 <path d="M480-80q-83 0-156.5-31.5T197-197q-54-54-85.5-127.5T80-480q0-83 31.5-156.5T197-763q54-54 127.5-85.5T480-880q83 0 156.5 31.5T763-763q54 54 85.5 127.5T880-480q0 83-31.5 156.5T763-197q-54 54-127.5 85.5T480-80Zm0-80q134 0 227-93t93-227q0-7-.5-14t-1.5-14q-6 29-27.5 47.5T717-440h-80q-33 0-56.5-23.5T557-520v-40H400v-80q0-33 23.5-56.5T480-720h40q0-23 12.5-40.5T565-788q-20-5-41-8.5t-44-3.5q-134 0-227 93t-93 227h200q66 0 113 47t47 113v40H400v110q19 5 38.5 7.5T480-160Z"/>
-               </svg>`;
+            ? '<span class="material-symbols-outlined">streetview</span>'
+            : '<span class="material-symbols-outlined">globe</span>';
         };
 
         renderIcon();
 
         btn.addEventListener('click', () => {
           component.toggleMapStyle();
-          btn.title = component.isSatelliteView ? 'แผนที่ถนน' : 'ภาพถ่ายดาวเทียม';
+          btn.title = component.isSatelliteView
+            ? 'แผนที่ถนน'
+            : 'ภาพถ่ายดาวเทียม';
           renderIcon();
         });
 
@@ -372,19 +508,17 @@ export class DormMapComponent implements OnInit, OnDestroy {
       onRemove() {
         const c = (this as any)._container as HTMLElement | undefined;
         if (c && c.parentNode) c.parentNode.removeChild(c);
-      }
+      },
     };
 
     this.map.addControl(satelliteControl, 'top-right');
   }
 
-
-
   private toggleMapStyle(): void {
     if (!this.map) return;
 
     this.isSatelliteView = !this.isSatelliteView;
-    
+
     if (this.isSatelliteView) {
       this.map.setStyle(maptilersdk.MapStyle.SATELLITE);
     } else {
@@ -398,7 +532,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
       this.popup = null;
     }
 
-    this.markers.forEach(marker => marker.remove());
+    this.markers.forEach((marker) => marker.remove());
     this.markers = [];
 
     if (this.map) {

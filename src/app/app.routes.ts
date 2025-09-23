@@ -10,6 +10,7 @@ import { DormMapComponent } from './main/dorm-map/dorm-map.component';
 import { DormAddComponent } from './main/dorm-add/dorm-add.component';
 import { DormCompareComponent } from './main/dorm-compare/dorm-compare.component';
 import { AdminComponent } from './main/admin/admin.component';
+import { AdminLoginComponent } from './main/admin/login/admin-login.component';
 import { TenantListComponent } from './main/tenant-list/tenant-list.component';
 import { AuthRedirectGuard } from './guards/auth-redirect.guard';
 import { OwnerGuard } from './guards/owner.guard';
@@ -20,6 +21,9 @@ export const routes: Routes = [
 
   // Add dorm-list as a top-level route
   { path: 'dorm-list', component: DormListComponent },
+
+  // Dorm compare route - accessible to everyone
+  { path: 'dorm-compare', component: DormCompareComponent },
 
   // Dorm map route - accessible to everyone (no login required)
   { path: 'dorm-map', component: DormMapComponent },
@@ -82,8 +86,6 @@ export const routes: Routes = [
     canActivate: [AuthRedirectGuard],
     children: [
       { path: '', component: DormListComponent },
-
-      { path: 'dorm-compare', component: DormCompareComponent },
     ]
   },
 
@@ -91,6 +93,12 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminComponent
+  },
+
+  // Admin login route
+  {
+    path: 'admin/login',
+    component: AdminLoginComponent
   },
 
 
