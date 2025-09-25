@@ -53,6 +53,8 @@ export const routes: Routes = [
     canActivate: [OwnerGuard],
     children: [
       { path: 'dorm-add', component: DormAddComponent },
+      // Route for editing an existing dormitory (reuses DormAddComponent in edit mode)
+      { path: 'edit-dorm/:id', component: DormAddComponent },
     ]
   },
 

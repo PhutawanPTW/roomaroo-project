@@ -8,6 +8,7 @@ import {
   ViewChild,
   ElementRef,
 } from '@angular/core';
+import { Input } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import {
   FormsModule,
@@ -21,7 +22,7 @@ import {
   ValidatorFn,
 } from '@angular/forms';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { MapService } from '../../services/map.service';
 import { environment } from '../../../environments/environment';
@@ -70,6 +71,10 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
   // images
   selectedImages: File[] = [];
   imagePreviewUrls: string[] = [];
+  // edit mode
+  isEditMode = false;
+  editingDormId: number | null = null;
+  @Input() editDormId: number | null = null; // allow parent to pass id for edit mode
   
   // drag & drop
   isDragOver = false;
@@ -145,6 +150,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private router: Router,
+    private route: ActivatedRoute,
     @Inject(DOCUMENT) private document: Document,
     private mapService: MapService,
     private cdr: ChangeDetectorRef,
@@ -156,6 +162,106 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     this.initForm();
     this.loadZones();
     this.initSliderImages();
+    this.bootstrapEditModeIfNeeded();
+  }
+
+  private bootstrapEditModeIfNeeded(): void {
+    // Priority 1: input from parent
+    const idFromInput = this.editDormId ?? null;
+    // Priority 2: route params
+    const idParam = this.route.snapshot.paramMap.get('id');
+    const idFromQuery = this.route.snapshot.queryParamMap.get('id');
+    const raw = idParam || idFromQuery;
+    const id = idFromInput !== null && idFromInput !== undefined
+      ? Number(idFromInput)
+      : raw ? parseInt(raw, 10) : NaN;
+    if (!isNaN(id) && id > 0) {
+      this.isEditMode = true;
+      this.editingDormId = id;
+      this.loadDormitoryForEdit(id);
+    }
+  }
+
+  private async loadDormitoryForEdit(dormId: number): Promise<void> {
+    try {
+      // โหลดข้อมูลหลัก + room types + images พร้อมกัน
+      const detail$ = this.dormitoryService.getDormitoryById(dormId).toPromise();
+      const roomTypes$ = this.dormitoryService.getRoomTypes(dormId).toPromise();
+      const images$ = this.dormitoryService.getImages(dormId).toPromise();
+      const [detail, roomTypes, images] = await Promise.all([detail$, roomTypes$, images$]);
+
+      if (detail) {
+        // General
+        this.dormForm.get('generalInfo.name')?.setValue(detail.dorm_name || '');
+        this.dormForm.get('generalInfo.zone_id')?.setValue((detail as any).zone_id || '');
+        this.dormForm.get('generalInfo.address')?.setValue(detail.address || '');
+        this.dormForm.get('generalInfo.description')?.setValue(detail.dorm_description || detail.description || '');
+
+        // Utilities (normalize using *_type and *_rate)
+        const eType = detail.electricity_type || 'ตามมิเตอร์';
+        const wType = detail.water_type || 'ตามมิเตอร์';
+        this.electricity.get('electricity_type')?.setValue(eType);
+        this.electricity.get('electricity_rate')?.setValue(detail.electricity_rate || '');
+        this.water.get('water_type')?.setValue(wType);
+        this.water.get('water_rate')?.setValue(detail.water_rate || '');
+
+        // Location
+        const lat = Number(detail.latitude) || this.defaultLocation.lat;
+        const lng = Number(detail.longitude) || this.defaultLocation.lng;
+        this.dormForm.get('location.latitude')?.setValue(lat);
+        this.dormForm.get('location.longitude')?.setValue(lng);
+      }
+
+      // Room types
+      if (Array.isArray(roomTypes) && roomTypes.length) {
+        // clear existing
+        while (this.roomTypes.length) this.roomTypes.removeAt(0);
+        roomTypes.forEach(rt => {
+          const g = this.createRoomType();
+          g.get('type')?.setValue(rt.name || '');
+          g.get('customType')?.setValue('');
+          g.get('bed_type')?.setValue(rt.bed_type || '');
+          if (rt.monthly_price) g.get('pricePerMonth')?.setValue(String(rt.monthly_price));
+          if (rt.daily_price) g.get('pricePerDay')?.setValue(String(rt.daily_price));
+          if ((rt as any).term_price) g.get('pricePerTerm')?.setValue(String((rt as any).term_price));
+          if ((rt as any).summer_price) g.get('pricePerSummer')?.setValue(String((rt as any).summer_price));
+          this.roomTypes.push(g);
+        });
+      }
+
+      // Images
+      if (Array.isArray(images) && images.length) {
+        this.imagePreviewUrls = images.map((img: any) => img.image_url).filter(Boolean);
+        // sync form array for previews (no File objects in edit)
+        while (this.imagesArray.length) this.imagesArray.removeAt(0);
+        this.imagePreviewUrls.forEach(url => {
+          this.imagesArray.push(this.fb.group({ file: [null], preview: [url], image_type: [''] }));
+        });
+        this.updateSliderImages();
+      }
+
+      // Amenities: map using names present in detail.amenities
+      const amenitiesFromApi = Array.isArray((detail as any)?.amenities) ? (detail as any).amenities : [];
+      const amenityNames = new Set<string>(
+        amenitiesFromApi.map((a: any) => (a.name || a.amenity_name || '').toString().trim())
+      );
+      const arr = this.dormForm.get('amenities') as FormArray;
+      this.AMENITIES.forEach((a, idx) => {
+        const checked = amenityNames.has(a.name);
+        arr.at(idx).setValue(checked);
+      });
+
+      // stepper: jump to step 2 for quick verify
+      this.maxReachedStep = 2;
+      this.currentStep = 1;
+      this.cdr.markForCheck();
+      setTimeout(() => {
+        this.initLocationMap();
+        this.initPreviewMap();
+      }, 300);
+    } catch (e) {
+      console.error('[DormAdd] Failed to load dormitory for edit:', e);
+    }
   }
 
   ngAfterViewInit() {

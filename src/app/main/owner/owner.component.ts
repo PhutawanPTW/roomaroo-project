@@ -72,7 +72,7 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
   anyNameWrapsTwoLines = false;
   @ViewChildren('nameEl') nameEls!: QueryList<ElementRef<HTMLDivElement>>;
 
-  // เพิ่ม property เพื่อตรวจสอบว่าอยู่ในหน้า dorm-add หรือไม่
+  // เพิ่ม property เพื่อตรวจสอบว่าอยู่ในหน้า child (add/edit) หรือไม่
   isDormAddPage = false;
   
   // ป้องกัน loading race conditions
@@ -238,7 +238,8 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
   private checkCurrentRoute(): void {
     const currentUrl = this.router.url;
     const wasDormAddPage = this.isDormAddPage;
-    this.isDormAddPage = currentUrl.includes('/owner/dorm-add');
+    // ซ่อนรายการเมื่ออยู่ที่หน้าเพิ่มหรือแก้ไขหอพักภายใต้ owner
+    this.isDormAddPage = currentUrl.includes('/owner/dorm-add') || currentUrl.includes('/owner/edit-dorm/');
 
     // โหลดข้อมูลหอพักเมื่อออกจากหน้า dorm-add
     if (wasDormAddPage && !this.isDormAddPage && this.currentUser && (this.currentUser as any).id) {
@@ -455,8 +456,17 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onEditDorm(dorm: any) {
-    // TODO: implement edit logic
-    alert('Edit dorm: ' + dorm.dorm_name);
+    // Navigate to new edit route
+    try {
+      const id = dorm.dorm_id || dorm.id;
+      if (!id) {
+        alert('ไม่พบรหัสหอพักสำหรับแก้ไข');
+        return;
+      }
+      this.router.navigate(['/owner/edit-dorm', id.toString()]);
+    } catch (e) {
+      console.error('[OwnerComponent] Failed to navigate to edit page:', e);
+    }
   }
 
   // Updated methods for owner.component.ts

@@ -154,7 +154,8 @@ export class DormitoryService {
   }
 
   getImages(dormId: number): Observable<DormImage[]> {
-    return this.http.get<DormImage[]>(`${this.backendUrl}/dormitories/${dormId}/images`).pipe(
+    // moved to new base: /edit-dormitory
+    return this.http.get<DormImage[]>(`${this.backendUrl}/edit-dormitory/${dormId}/images`).pipe(
       catchError(err => {
         console.error(`[DormitoryService] Error fetching images for dorm ${dormId}:`, err);
         return of([]);
@@ -164,7 +165,8 @@ export class DormitoryService {
   
   /** Get room types for a specific dormitory */
   getRoomTypes(dormId: number): Observable<RoomType[]> {
-    return this.http.get<RoomType[]>(`${this.backendUrl}/dormitories/${dormId}/room-types`).pipe(
+    // moved to new base: /edit-dormitory
+    return this.http.get<RoomType[]>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`).pipe(
       catchError(err => {
         console.error(`[DormitoryService] Error fetching room types for dorm ${dormId}:`, err);
         return of([]);
@@ -174,22 +176,22 @@ export class DormitoryService {
   
   /** Add a new room type */
   addRoomType(dormId: number, roomType: Partial<RoomType>): Observable<RoomType> {
-    return this.http.post<RoomType>(`${this.backendUrl}/dormitories/${dormId}/room-types`, roomType);
+    return this.http.post<RoomType>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`, roomType);
   }
   
   /** Add multiple room types in one request (bulk) */
   addRoomTypesBulk(dormId: number, roomTypes: Array<Partial<RoomType>>): Observable<any> {
-    return this.http.post(`${this.backendUrl}/dormitories/${dormId}/room-types/bulk`, { room_types: roomTypes });
+    return this.http.post(`${this.backendUrl}/edit-dormitory/${dormId}/room-types/bulk`, { room_types: roomTypes });
   }
   
   /** Update a room type */
   updateRoomType(roomTypeId: number, roomType: Partial<RoomType>): Observable<RoomType> {
-    return this.http.put<RoomType>(`${this.backendUrl}/dormitories/room-types/${roomTypeId}`, roomType);
+    return this.http.put<RoomType>(`${this.backendUrl}/edit-dormitory/room-types/${roomTypeId}`, roomType);
   }
   
   /** Delete a room type */
   deleteRoomType(roomTypeId: number): Observable<any> {
-    return this.http.delete(`${this.backendUrl}/dormitories/room-types/${roomTypeId}`);
+    return this.http.delete(`${this.backendUrl}/edit-dormitory/room-types/${roomTypeId}`);
   }
 
   /** Get all amenities from the database */
