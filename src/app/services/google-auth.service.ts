@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Auth, signInWithPopup, GoogleAuthProvider, signOut } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface UserProfile {
   uid: string;
@@ -42,10 +43,11 @@ export class GoogleAuthService {
     isTemporaryGoogleUser: false
   };
 
-    constructor(
+  constructor(
         private http: HttpClient,
         private auth: Auth,
-    private router: Router
+    private router: Router,
+    private appAuthService: AuthService
   ) {}
 
   /**
@@ -60,6 +62,10 @@ export class GoogleAuthService {
       provider.addScope('profile');
       provider.addScope('email');
       provider.setCustomParameters({ prompt: 'select_account' });
+
+      // Pause auth state broadcasting to avoid UI flicker while determining final route
+      // The AuthService onAuthStateChanged may set a temporary user, so we suppress it now
+      try { this.appAuthService.pauseAuthStateChange(); } catch {}
 
       const result = await signInWithPopup(this.auth, provider);
       const user = result.user;
@@ -117,7 +123,19 @@ export class GoogleAuthService {
         hasPhoneNumber: !!userProfile.phoneNumber,
       });
 
-      // Handle routing based on profile completeness
+      // Safeguard FIRST: if backend returned success but memberType ≠ requested type → block login
+      if (!userProfile.needsProfileSetup && userProfile.memberType !== userType) {
+        // Sign out and navigate to public main (not logged in)
+        const thaiRole = userProfile.memberType === 'owner' ? 'เจ้าของหอพัก' : 'สมาชิก';
+        try {
+          await this.signOutGoogleUser();
+        } finally {
+          await this.router.navigate(['/main']);
+        }
+        throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
+      }
+
+      // Handle routing based on profile completeness (only when type matches or setup required)
       if (!userProfile.needsProfileSetup) {
         console.log('[GoogleAuthService] User has complete profile, redirecting to dashboard');
         this.googleAuthState.isGoogleRegistrationFlow = false;
@@ -142,12 +160,7 @@ export class GoogleAuthService {
         });
       }
 
-      // Add safeguard: if backend returned success but memberType ≠ requested type → block login
-      if (!userProfile.needsProfileSetup && userProfile.memberType !== userType) {
-        await this.signOutGoogleUser();
-        const thaiRole = userProfile.memberType === 'owner' ? 'เจ้าของหอพัก' : 'สมาชิก';
-        throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
-      }
+      try { this.appAuthService.resumeAuthStateChange(); } catch {}
 
       return userProfile;
     } catch (error: any) {

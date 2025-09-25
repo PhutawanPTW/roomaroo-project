@@ -70,6 +70,15 @@ export class AuthService {
     this.initializeAuthState();
   }
 
+  // Public controls for temporarily pausing/resuming auth state broadcasting
+  public pauseAuthStateChange(): void {
+    this.authState.skipAuthStateChange = true;
+  }
+
+  public resumeAuthStateChange(): void {
+    this.authState.skipAuthStateChange = false;
+  }
+
   // *** Method สำหรับ update currentUser$ แบบ queue เพื่อป้องกัน race condition ***
   private async updateCurrentUserSafely(userProfile: UserProfile | null | undefined): Promise<void> {
     this.currentUserUpdateQueue = this.currentUserUpdateQueue.then(async () => {

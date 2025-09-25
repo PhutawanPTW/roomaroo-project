@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface SentimentResponse {
   text: string;
@@ -12,7 +13,7 @@ export interface SentimentResponse {
   providedIn: 'root'
 })
 export class SentimentService {
-  private apiUrl = 'http://localhost:8000'; // URL ของ FastAPI
+  private apiUrl = environment.fastApiUrl;
 
   constructor(private http: HttpClient) { }
 

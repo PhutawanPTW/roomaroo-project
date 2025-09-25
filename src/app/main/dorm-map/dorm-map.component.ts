@@ -15,6 +15,7 @@ import {
   DormDetail,
 } from '../../services/dormitory.service';
 import { Subscription } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-dorm-map',
@@ -72,7 +73,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
   private isSatelliteView = true; // เริ่มต้นเป็นดาวเทียม
 
   constructor(private dormitoryService: DormitoryService) {
-    maptilersdk.config.apiKey = 'Gpwk2Mpi9cl8hUkVrf6f';
+    maptilersdk.config.apiKey = environment.mapTilerApiKey;
   }
 
   ngOnInit(): void {

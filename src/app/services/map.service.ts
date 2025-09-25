@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as maptilersdk from '@maptiler/sdk';
 import { DormDetail } from '../services/dormitory.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class MapService {
@@ -25,7 +26,7 @@ export class MapService {
   private mapInstances = new Map<string, { map: maptilersdk.Map; marker: maptilersdk.Marker | null }>();
 
   constructor() {
-    maptilersdk.config.apiKey = 'Gpwk2Mpi9cl8hUkVrf6f';
+    maptilersdk.config.apiKey = environment.mapTilerApiKey;
   }
 
   initializeMap(

@@ -9,5 +9,7 @@ export const environment = {
     appId: "1:782979223053:web:0ed401a937a53890158f44",
     measurementId: "G-X6MZ8F81G1"
   },
-  backendApiUrl: 'http://localhost:3000/api'
+  backendApiUrl: 'http://localhost:3000/api',
+  fastApiUrl: 'http://localhost:8000',
+  mapTilerApiKey: 'Gpwk2Mpi9cl8hUkVrf6f'
 };
