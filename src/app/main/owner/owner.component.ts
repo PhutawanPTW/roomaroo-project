@@ -239,7 +239,7 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentUrl = this.router.url;
     const wasDormAddPage = this.isDormAddPage;
     // ซ่อนรายการเมื่ออยู่ที่หน้าเพิ่มหรือแก้ไขหอพักภายใต้ owner
-    this.isDormAddPage = currentUrl.includes('/owner/dorm-add') || currentUrl.includes('/owner/edit-dorm/');
+    this.isDormAddPage = currentUrl.includes('/owner/dorm-add') || currentUrl.includes('/owner/dorm-edit/');
 
     // โหลดข้อมูลหอพักเมื่อออกจากหน้า dorm-add
     if (wasDormAddPage && !this.isDormAddPage && this.currentUser && (this.currentUser as any).id) {
@@ -463,7 +463,7 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
         alert('ไม่พบรหัสหอพักสำหรับแก้ไข');
         return;
       }
-      this.router.navigate(['/owner/edit-dorm', id.toString()]);
+      this.router.navigate(['/owner/dorm-edit', id.toString()]);
     } catch (e) {
       console.error('[OwnerComponent] Failed to navigate to edit page:', e);
     }

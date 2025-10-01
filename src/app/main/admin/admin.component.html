@@ -1,147 +1,330 @@
-<div class="w-full min-h-screen bg-[#F5F7FA] flex font-thai">
+<!-- Admin Dashboard Container -->
+<div class="min-h-screen bg-gray-50 flex">
   <!-- Sidebar -->
-  <aside class="w-72 bg-white border-r border-black/10 p-6 flex-shrink-0">
-    <!-- Logo -->
-    <div class="mb-8">
-      <a class="flex items-center cursor-pointer">
-        <img
-          src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png"
-          alt="Roomaroo Logo"
-          class="w-auto object-contain"
-          style="height: 60px"
-          loading="eager"
-        />
-        <span class="text-xl font-thai flex items-center ml-2">
-          <span class="font-bold">Room</span>
-          <span class="font-normal">aroo</span>
-        </span>
-      </a>
+  <aside class="w-64 bg-white shadow-lg">
+    <!-- Logo Section -->
+    <div class="p-6 border-b border-gray-200">
+      <div class="flex items-center justify-center">
+        <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo" 
+             class="w-12 h-12 object-contain">
+        <div class="ml-3">
+          <h1 class="text-xl font-bold text-gray-800">
+            <span class="text-blue-600">Room</span><span class="text-gray-700">aroo</span>
+          </h1>
+          <p class="text-xs text-gray-500">Admin Dashboard</p>
+        </div>
+      </div>
     </div>
 
-    <!-- เมนู -->
-    <nav class="space-y-3">
-      <button
-        (click)="setTab('all')"
-        class="w-full text-center px-4 py-3 rounded-md transition-colors"
-        [ngClass]="
-          selectedTab === 'all'
-            ? 'bg-[#45A9EA] text-white'
-            : 'bg-white text-[#45A9EA] border border-[#45A9EA]'
-        "
-      >
-        รายการหอพักทั้งหมด
+    <!-- Navigation -->
+    <nav class="p-4">
+      <div class="space-y-2">
+        <button (click)="setTab('all')" 
+                [class]="selectedTab === 'all' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200'"
+                class="w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 hover:bg-blue-50">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+            <span class="font-medium">รายการหอพักทั้งหมด</span>
+          </div>
       </button>
 
-      <button
-        (click)="setTab('รออนุมัติ')"
-        class="w-full text-center px-4 py-3 rounded-md transition-colors"
-        [ngClass]="
-          selectedTab === 'รออนุมัติ'
-            ? 'bg-[#45A9EA] text-white'
-            : 'bg-white text-[#45A9EA] border border-[#45A9EA]'
-        "
-      >
-        รายการรอการอนุมัติ
+        <button (click)="setTab('รออนุมัติ')" 
+                [class]="selectedTab === 'รออนุมัติ' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200'"
+                class="w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 hover:bg-blue-50">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="font-medium">รออนุมัติ</span>
+            <span *ngIf="getPendingCount() > 0" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              {{ getPendingCount() }}
+            </span>
+          </div>
       </button>
+      </div>
     </nav>
   </aside>
 
-  <!-- Main -->
-  <main class="flex-1 p-6">
-    <!-- Header (เหมือนของคุณเดิม) -->
-    <header class="flex items-center justify-end mb-6">
-      <button
-        class="px-4 py-2 bg-[#45A9EA] text-white rounded-md text-sm font-english"
-        routerLink="/admin/login"
-      >
-        เข้าสู่ระบบ
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col">
+    <!-- Top Navigation Bar - Full Width -->
+    <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 w-full">
+      <div class="flex items-center justify-between">
+        <!-- Page Title -->
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">จัดการหอพัก</h1>
+          <p class="text-sm text-gray-600 mt-1">ระบบจัดการหอพักสำหรับผู้ดูแลระบบ</p>
+        </div>
+
+        <!-- Admin Profile -->
+        <div class="relative">
+          <button (click)="toggleProfileDropdown()" 
+                  class="flex items-center space-x-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 transition-all duration-200">
+            <img [src]="adminProfile?.photoURL || 'assets/images/photo.png'" 
+                 [alt]="adminProfile?.displayName || 'Admin Avatar'"
+                 class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm cursor-pointer"
+                 (error)="onImageError($event)"
+                 (click)="showProfileModal($event)">
+            <div class="text-left">
+              <div class="text-sm font-semibold text-gray-900">{{ adminProfile?.displayName || 'Admin' }}</div>
+              <div class="text-xs text-gray-500">{{ adminProfile?.username || 'N/A' }}</div>
+            </div>
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Profile Dropdown -->
+          <div *ngIf="profileDropdownOpen" 
+               class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+            <button (click)="onLogout()" 
+                    class="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 flex items-center">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              ออกจากระบบ
       </button>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <!-- Title -->
-    <div class="max-w-6xl mx-auto">
-      <h2 class="mb-4 text-lg font-medium">รายการหอพัก</h2>
+    <!-- Content Area -->
+    <div class="flex-1 p-6">
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="p-3 bg-blue-100 rounded-lg">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">หอพักทั้งหมด</p>
+              <p class="text-2xl font-bold text-gray-900">{{ dorms.length }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="p-3 bg-yellow-100 rounded-lg">
+              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">รออนุมัติ</p>
+              <p class="text-2xl font-bold text-gray-900">{{ getPendingCount() }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="p-3 bg-green-100 rounded-lg">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">อนุมัติแล้ว</p>
+              <p class="text-2xl font-bold text-gray-900">{{ getApprovedCount() }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approved Dormitories Section -->
+      <div *ngIf="selectedTab === 'all'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">รายการหอพักทั้งหมด</h2>
+          <p class="text-sm text-gray-600 mt-1">แสดงเฉพาะหอพักที่ผ่านการอนุมัติแล้ว</p>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span class="ml-3 text-gray-600">กำลังโหลดข้อมูล...</span>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="errorMessage && !isLoading" class="px-6 py-4 bg-red-50 border border-red-200 rounded-lg mx-6 mb-4">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-red-700">{{ errorMessage }}</span>
+          </div>
     </div>
 
-    <!-- Table Card -->
-    <div
-      class="bg-white border border-black/10 rounded-lg overflow-hidden w-full max-w-6xl mx-auto"
-    >
-      <div class="overflow-x-auto">
-        <table class="min-w-full border-separate [border-spacing:0]">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="px-4 py-2.5 text-left text-sm font-medium">ชื่อหอพัก</th>
-              <th class="px-4 py-2.5 text-left text-sm font-medium">Username</th>
-              <th class="px-4 py-2.5 text-left text-sm font-medium">
-                เจ้าของหอพัก
-              </th>
-              <th class="py-2.5 pr-6 text-center text-sm font-medium w-[160px]">
-                การจัดการ
-              </th>
+        <div *ngIf="!isLoading" class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูปภาพ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อหอพัก</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เจ้าของ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">โซน</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่เพิ่ม</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
             </tr>
           </thead>
-
-          <tbody>
-            <tr
-              *ngFor="let dorm of dorms; let i = index"
-              class="odd:bg-white even:bg-gray-50"
-            >
-              <td class="px-4 py-2.5 text-sm">{{ dorm.name }}</td>
-              <td class="px-4 py-2.5 text-sm">{{ dorm.userId }}</td>
-              <td class="px-4 py-2.5 text-sm">{{ dorm.owner }}</td>
-              <td class="py-2.5 pr-6">
-                <div class="relative flex justify-end w-[160px]">
-                  <!-- โหมด 'ทั้งหมด' = แก้ไข/ลบ -->
-                  <div
-                    class="grid grid-cols-2 gap-2 w-full"
-                    [class.invisible]="selectedTab === 'รออนุมัติ'"
-                  >
-                    <button
-                      class="min-w-[72px] h-8 px-3 py-1 rounded text-white text-xs bg-[#1D4ED8]"
-                    >
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let dorm of getApprovedDorms()" class="hover:bg-gray-50 transition-colors duration-200">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <img [src]="dorm.main_image_url || 'assets/images/photo.png'" 
+                       [alt]="dorm.dorm_name"
+                       class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                       (click)="showImageModal(dorm.main_image_url || 'assets/images/photo.png', dorm.dorm_name)"
+                       (error)="onImageError($event)">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ dorm.dorm_name }}</div>
+                  <div class="text-sm text-gray-500">{{ dorm.address }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ dorm.owner_name }}</div>
+                  <div class="text-sm text-gray-500">{{ dorm.owner_username }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ dorm.zone_name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ dorm.submitted_date }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div class="flex space-x-2">
+                    <button (click)="editDormitory(dorm.dorm_id)"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
                       แก้ไข
                     </button>
-                    <button
-                      class="min-w-[72px] h-8 px-3 py-1 rounded text-white text-xs bg-[#E72020]"
-                    >
+                    <button (click)="deleteDormitory(dorm.dorm_id)"
+                            class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
                       ลบ
                     </button>
                   </div>
-                  <!-- โหมด 'รออนุมัติ' = ตรวจสอบ -->
-                  <button
-                    *ngIf="selectedTab === 'รออนุมัติ'"
-                    class="absolute inset-0 w-full h-8 rounded text-white text-xs bg-[#3B9DFF] inline-flex items-center justify-center"
-                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pending Approval Section -->
+      <div *ngIf="selectedTab === 'รออนุมัติ'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">รายการรออนุมัติ</h2>
+          <p class="text-sm text-gray-600 mt-1">หอพักที่เจ้าของส่งเข้ามารอการตรวจสอบ</p>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span class="ml-3 text-gray-600">กำลังโหลดข้อมูล...</span>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="errorMessage && !isLoading" class="px-6 py-4 bg-red-50 border border-red-200 rounded-lg mx-6 mb-4">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-red-700">{{ errorMessage }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="!isLoading" class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูปภาพ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อหอพัก</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เจ้าของ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">โซน</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่ส่ง</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let dorm of getPendingDorms()" class="hover:bg-gray-50 transition-colors duration-200">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <img [src]="dorm.main_image_url || 'assets/images/photo.png'" 
+                       [alt]="dorm.dorm_name"
+                       class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                       (click)="showImageModal(dorm.main_image_url || 'assets/images/photo.png', dorm.dorm_name)"
+                       (error)="onImageError($event)">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ dorm.dorm_name }}</div>
+                  <div class="text-sm text-gray-500">{{ dorm.address }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ dorm.owner_name }}</div>
+                  <div class="text-sm text-gray-500">{{ dorm.owner_username }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ dorm.zone_name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ dorm.submitted_date }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button (click)="reviewDormitory(dorm.dorm_id)"
+                          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
                     ตรวจสอบ
                   </button>
-                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-
-    <!-- Pagination -->
-    <div class="mt-4 flex items-center justify-center gap-2 font-thai">
-      <button
-        *ngFor="let page of [1, 2, 3, 4, 5]"
-        (click)="currentPage = page"
-        class="w-9 h-9 grid place-items-center rounded border border-black/10 text-sm"
-        [ngClass]="
-          page === currentPage
-            ? 'bg-[#E02828] text-white border-transparent'
-            : 'bg-white'
-        "
-      >
-        {{ page }}
-      </button>
-      <button
-        class="h-9 px-3 rounded border border-black/10 bg-white text-sm"
-      >
-        ถัดไป
-      </button>
     </div>
   </main>
+</div>
+
+<!-- Profile Modal -->
+<div *ngIf="showProfileModalFlag" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="closeProfileModal()">
+  <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">ข้อมูลผู้ดูแลระบบ</h3>
+      <button (click)="closeProfileModal()" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="text-center">
+      <img [src]="adminProfile?.photoURL || 'assets/images/photo.png'" 
+           [alt]="adminProfile?.displayName || 'Admin Avatar'"
+           class="w-20 h-20 rounded-full mx-auto mb-4 object-cover border-4 border-gray-200">
+      
+      <h4 class="text-xl font-semibold text-gray-900 mb-2">{{ adminProfile?.displayName || 'Admin' }}</h4>
+      <p class="text-gray-600 mb-4">{{ adminProfile?.username || 'N/A' }}</p>
+      <p class="text-sm text-gray-500">{{ adminProfile?.email || 'N/A' }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div *ngIf="showImageModalFlag" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" (click)="closeImageModal()">
+  <div class="max-w-4xl max-h-full p-4" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-white">{{ selectedImageTitle }}</h3>
+      <button (click)="closeImageModal()" class="text-white hover:text-gray-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <img [src]="selectedImageUrl" 
+         [alt]="selectedImageTitle"
+         class="max-w-full max-h-[80vh] rounded-lg object-contain">
+  </div>
 </div>

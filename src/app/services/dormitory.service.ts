@@ -73,7 +73,7 @@ export interface RoomType {
   daily_price?: number;
   term_price?: number;
   summer_price?: number;
-  price_type: 'fixed' | 'contact';  // fixed = ราคาชัดเจน, contact = ติดต่อสอบถาม
+  // price_type removed: backend calculates from numeric prices
   description?: string;
   created_at?: string;
   updated_at?: string;
@@ -176,12 +176,17 @@ export class DormitoryService {
   
   /** Add a new room type */
   addRoomType(dormId: number, roomType: Partial<RoomType>): Observable<RoomType> {
+    return this.http.post<RoomType>(`${this.backendUrl}/add-dormitory/${dormId}/room-types`, roomType);
+  }
+
+  /** Add a new room type (edit flow) */
+  addRoomTypeForEdit(dormId: number, roomType: Partial<RoomType>): Observable<RoomType> {
     return this.http.post<RoomType>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`, roomType);
   }
   
   /** Add multiple room types in one request (bulk) */
   addRoomTypesBulk(dormId: number, roomTypes: Array<Partial<RoomType>>): Observable<any> {
-    return this.http.post(`${this.backendUrl}/edit-dormitory/${dormId}/room-types/bulk`, { room_types: roomTypes });
+    return this.http.post(`${this.backendUrl}/add-dormitory/${dormId}/room-types/bulk`, { room_types: roomTypes });
   }
   
   /** Update a room type */

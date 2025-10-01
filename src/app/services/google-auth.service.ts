@@ -135,6 +135,12 @@ export class GoogleAuthService {
         throw new Error(`บัญชีนี้ถูกลงทะเบียนเป็น${thaiRole}แล้ว`);
       }
 
+      // Ensure frontend state reflects the authenticated user BEFORE any navigation
+      // so that guards/interceptors can read the correct role immediately
+      try {
+        this.appAuthService.updateCurrentUser(userProfile);
+      } catch {}
+
       // Handle routing based on profile completeness (only when type matches or setup required)
       if (!userProfile.needsProfileSetup) {
         console.log('[GoogleAuthService] User has complete profile, redirecting to dashboard');

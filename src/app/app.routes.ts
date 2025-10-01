@@ -8,12 +8,13 @@ import { DormListComponent } from './main/dorm-list/dorm-list.component';
 import { DormDetailComponent } from './main/dorm-detail/dorm-detail.component';
 import { DormMapComponent } from './main/dorm-map/dorm-map.component';
 import { DormAddComponent } from './main/dorm-add/dorm-add.component';
+import { DormEditComponent } from './main/dorm-edit/dorm-edit.component';
 import { DormCompareComponent } from './main/dorm-compare/dorm-compare.component';
 import { AdminComponent } from './main/admin/admin.component';
 import { AdminLoginComponent } from './main/admin/login/admin-login.component';
+import { AdminDormDetailComponent } from './main/admin/dorm-detail/admin-dorm-detail.component';
 import { TenantListComponent } from './main/tenant-list/tenant-list.component';
 import { AuthRedirectGuard } from './guards/auth-redirect.guard';
-import { OwnerGuard } from './guards/owner.guard';
 
 export const routes: Routes = [
   // Redirect root path to main
@@ -50,11 +51,10 @@ export const routes: Routes = [
   {
     path: 'owner',
     component: OwnerComponent,
-    canActivate: [OwnerGuard],
+    canActivate: [AuthRedirectGuard],
     children: [
       { path: 'dorm-add', component: DormAddComponent },
-      // Route for editing an existing dormitory (reuses DormAddComponent in edit mode)
-      { path: 'edit-dorm/:id', component: DormAddComponent },
+      { path: 'dorm-edit/:id', component: DormEditComponent },
     ]
   },
 
@@ -62,7 +62,7 @@ export const routes: Routes = [
   {
     path: 'owner/profile',
     component: ProfileComponent,
-    canActivate: [OwnerGuard],
+    canActivate: [AuthRedirectGuard],
     data: { userType: 'owner' }
   },
 
@@ -70,7 +70,7 @@ export const routes: Routes = [
   {
     path: 'owner/tenant-list',
     component: TenantListComponent,
-    canActivate: [OwnerGuard]
+    canActivate: [AuthRedirectGuard]
   },
 
   // Member profile route - standalone
@@ -94,13 +94,21 @@ export const routes: Routes = [
   // Admin routes
   {
     path: 'admin',
-    component: AdminComponent
+    component: AdminComponent,
+    canActivate: [AuthRedirectGuard]
   },
 
   // Admin login route
   {
     path: 'admin/login',
     component: AdminLoginComponent
+  },
+
+  // Admin dormitory detail route
+  {
+    path: 'admin/dorm-detail/:id',
+    component: AdminDormDetailComponent,
+    canActivate: [AuthRedirectGuard]
   },
 
 

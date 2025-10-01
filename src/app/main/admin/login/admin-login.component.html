@@ -1,96 +1,308 @@
-<div class="min-h-screen w-full bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1f2937] flex items-center justify-center p-4">
-  <div class="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 overflow-hidden rounded-2xl shadow-2xl">
-    <!-- Left: Visual showcase -->
-    <div class="relative hidden lg:block bg-[url('assets/images/photo.png')] bg-cover bg-center">
-      <div class="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-transparent"></div>
-      <div class="absolute inset-0 p-8 flex flex-col justify-between">
-        <div class="text-white">
-          <div class="flex items-center gap-3">
-            <img src="assets/images/logo.png" alt="logo" class="h-10 w-auto" />
-            <div class="text-2xl font-bold">Roomaroo Admin</div>
+<div class="min-h-screen flex items-center justify-center bg-white p-4">
+  <!-- Single Column Container -->
+  <div class="w-full max-w-md">
+    <!-- Logo Section -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <img
+          src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png"
+          alt="Roomaroo"
+          class="w-10 h-10 object-contain"
+        />
+        <div class="ml-3">
+          <div class="text-xl font-bold leading-tight">
+            <span class="text-slate-900">Room</span
+            ><span class="text-[rgb(38,181,255)]">aroo</span>
           </div>
-          <div class="mt-4 text-sm text-white/80 max-w-sm leading-relaxed">
-            จัดการหอพักทั้งระบบด้วยพลังระดับโปร: ตรวจสอบ อนุมัติ แก้ไข ลบ — ในหน้าจอเดียว
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 text-white/90">
-          <div class="backdrop-blur-md bg-white/10 rounded-xl p-4 border border-white/10">
-            <div class="text-3xl font-semibold">5+</div>
-            <div class="text-xs mt-1">หมวดการจัดการครบวงจร</div>
-          </div>
-          <div class="backdrop-blur-md bg-white/10 rounded-xl p-4 border border-white/10">
-            <div class="text-3xl font-semibold">Realtime</div>
-            <div class="text-xs mt-1">ปรับปรุงข้อมูลทันที</div>
+          <div class="text-[10px] text-slate-500 tracking-wide">
+            Admin Dashboard
           </div>
         </div>
       </div>
+      <div>
+        <p class="text-slate-600 text-sm">เข้าสู่ระบบเพื่อจัดการข้อมูลหอพัก</p>
+      </div>
     </div>
 
-    <!-- Right: Form -->
-    <div class="relative bg-white p-8 lg:p-10">
-      <div class="absolute -top-24 -right-24 w-72 h-72 bg-blue-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
-      <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-100 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
-
-      <div class="relative z-10">
-        <div class="flex items-center gap-3">
-          <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" class="h-12 w-auto" alt="Roomaroo" />
-          <div class="text-2xl font-bold">เข้าสู่ระบบผู้ดูแล</div>
+    <!-- Login Form Card -->
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <!-- Error Message -->
+        <div
+          *ngIf="errorMessage"
+          class="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start"
+        >
+          <svg
+            class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <span>{{ errorMessage }}</span>
         </div>
 
-        <div class="mt-6 text-sm text-gray-600">ใช้บัญชีเฉพาะแอดมินเท่านั้น หากไม่ใช่ผู้ดูแล โปรดเข้าสู่ระบบแบบสมาชิก/เจ้าของหอ</div>
+        <!-- Email Field -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            อีเมล
+          </label>
+          <input
+            type="email"
+            formControlName="email"
+            placeholder="example@roomaroo.com"
+            class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgb(38,181,255)] focus:border-[rgb(38,181,255)] transition-all duration-200"
+            [class.border-red-500]="email?.invalid && email?.touched"
+          />
+          <p
+            *ngIf="email?.invalid && email?.touched"
+            class="mt-2 text-sm text-red-600"
+          >
+            <span *ngIf="email?.errors?.['required']">กรุณากรอกอีเมล</span>
+            <span *ngIf="email?.errors?.['email']">รูปแบบอีเมลไม่ถูกต้อง</span>
+          </p>
+        </div>
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-8 space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">อีเมล</label>
-            <div class="mt-1 relative">
-              <input type="email" formControlName="email" autocomplete="username" placeholder="admin@roomaroo.app"
-                     class="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition" />
-              <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M1.5 8.67v8.58A2.25 2.25 0 0 0 3.75 19.5h16.5a2.25 2.25 0 0 0 2.25-2.25V8.67l-8.954 4.477a2.25 2.25 0 0 1-2.092 0L1.5 8.67Z"/><path d="M22.5 6.908V6.75A2.25 2.25 0 0 0 20.25 4.5H3.75A2.25 2.25 0 0 0 1.5 6.75v.158l9.318 4.659a.75.75 0 0 0 .684 0L22.5 6.908Z"/></svg>
-              </div>
-            </div>
-            <div class="mt-1 text-xs text-red-600" *ngIf="email?.touched && email?.invalid">
-              กรุณากรอกอีเมลให้ถูกต้อง
-            </div>
+        <!-- Password Field -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            รหัสผ่าน
+          </label>
+          <div class="relative">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="At least 6 characters"
+              class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgb(38,181,255)] focus:border-[rgb(38,181,255)] transition-all duration-200 pr-12"
+              [class.border-red-500]="password?.invalid && password?.touched"
+            />
+            <button
+              type="button"
+              (click)="showPassword = !showPassword"
+              class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-[rgb(38,181,255)] transition-colors"
+            >
+              <svg
+                *ngIf="!showPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              <svg
+                *ngIf="showPassword"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                />
+              </svg>
+            </button>
           </div>
+          <p
+            *ngIf="password?.invalid && password?.touched"
+            class="mt-2 text-sm text-red-600"
+          >
+            <span *ngIf="password?.errors?.['required']"
+              >กรุณากรอกรหัสผ่าน</span
+            >
+            <span *ngIf="password?.errors?.['minlength']"
+              >รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</span
+            >
+          </p>
+        </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
-            <div class="mt-1 relative">
-              <input [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="current-password" placeholder="••••••••"
-                     class="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition" />
-              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      (click)="showPassword = !showPassword">
-                <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M1.323 12.618a1.012 1.012 0 0 1 0-1.236C3.035 9.01 6.73 5.25 12 5.25s8.965 3.76 10.677 6.132c.23.303.23.732 0 1.236C20.965 14.99 17.27 18.75 12 18.75S3.035 14.99 1.323 12.618Z"/><path d="M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
-                <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l1.623 1.622C2.733 6.116 1.84 7.2 1.323 7.868a1.012 1.012 0 0 0 0 1.236C3.035 11.476 6.73 15.236 12 15.236c1.601 0 3.037-.297 4.3-.79l3.17 3.17a.75.75 0 0 0 1.06-1.06L3.53 2.47Z"/><path d="M20.47 7.53 17.3 4.36C15.93 3.8 14.1 3.264 12 3.264 6.73 3.264 3.035 7.024 1.323 9.396a1.012 1.012 0 0 0 0 1.236c.41.54 1.11 1.378 2.043 2.256L6.5 9.753A3.75 3.75 0 0 1 12 8.25c.66 0 1.283.165 1.83.455l6.64 6.64c.933-.878 1.632-1.716 2.043-2.256a1.012 1.012 0 0 0 0-1.236 28.9 28.9 0 0 0-2.043-2.273Z"/></svg>
-              </button>
-            </div>
-            <div class="mt-1 text-xs text-red-600" *ngIf="password?.touched && password?.invalid">
-              รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร
-            </div>
-          </div>
+        <!-- Remember Me -->
+        <div class="flex items-center justify-between mb-6">
+          <label class="inline-flex items-center cursor-pointer group">
+            <input
+              type="checkbox"
+              formControlName="remember"
+              class="w-4 h-4 rounded border-slate-300 bg-white text-[rgb(38,181,255)] focus:ring-[rgb(38,181,255)] focus:ring-2 cursor-pointer transition-all"
+            />
+            <span
+              class="ml-2 text-sm text-slate-600 group-hover:text-slate-700 transition-colors"
+              >จดจำฉันไว้ในระบบ</span
+            >
+          </label>
+        </div>
 
-          <div class="flex items-center justify-between">
-            <label class="inline-flex items-center gap-2 text-sm text-gray-600">
-              <input type="checkbox" formControlName="remember" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              จดจำฉันไว้ในระบบ
-            </label>
-            <a routerLink="/login/member" class="text-sm text-blue-600 hover:text-blue-700">เข้าสู่ระบบแบบสมาชิก</a>
-          </div>
+        <!-- Login Button -->
+        <button
+          type="submit"
+          [disabled]="isSubmitting"
+          class="w-full bg-gradient-to-r from-[rgb(38,181,255)] to-cyan-500 hover:from-[rgb(28,171,245)] hover:to-cyan-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-[rgb(38,181,255)]/20 hover:shadow-[rgb(38,181,255)]/40 focus:outline-none focus:ring-4 focus:ring-[rgb(38,181,255)]/50 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+        >
+          <svg
+            *ngIf="isSubmitting"
+            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span *ngIf="!isSubmitting">Sign In</span>
+          <span *ngIf="isSubmitting">Signing in...</span>
+        </button>
 
-          <div class="text-sm text-red-600" *ngIf="errorMessage">{{ errorMessage }}</div>
-
-          <button type="submit" [disabled]="isSubmitting" class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 active:scale-[.99] transition flex items-center justify-center">
-            <svg *ngIf="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-            <span>เข้าสู่ระบบผู้ดูแล</span>
+        <!-- Contact Admin Link -->
+        <div class="mt-6 text-center">
+          <button
+            type="button"
+            (click)="showContactModal()"
+            class="text-sm text-slate-600 hover:text-[rgb(38,181,255)] transition-colors"
+          >
+            มีปัญหาในการเข้าใช้งาน?
+            <span class="underline underline-offset-4 font-medium"
+              >ติดต่อผู้ดูแลระบบ</span
+            >
           </button>
+        </div>
+      </form>
+    </div>
 
-          <div class="text-center text-xs text-gray-500">มีปัญหาในการเข้าใช้งาน? ติดต่อผู้ดูแลระบบ</div>
-        </form>
+    <!-- Footer -->
+    <div class="text-center mt-8 text-sm text-slate-500">
+      <p>© 2025 ALL RIGHTS RESERVED</p>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div
+  *ngIf="showModal"
+  class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn"
+>
+  <div
+    class="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-md shadow-2xl transform animate-slideUp"
+  >
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-slate-900">ติดต่อผู้ดูแลระบบ</h3>
+      <button
+        type="button"
+        (click)="closeContactModal()"
+        class="text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg p-2 transition-all"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Admin Profile -->
+    <div class="text-center">
+      <div class="relative inline-block mb-4">
+        <img
+          src="https://s359.kapook.com/rq/320/auto/10/pagebuilder/6bf6c28f-2de1-4698-a98a-6089083ccb51.jpg"
+          alt="Admin Profile"
+          class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-[rgb(38,181,255)]/30 shadow-lg"
+        />
+        <div
+          class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-white rounded-full"
+        ></div>
+      </div>
+
+      <h4 class="text-2xl font-bold text-slate-900 mb-1">ภูตะวัน ชลสาคร</h4>
+      <p class="text-slate-600 mb-6">ผู้ดูแลระบบ Roomaroo</p>
+
+      <!-- Contact Buttons -->
+      <div class="flex flex-col gap-3">
+        <a
+          href="https://facebook.com"
+          target="_blank"
+          class="bg-gradient-to-r from-[rgb(38,181,255)] to-cyan-500 hover:from-[rgb(28,171,245)] hover:to-cyan-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[rgb(38,181,255)]/30 flex items-center justify-center"
+        >
+          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M22 12.073C22 6.477 17.523 2 11.927 2S1.853 6.477 1.853 12.073c0 4.957 3.62 9.074 8.36 9.88v-6.988H7.87v-2.892h2.343V9.845c0-2.317 1.379-3.594 3.49-3.594.101 0 .203.003.304.008l1.988.103v2.304h-1.366c-1.074 0-1.386.676-1.386 1.368v1.664h2.61l-.418 2.892h-2.192v6.988c4.74-.806 8.36-4.924 8.36-9.88z"
+            />
+          </svg>
+          ติดต่อผ่าน Facebook
+        </a>
+
+        <button
+          type="button"
+          (click)="closeContactModal()"
+          class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all duration-200"
+        >
+          ปิด
+        </button>
       </div>
     </div>
   </div>
 </div>
 
+<style>
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.3s ease-out;
+  }
+</style>

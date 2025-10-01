@@ -39,7 +39,7 @@ export class OwnerDormitoryService {
     zone_id: number | string;
     room_types?: Array<{
       name: string;
-      price_type: 'fixed' | 'contact';
+      // price_type removed: backend derives from provided prices
       monthly_price?: number;
       daily_price?: number;
       term_price?: number;
@@ -53,6 +53,57 @@ export class OwnerDormitoryService {
           try {
             console.log('[OwnerDormitoryService] POST /api/add-dormitory/ -> ok', resp);
           } catch { }
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // แก้ไขข้อมูลพื้นฐานหอพัก (Edit)
+  updateDormitoryBasic(dormId: number, payload: {
+    dorm_name: string;
+    address: string;
+    dorm_description?: string;
+    zone_id: number | string;
+    electricity_type?: string | null;
+    electricity_rate?: number | string | null;
+    water_type?: string | null;
+    water_rate?: number | string | null;
+    latitude?: number;
+    longitude?: number;
+    amenities?: Array<{ amenity_id?: number; amenity_name: string; location_type: string; is_available: boolean }>
+  }): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/edit-dormitory/${dormId}`, payload)
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] PUT /api/edit-dormitory/:id -> ok', resp);
+          } catch {}
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // อัปโหลดรูปหอพัก (Add flow)
+  uploadDormImagesForAdd(dormId: number, formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/add-dormitory/${dormId}/images`, formData)
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] POST /api/add-dormitory/:id/images -> ok', resp);
+          } catch {}
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // อัปโหลดรูปหอพัก (Edit flow)
+  uploadDormImagesForEdit(dormId: number, formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/edit-dormitory/${dormId}/images`, formData)
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] POST /api/edit-dormitory/:id/images -> ok', resp);
+          } catch {}
         }),
         catchError(this.handleError)
       );

@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService, UserProfile as BaseUserProfile } from '../../services/auth.service';
@@ -13,7 +13,7 @@ interface UserProfile extends BaseUserProfile {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
@@ -29,6 +29,13 @@ export class LoginComponent implements OnInit, OnDestroy {
   googleTimeout: any = null;
   private slideInterval: any;
   private authSub: Subscription | undefined;
+
+  // Forgot Password Modal
+  showForgotPassword = false;
+  forgotPasswordEmail = '';
+  forgotPasswordError: string | null = null;
+  forgotPasswordSuccess: string | null = null;
+  isForgotPasswordLoading = false;
 
   sliderImages = [
     { src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Modern Dormitory Building' },
@@ -239,5 +246,50 @@ export class LoginComponent implements OnInit, OnDestroy {
   private startSlideshow(): void {
     const intervalId = window.setInterval(() => this.nextSlide(), 5000);
     this.slideInterval = intervalId;
+  }
+
+  // ===== FORGOT PASSWORD METHODS =====
+  showForgotPasswordModal(): void {
+    this.showForgotPassword = true;
+    this.forgotPasswordEmail = '';
+    this.forgotPasswordError = null;
+    this.forgotPasswordSuccess = null;
+  }
+
+  closeForgotPasswordModal(): void {
+    this.showForgotPassword = false;
+    this.forgotPasswordEmail = '';
+    this.forgotPasswordError = null;
+    this.forgotPasswordSuccess = null;
+    this.isForgotPasswordLoading = false;
+  }
+
+  sendForgotPasswordEmail(): void {
+    if (!this.forgotPasswordEmail) {
+      this.forgotPasswordError = 'กรุณากรอกอีเมล';
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.forgotPasswordEmail)) {
+      this.forgotPasswordError = 'รูปแบบอีเมลไม่ถูกต้อง';
+      return;
+    }
+
+    this.isForgotPasswordLoading = true;
+    this.forgotPasswordError = null;
+    this.forgotPasswordSuccess = null;
+
+    // Simulate API call (replace with actual implementation)
+    setTimeout(() => {
+      this.isForgotPasswordLoading = false;
+      this.forgotPasswordSuccess = 'ระบบได้ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบอีเมล';
+      
+      // Auto close modal after 3 seconds
+      setTimeout(() => {
+        this.closeForgotPasswordModal();
+      }, 3000);
+    }, 2000);
   }
 }

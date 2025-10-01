@@ -1,0 +1,44 @@
+/* Admin Dormitory Detail Component Styles */
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+/* Custom scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Smooth transitions for interactive elements */
+button, img {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hover effects for better user feedback */
+.hover\:opacity-80:hover {
+  opacity: 0.8;
+}
+
+/* Focus states for accessibility */
+button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Modal backdrop blur effect */
+.fixed.inset-0 {
+  backdrop-filter: blur(4px);
+}

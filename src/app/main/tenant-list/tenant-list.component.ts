@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
 import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription, timer, of } from 'rxjs';
+import { switchMap, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tenant-list',
@@ -11,7 +13,7 @@ import { FormsModule } from '@angular/forms';
   imports: [NavbarComponent, CommonModule, FormsModule],
   templateUrl: './tenant-list.component.html',
 })
-export class TenantListComponent implements OnInit {
+export class TenantListComponent implements OnInit, OnDestroy {
   tenants: any[] = [];
   filteredTenants: any[] = [];
   isLoading = false;
@@ -20,6 +22,7 @@ export class TenantListComponent implements OnInit {
   sortBy = '';
   processingTenantId: number | null = null; // สำหรับแสดง loading state ของแต่ละ tenant
   processingAction: string | null = null; // สำหรับติดตาม action ที่กำลังประมวลผล (approve, reject, cancel)
+  private refreshSub: Subscription | null = null;
 
   constructor(
     private ownerDormitoryService: OwnerDormitoryService,
@@ -27,7 +30,14 @@ export class TenantListComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadTenants();
+    this.startAutoRefresh();
+  }
+
+  ngOnDestroy() {
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+      this.refreshSub = null;
+    }
   }
 
   loadTenants() {
@@ -64,6 +74,35 @@ export class TenantListComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  // เรียลไทม์แบบง่ายด้วย polling ทุกๆ 10 วินาที (เริ่มทันทีที่เข้าเพจ)
+  private startAutoRefresh() {
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+    }
+
+    this.refreshSub = timer(0, 10000)
+      .pipe(
+        // เมื่อมี action กำลังประมวลผล ให้ยังคง refresh ได้ปกติ (สามารถปรับเป็น pause ได้ถ้าต้องการ)
+        switchMap(() => this.ownerDormitoryService.getOwnerTenants().pipe(
+          catchError((error) => {
+            console.error('Error loading tenants (auto refresh):', error);
+            this.errorMessage = 'ไม่สามารถโหลดข้อมูลผู้เช่าได้';
+            // อย่าทำให้สตรีมตาย: ส่งค่า fallback เพื่อให้ timer ทำงานต่อ
+            return of({ tenants: [] });
+          })
+        ))
+      )
+      .subscribe((response: any) => {
+        if (response && response.tenants) {
+          this.tenants = response.tenants;
+        } else {
+          this.tenants = [];
+        }
+        this.filteredTenants = [...this.tenants];
+        this.isLoading = false;
+      });
   }
 
 

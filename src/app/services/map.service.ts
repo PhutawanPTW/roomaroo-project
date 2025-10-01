@@ -109,6 +109,24 @@ export class MapService {
     this.isInitialized = true;
   }
 
+  /** ตรวจสอบว่าแมปถูกสร้างแล้วหรือไม่ */
+  isMapInitialized(containerId: string): boolean {
+    const existingInstance = this.mapInstances.get(containerId);
+    if (!existingInstance || !existingInstance.map) {
+      return false;
+    }
+    
+    // ตรวจสอบว่าแมปยังทำงานอยู่หรือไม่
+    try {
+      const canvas = existingInstance.map.getCanvas();
+      const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+      return !!(gl && !gl.isContextLost());
+    } catch (error) {
+      console.log(`[MapService] Map context check failed for ${containerId}:`, error);
+      return false;
+    }
+  }
+
   /** เพิ่มเฉพาะคอนโทรลที่ต้องการ โดยล้างคอนโทรลเดิมก่อน */
   private addControls(): void {
     if (!this.map || this.controlsAttached) return;
@@ -359,6 +377,7 @@ export class MapService {
       console.log(`[MapService] Destroyed map instance for container: ${containerId}`);
     }
   }
+
 
   /**
    * ทำลาย map instances ทั้งหมด

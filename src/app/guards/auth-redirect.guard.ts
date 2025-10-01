@@ -23,11 +23,58 @@ export class AuthRedirectGuard implements CanActivate {
         const isRegisterPage = destPath.startsWith('register');
         const isMainPage = destPath === 'main';
         const isTenantListPage = destPath === 'tenant-list';
+        const isOwnerPage = destPath === 'owner';
+        const isAdminPage = destPath === 'admin';
+        const isAdminLoginPage = destPath === 'admin/login';
         const queryParams = route.queryParams;
 
         console.log(`[AuthRedirectGuard] Checking access to ${destPath}, user:`, user ? `${user.memberType}` : 'null');
         console.log('[AuthRedirectGuard] Query params:', queryParams);
 
+        // ===== ADMIN LOGIC =====
+        const adminProfile = localStorage.getItem('adminProfile');
+        if (adminProfile) {
+          try {
+            const profile = JSON.parse(adminProfile);
+            if (profile.memberType === 'admin') {
+              console.log('[AuthRedirectGuard] Admin profile found');
+              
+              // ถ้าพยายามเข้า main page ให้ redirect ไป admin
+              if (isMainPage) {
+                console.log('[AuthRedirectGuard] Admin trying to access main, redirecting to /admin');
+                return this.router.createUrlTree(['/admin']);
+              }
+              
+              // ถ้าพยายามเข้า owner page ให้ redirect ไป admin
+              if (isOwnerPage) {
+                console.log('[AuthRedirectGuard] Admin trying to access owner, redirecting to /admin');
+                return this.router.createUrlTree(['/admin']);
+              }
+              
+              // ถ้าเป็น admin page ให้อนุญาต
+              if (isAdminPage) {
+                console.log('[AuthRedirectGuard] Admin accessing admin page, allowing');
+                return true;
+              }
+              
+              // ถ้าเป็น admin login page ให้ redirect ไป admin
+              if (isAdminLoginPage) {
+                console.log('[AuthRedirectGuard] Admin accessing admin login, redirecting to /admin');
+                return this.router.createUrlTree(['/admin']);
+              }
+              
+              // สำหรับหน้าอื่นๆ ให้ redirect ไป admin
+              console.log('[AuthRedirectGuard] Admin accessing other pages, redirecting to /admin');
+              return this.router.createUrlTree(['/admin']);
+            }
+          } catch (error) {
+            console.error('[AuthRedirectGuard] Error parsing admin profile:', error);
+            localStorage.removeItem('adminProfile');
+            localStorage.removeItem('firebaseToken');
+          }
+        }
+
+        // ===== MEMBER/OWNER LOGIC =====
         if (user) {
           // ถ้าผู้ใช้มาจาก Google flow และยังไม่มีข้อมูลครบ
           if (user.provider === 'google' && user.needsProfileSetup) {
@@ -93,6 +140,12 @@ export class AuthRedirectGuard implements CanActivate {
               return this.router.createUrlTree(['/owner/tenant-list']);
             }
             
+            // ป้องกัน member เข้า owner page
+            if (isOwnerPage && user.memberType === 'member') {
+              console.log('[AuthRedirectGuard] Member trying to access owner page, redirecting to main');
+              return this.router.createUrlTree(['/main']);
+            }
+            
             return true;
           }
 
@@ -111,6 +164,7 @@ export class AuthRedirectGuard implements CanActivate {
           }
         }
         
+        // ===== NO USER LOGIC =====
         // User not logged in - allow access to login/register pages, redirect main to login
         if (isLoginPage || isRegisterPage) {
           console.log('[AuthRedirectGuard] No user, allowing access to login/register pages');

@@ -365,6 +365,65 @@ export class AuthService {
     this.updateCurrentUserSafely(userProfile);
   }
 
+  // =============================
+  // Profile APIs (Backend calls)
+  // =============================
+
+  /**
+   * อัปเดตโปรไฟล์ผู้ใช้ในระบบ (DB เป็น source of truth)
+   * PUT /api/profile/
+   */
+  async updateProfile(payload: {
+    displayName?: string;
+    username?: string;
+    phone?: string;
+    // owner-only optional fields
+    managerName?: string;
+    secondaryPhone?: string;
+    lineId?: string;
+  }): Promise<{ message: string } | any> {
+    const token = await this.refreshToken(false);
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    // Map camelCase -> snake_case for backend
+    const serverPayload: any = {};
+    if (payload.displayName !== undefined) serverPayload.display_name = payload.displayName;
+    if (payload.username !== undefined) serverPayload.username = payload.username;
+    if (payload.phone !== undefined) serverPayload.phone_number = payload.phone;
+    if (payload.managerName !== undefined) serverPayload.manager_name = payload.managerName;
+    if (payload.secondaryPhone !== undefined) serverPayload.secondary_phone = payload.secondaryPhone;
+    if (payload.lineId !== undefined) serverPayload.line_id = payload.lineId;
+    return this.http
+      .put(`${this.backendUrl}/profile/`, serverPayload, { headers })
+      .toPromise();
+  }
+
+  /**
+   * อัปโหลดรูปโปรไฟล์ -> ได้ URL ใหม่จาก backend
+   * POST /api/profile/upload-image (multipart/form-data)
+   */
+  async uploadProfileImage(file: File): Promise<{ url?: string; photo_url?: string; message?: string } | any> {
+    const token = await this.refreshToken(false);
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const formData = new FormData();
+    // Backend expects single('image')
+    formData.append('image', file);
+    return this.http
+      .post(`${this.backendUrl}/profile/upload-image`, formData, { headers })
+      .toPromise();
+  }
+
+  /**
+   * ยื่นคำขอย้ายหอ (สำหรับสมาชิก)
+   * PUT /api/profile/change-dormitory
+   */
+  async requestChangeDormitory(newDormId: number): Promise<{ message: string } | any> {
+    const token = await this.refreshToken(false);
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http
+      .put(`${this.backendUrl}/profile/change-dormitory`, { new_dorm_id: newDormId }, { headers })
+      .toPromise();
+  }
+
   /**
    * ดึงข้อมูลผู้ใช้ปัจจุบันแบบ sync
    */
@@ -470,6 +529,7 @@ export class AuthService {
           return error.error?.message || error.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
       }
     }
+    
 
     // Custom error messages from our backend
     if (error.message) {
@@ -482,4 +542,22 @@ export class AuthService {
     // Generic error
     return 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ กรุณาลองอีกครั้ง';
   }
+
+  // เพิ่มใหม่ใน AuthService
+async signInAdmin(email: string, password: string) {
+  try {
+    // กัน onAuthStateChanged ยิงก่อนตรวจสอบโปรไฟล์
+    this.authState.skipAuthStateChange = true;
+
+    const cred = await signInWithEmailAndPassword(this.auth, email, password);
+    const profile = await this.fetchUserProfile(cred.user);
+
+    // อัปเดตสถานะผู้ใช้ให้ UI รับทราบ
+    await this.updateCurrentUserSafely(profile);
+    return profile;
+  } finally {
+    this.authState.skipAuthStateChange = false;
+  }
+}
+
 }

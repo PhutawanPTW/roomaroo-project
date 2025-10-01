@@ -283,6 +283,11 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loadDormitoryDetail();
   }
 
+  // Public method for going back
+  goBack(): void {
+    this.router.navigate(['/main']);
+  }
+
   // *** Loading state management - ป้องกัน race conditions ***
   private loadingState = {
     detail: false,
@@ -345,6 +350,15 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       // Debug: ดู keys ทั้งหมดใน response เพื่อหาชื่อ field ที่อาจเป็นรูปภาพ
       console.log('[DormDetail] All keys in response:', Object.keys(detail));
       console.log('[DormDetail] All values in response:', detail);
+
+      // ตรวจสอบสถานะการอนุมัติ
+      if (detail.approval_status === 'รออนุมัติ') {
+        this.error = 'หอพักนี้ยังรออนุมัติ ไม่สามารถเข้าถึงได้';
+        this.isLoading = false;
+        this.loadingState.detail = false;
+        this.loadingState.amenities = false;
+        return;
+      }
 
       // จัดการข้อมูลหอพัก
       this.dormDetail = detail;

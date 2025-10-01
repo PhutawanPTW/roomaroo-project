@@ -35,10 +35,10 @@
     <h3 class="text-lg font-semibold text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
     <p class="text-gray-600 mb-6">{{ error }}</p>
     <button 
-      (click)="retryLoad()"
+      (click)="goBack()"
       class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
     >
-      ลองใหม่
+      กลับ
     </button>
   </div>
 </div>
@@ -231,7 +231,7 @@
                   <tr *ngFor="let rt of roomTypes; let i = index" 
                       [class.bg-gray-50]="i % 2 === 1">
                     <td class="px-6 py-4 font-medium text-gray-600">
-                      <span *ngIf="rt.name && rt.name.trim(); else noName">{{ rt.name }}</span>
+                      <span *ngIf="(rt.room_name && rt.room_name.trim()) || (rt.name && rt.name.trim()); else noName">{{ rt.room_name || rt.name }}</span>
                       <ng-template #noName>
                         <span>
                           {{ rt.bed_type ? 'ห้อง' + rt.bed_type : 'ห้อง ' + rt.room_type_id }}
