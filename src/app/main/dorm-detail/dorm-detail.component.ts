@@ -29,6 +29,7 @@ interface Review {
   isCurrentUser?: boolean; // เป็นรีวิวของผู้ใช้ปัจจุบันหรือไม่
   isEditing?: boolean; // กำลังแก้ไขหรือไม่
   editComment?: string; // ข้อความที่กำลังแก้ไข
+  saving?: boolean; // กำลังบันทึกอยู่เพื่อกันการกดซ้ำ
 }
 
 interface SimilarProperty {
@@ -67,6 +68,10 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   newComment: string = '';
   isLoading: boolean = true;
   error: string | null = null;
+  
+  // Image modal state
+  showImageModal: boolean = false;
+  modalImageIndex: number = 0;
 
   // Mock data (จะถูกแทนที่ด้วยข้อมูลจริง)
   dormName: string = '';
@@ -114,6 +119,17 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   // Reviews data
   overallRating: number = 5.0;
   reviews: Review[] = [];
+
+  // Auto-grow textarea on input
+  autoGrow(event: Event): void {
+    const target = event.target as HTMLTextAreaElement;
+    if (!target) return;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+  }
+
+  // Loading states to prevent duplicate actions
+  isSubmittingComment: boolean = false;
   
   // Mockup reviews data
   mockupReviews: Review[] = [
@@ -648,6 +664,50 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.currentImageIndex = index;
   }
 
+  // Image modal methods
+  openImageModal(index: number = this.currentImageIndex): void {
+    this.modalImageIndex = index;
+    this.showImageModal = true;
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeImageModal(): void {
+    this.showImageModal = false;
+    // Restore body scroll
+    document.body.style.overflow = 'auto';
+  }
+
+  prevModalImage(): void {
+    if (this.modalImageIndex > 0) {
+      this.modalImageIndex--;
+    } else {
+      this.modalImageIndex = this.images.length - 1;
+    }
+  }
+
+  nextModalImage(): void {
+    if (this.modalImageIndex < this.images.length - 1) {
+      this.modalImageIndex++;
+    } else {
+      this.modalImageIndex = 0;
+    }
+  }
+
+  onModalKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Escape':
+        this.closeImageModal();
+        break;
+      case 'ArrowLeft':
+        this.prevModalImage();
+        break;
+      case 'ArrowRight':
+        this.nextModalImage();
+        break;
+    }
+  }
+
   // Add to favorites method
   addToFavorites(): void {
     console.log('Added to favorites:', this.dormName);
@@ -749,6 +809,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.authService.currentUser$.subscribe(user => {
       if (user && user.memberType === 'owner') {
         this.isOwner = true;
+        // เจ้าของหอพักห้ามรีวิว
+        this.canReview = false;
+        this.reviewEligibilityMessage = 'เจ้าของหอพักไม่สามารถแสดงความคิดเห็นในหอตัวเองได้';
       } else {
         this.isOwner = false;
       }
@@ -781,13 +844,23 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
           console.log('[DormDetail] No valid field found, defaulting to false');
         }
         
-        // ข้อความเหตุผล และสถานะรออนุมัติแบบชัดเจน (ไม่พึ่งพา string contains ฝั่ง template)
+        // จัดการเหตุผลจาก backend และเคสพิเศษ (เคยรีวิวแล้ว / ไม่ใช่ผู้พักอาศัย)
         const backendReason = (response as any).reason || response.message || '';
         this.isPendingApproval = (response as any).status === 'pending_approval';
-        // ถ้าไม่ใช่สถานะรออนุมัติ ให้ใช้ข้อความมาตรฐาน "ไม่มีสิทธิ์รีวิว" เพื่อสะท้อนเคส non-resident
-        this.reviewEligibilityMessage = (!this.isPendingApproval && !this.canReview)
-          ? 'เฉพาะสมาชิกที่อยู่อาศัยในหอพักนี้เท่านั้นที่สามารถแสดงความคิดเห็นได้'
-          : backendReason;
+
+        const hasReviewed = (response as any).has_reviewed === true || (response as any).hasReviewed === true;
+        if (hasReviewed) {
+          this.canReview = false;
+          this.reviewEligibilityMessage = 'คุณได้แสดงความคิดเห็นสำหรับหอนี้ไปแล้ว';
+        } else if ((response as any).status === 'not_resident' || (response as any).is_resident === false) {
+          this.canReview = false;
+          this.reviewEligibilityMessage = 'เฉพาะสมาชิกที่อยู่อาศัยในหอพักนี้เท่านั้นที่สามารถแสดงความคิดเห็นได้';
+        } else if (!this.canReview && !this.isPendingApproval) {
+          // เคสอื่นๆที่ backend ไม่อนุญาต
+          this.reviewEligibilityMessage = backendReason || 'ไม่สามารถแสดงความคิดเห็นได้';
+        } else {
+          this.reviewEligibilityMessage = backendReason;
+        }
         
         // Debug: แสดง field values ที่ตรวจสอบ
         console.log('[DormDetail] Field check:', {
@@ -841,6 +914,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
+    if (this.isSubmittingComment) return; // กันการกดซ้ำ
+    this.isSubmittingComment = true;
+
     // ส่งรีวิวไปยัง API - ส่งเฉพาะ comment (AI จะทำการ auto-rating)
     this.dormitoryService.createReview(this.dormId, {
       comment: trimmedComment
@@ -867,6 +943,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         
         this.reviews.unshift(newReview);
         this.newComment = '';
+        this.isSubmittingComment = false;
         
         // โหลดรีวิวใหม่จาก API เพื่อให้ได้ข้อมูลล่าสุด
         this.loadReviews();
@@ -895,6 +972,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         }
         
         this.triggerPopup(errorMessage, 'warning');
+        this.isSubmittingComment = false;
       }
     });
   }
@@ -1006,6 +1084,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
+    // ป้องกันการกดซ้ำด้วย flag ภายในตัวรีวิว
+    review.saving = true;
+
     // ส่งการแก้ไขไปยัง API
     this.dormitoryService.updateReview(review.id || index, {
       comment: review.editComment.trim()
@@ -1019,6 +1100,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         review.isPositive = (response.predicted_rating || review.rating) >= 3;
         review.isEditing = false;
         review.editComment = '';
+        review.saving = false;
         
         // โหลดรีวิวใหม่จาก API เพื่อให้ได้ข้อมูลล่าสุด
         this.loadReviews();
@@ -1026,6 +1108,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (error) => {
         console.error('[DormDetail] Error updating review:', error);
         this.triggerPopup('ไม่สามารถแก้ไขรีวิวได้: ' + (error.error?.message || 'เกิดข้อผิดพลาด'), 'error');
+        review.saving = false;
       }
     });
   }

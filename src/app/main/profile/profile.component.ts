@@ -19,6 +19,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   userType: 'member' | 'owner' = 'member';
   isEditMode = false;
   isSaving = false;
+  passwordError: string = '';
 
   // Modal & image upload state
   imageModalOpen = false;
@@ -37,6 +38,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
     displayName: '',
     email: '',
     phoneNumber: '',
+    managerName: '',
+    secondaryPhone: '',
+    lineId: '',
     password: '',
     confirmPassword: '',
     dormId: '',
@@ -98,6 +102,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (this.isEditMode) {
       this.isEditMode = false;
       this.resetEditForm();
+      this.passwordError = '';
     } else {
       this.isEditMode = true;
       this.loadEditForm();
@@ -106,27 +111,52 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   loadEditForm() {
     if (this.currentUser) {
+      // ถ้าผู้ใช้กำลังอยู่ในโหมดแก้ไข ให้คงค่า dormId ที่เลือกไว้
+      const currentDormId = this.isEditMode ? this.editForm.dormId : '';
+      
+      // ตั้งค่าเริ่มต้นเฉพาะเมื่อมีหอพักปัจจุบันหรือหอพักที่รออนุมัติ
+      let selectedDormId = '';
+      if (currentDormId) {
+        selectedDormId = currentDormId;
+      } else if (this.currentUser.residenceDormId != null) {
+        selectedDormId = String(this.currentUser.residenceDormId);
+      } else if (this.currentUser.pendingDormId != null) {
+        selectedDormId = String(this.currentUser.pendingDormId);
+      }
+      // ถ้าไม่มีหอพักเลย ให้ selectedDormId เป็นค่าว่าง (แสดง placeholder)
+
       this.editForm = {
         username: this.currentUser.username || '',
         displayName: this.currentUser.displayName || '',
         email: this.currentUser.email || '',
         phoneNumber: this.currentUser.phoneNumber || '',
+        managerName: this.currentUser.managerName || '',
+        secondaryPhone: this.currentUser.secondaryPhone || '',
+        lineId: this.currentUser.lineId || '',
         password: '',
         confirmPassword: '',
-        dormId: this.currentUser.residenceDormId != null ? String(this.currentUser.residenceDormId) : '',
+        dormId: selectedDormId,
       };
     }
   }
 
   resetEditForm() {
+    // ถ้าไม่มีหอพักปัจจุบันหรือหอพักที่รออนุมัติ ให้รีเซ็ตเป็นค่าว่าง
+    const hasCurrentDorm = this.currentUser?.residenceDormId != null;
+    const hasPendingDorm = this.currentUser?.pendingDormId != null;
+    const selectedDormId = (hasCurrentDorm || hasPendingDorm) ? this.editForm.dormId : '';
+    
     this.editForm = {
       username: '',
       displayName: '',
       email: '',
       phoneNumber: '',
+      managerName: '',
+      secondaryPhone: '',
+      lineId: '',
       password: '',
       confirmPassword: '',
-      dormId: '',
+      dormId: selectedDormId,
     };
   }
 
@@ -135,7 +165,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.dormitoryService.getAllDormitories().subscribe({
       next: (dorms) => {
         this.availableDorms = dorms;
-        console.log('Loaded available dorms:', dorms);
       },
       error: (error) => {
         console.error('Error loading dorms:', error);
@@ -155,6 +184,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
   isCurrentDorm(dormId: string): boolean {
     const currentId = this.currentUser?.residenceDormId;
     return String(currentId ?? '') === String(dormId ?? '');
+  }
+
+  // ตรวจสอบว่าหอพักนี้เป็นหอที่รออนุมัติหรือไม่
+  isPendingDorm(dormId: string): boolean {
+    const pendingId = this.currentUser?.pendingDormId;
+    return String(pendingId ?? '') === String(dormId ?? '');
+  }
+
+  // ตรวจสอบว่าหอพักนี้ควรถูก disable หรือไม่ (หอปัจจุบัน หรือ หอที่รออนุมัติ)
+  shouldDisableDorm(dormId: string): boolean {
+    const isCurrent = this.isCurrentDorm(dormId);
+    const isPending = this.isPendingDorm(dormId);
+    return isCurrent || isPending;
+  }
+
+  // ดึงข้อความสถานะหอพัก
+  getDormStatusText(dormId: string): string {
+    if (this.isCurrentDorm(dormId)) {
+      return 'หอปัจจุบัน';
+    }
+    if (this.isPendingDorm(dormId)) {
+      return 'รออนุมัติ';
+    }
+    return '';
   }
 
   // ส่งคำขอย้ายหอ (เฉพาะ Member)
@@ -185,22 +238,58 @@ export class ProfileComponent implements OnInit, OnDestroy {
   saveProfile() {
     console.log('Saving profile:', this.editForm);
     this.isSaving = true;
+    this.passwordError = '';
+
+    // ถ้าผู้ใช้กรอกรหัสผ่านใหม่ ให้ตรวจสอบความถูกต้อง
+    if (this.editForm.password || this.editForm.confirmPassword) {
+      if (this.editForm.password !== this.editForm.confirmPassword) {
+        this.passwordError = 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน';
+        this.isSaving = false;
+        return;
+      }
+      // นโยบาย: อย่างน้อย 10 ตัวอักษร และมีตัวพิมพ์ใหญ่ พิมพ์เล็ก ตัวเลข และสัญลักษณ์
+      const pwd = this.editForm.password || '';
+      const hasMinLen = pwd.length >= 10;
+      const hasUpper = /[A-Z]/.test(pwd);
+      const hasLower = /[a-z]/.test(pwd);
+      const hasNumber = /[0-9]/.test(pwd);
+      const hasSymbol = /[^A-Za-z0-9]/.test(pwd);
+      if (!(hasMinLen && hasUpper && hasLower && hasNumber && hasSymbol)) {
+        this.passwordError = 'รหัสผ่านต้องยาวอย่างน้อย 10 ตัว และมี A-Z, a-z, 0-9 และสัญลักษณ์';
+        this.isSaving = false;
+        return;
+      }
+    }
     const payload = {
       displayName: this.editForm.displayName?.trim() || undefined,
       username: this.editForm.username?.trim() || undefined,
       phone: this.editForm.phoneNumber?.trim() || undefined,
+      managerName: this.isOwner ? (this.editForm.managerName?.trim() || undefined) : undefined,
+      secondaryPhone: this.isOwner ? (this.editForm.secondaryPhone?.trim() || undefined) : undefined,
+      lineId: this.isOwner ? (this.editForm.lineId?.trim() || undefined) : undefined,
     };
 
     const doUpdateProfile = async () => {
-      await this.authService.updateProfile(payload);
-      // Reload profile from backend
-      const firebaseUser = (await import('@angular/fire/auth')).getAuth()
-        .currentUser;
-      if (firebaseUser) {
-        const refreshed = await this.authService.fetchUserProfile(firebaseUser);
-        this.authService.updateCurrentUser(refreshed);
+      // เปลี่ยนรหัสผ่านก่อน (ถ้ามี)
+      if (this.editForm.password) {
+        try {
+          await this.authService.changePassword(this.editForm.password);
+        } catch (err: any) {
+          console.error('Change password failed', err);
+          const code = err?.code || '';
+          if (code === 'auth/requires-recent-login') {
+            this.passwordError = 'ต้องเข้าสู่ระบบใหม่เพื่อเปลี่ยนรหัสผ่าน กรุณาออกจากระบบแล้วเข้าสู่ระบบอีกครั้ง';
+          } else if (code === 'auth/weak-password') {
+            this.passwordError = 'รหัสผ่านไม่ปลอดภัย กรุณาตรวจสอบนโยบายรหัสผ่านอีกครั้ง';
+          } else {
+            this.passwordError = 'ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาลองใหม่อีกครั้ง';
+          }
+          throw err;
+        }
       }
 
+      await this.authService.updateProfile(payload);
+      
       // หากสมาชิกเลือกหอใหม่ที่ไม่ใช่หอปัจจุบัน ให้ยื่นคำขอย้ายหอ
       if (this.isMember && this.editForm.dormId && !this.isCurrentDorm(String(this.editForm.dormId))) {
         const targetId = Number(this.editForm.dormId);
@@ -214,7 +303,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
           }
         }
       }
-      this.isEditMode = false;
+      
+      // Reload profile from backend AFTER handling dormitory change
+      const firebaseUser = (await import('@angular/fire/auth')).getAuth()
+        .currentUser;
+      if (firebaseUser) {
+        const refreshed = await this.authService.fetchUserProfile(firebaseUser);
+        this.authService.updateCurrentUser(refreshed);
+      }
+      
+      // ไม่ปิดโหมดแก้ไขทันที ให้รอให้ข้อมูลอัปเดตเสร็จก่อน
+      // this.isEditMode = false; // ย้ายไปไว้ในส่วนท้าย
     };
 
     (async () => {
@@ -228,6 +327,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
         await doUpdateProfile();
         // 3) เคลียร์สถานะรูปที่เลือกไว้
         this.clearSelectedImage();
+        // 4) ปิดโหมดแก้ไขหลังจากบันทึกเสร็จ
+        this.isEditMode = false;
       } catch (err) {
         console.error('Failed to save profile', err);
       } finally {

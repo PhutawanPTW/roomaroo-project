@@ -1,9 +1,9 @@
-import { Component, Directive, ElementRef, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, Directive, ElementRef, EventEmitter, HostListener, Input, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { DormitoryService, Dorm as APIDorm, Zone } from '../../services/dormitory.service';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ComparePopupComponent } from '../shared/compare-popup/compare-popup.component';
 
@@ -47,7 +47,7 @@ interface UIDorm {
   templateUrl: './dorm-list.component.html',
   styleUrls: ['./dorm-list.component.css']
 })
-export class DormListComponent {
+export class DormListComponent implements OnInit {
   // Filter variables
   showPriceFilter = false;
   showFilterPopup = false;
@@ -109,12 +109,51 @@ export class DormListComponent {
 
   private pendingLoads = 0;
 
+  // เพิ่มตัวแปรสำหรับ similar search
+  similarSearchParams: any = null;
+
   constructor(
     private dormitoryService: DormitoryService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private route: ActivatedRoute
   ) {
     this.loadZones();
-    this.loadDormitories();
+  }
+
+  ngOnInit() {
+    // รับ query parameters
+    this.route.queryParams.subscribe(params => {
+      if (params['type'] === 'similar' && params['from'] === 'dorm-detail') {
+        // เก็บพารามิเตอร์สำหรับการค้นหาหอพักที่คล้ายกัน
+        this.similarSearchParams = {
+          currentDormId: parseInt(params['currentDormId']) || 0,
+          similarName: params['similarName'] || '',
+          zone: params['zone'] || '',
+          minPrice: parseInt(params['minPrice']) || null,
+          maxPrice: parseInt(params['maxPrice']) || null,
+          amenities: params['amenities'] ? params['amenities'].split(',') : []
+        };
+        
+        // ตั้งค่าโซนที่เลือกตามข้อมูลที่ส่งมา
+        if (this.similarSearchParams.zone) {
+          this.selectedZone = this.similarSearchParams.zone;
+        }
+        
+        // ตั้งค่าช่วงราคาตามข้อมูลที่ส่งมา
+        if (this.similarSearchParams.minPrice && this.similarSearchParams.maxPrice) {
+          // ขยายช่วงราคา ±20% เพื่อหาหอพักในราคาใกล้เคียง
+          const priceRange = this.similarSearchParams.maxPrice - this.similarSearchParams.minPrice;
+          const buffer = Math.max(priceRange * 0.2, 1000); // อย่างน้อย 1000 บาท
+          
+          this.minPrice = Math.max(0, this.similarSearchParams.minPrice - buffer);
+          this.maxPrice = this.similarSearchParams.maxPrice + buffer;
+        }
+        
+        console.log('Similar search params:', this.similarSearchParams);
+      }
+      
+      this.loadDormitories();
+    });
   }
 
   loadZones() {
@@ -311,6 +350,11 @@ export class DormListComponent {
   applyFilters() {
     let filtered = [...this.dorms];
 
+    // ถ้าเป็นการค้นหาหอพักที่คล้ายกัน ให้กรองเพิ่มเติม
+    if (this.similarSearchParams) {
+      filtered = this.applySimilarFilters(filtered);
+    }
+
     // Filter by zone
     if (this.selectedZone) {
       filtered = filtered.filter(dorm => dorm.zone === this.selectedZone);
@@ -329,6 +373,96 @@ export class DormListComponent {
     }
 
     this.filteredDorms = filtered;
+  }
+
+  // Method สำหรับกรองหอพักที่คล้ายกัน
+  applySimilarFilters(dorms: UIDorm[]): UIDorm[] {
+    if (!this.similarSearchParams) return dorms;
+
+    let filtered = dorms;
+
+    // 1. กรองออกหอพักปัจจุบัน
+    filtered = filtered.filter(dorm => dorm.id !== this.similarSearchParams.currentDormId);
+
+    // 2. ให้คะแนนความคล้าย และเรียงตามคะแนน
+    const scoredDorms = filtered.map(dorm => ({
+      ...dorm,
+      similarityScore: this.calculateSimilarityScore(dorm)
+    }));
+
+    // เรียงตามคะแนนความคล้าย (สูงไปต่ำ)
+    scoredDorms.sort((a, b) => b.similarityScore - a.similarityScore);
+
+    // ส่งกลับเฉพาะหอพักที่มีคะแนนความคล้าย > 0
+    return scoredDorms
+      .filter(dorm => dorm.similarityScore > 0)
+      .map(({ similarityScore, ...dorm }) => dorm); // เอา similarityScore ออก
+  }
+
+  // คำนวณคะแนนความคล้าย
+  calculateSimilarityScore(dorm: UIDorm): number {
+    let score = 0;
+    const params = this.similarSearchParams;
+
+    // 1. โซนเดียวกัน (+30 คะแนน)
+    if (dorm.zone === params.zone) {
+      score += 30;
+    }
+
+    // 2. ชื่อหอพักที่คล้ายกัน (+20 คะแนน)
+    if (params.similarName && dorm.name) {
+      const similarity = this.calculateNameSimilarity(dorm.name, params.similarName);
+      score += similarity * 20;
+    }
+
+    // 3. ราคาในช่วงใกล้เคียง (+25 คะแนน)
+    if (params.minPrice && params.maxPrice) {
+      const dormPrice = this.getDormPrice(dorm);
+      const priceScore = this.calculatePriceSimilarity(dormPrice, params.minPrice, params.maxPrice);
+      score += priceScore * 25;
+    }
+
+    // 4. สิ่งอำนวยความสะดวกที่คล้ายกัน (+25 คะแนน)
+    // Note: ในปัจจุบันเราไม่มีข้อมูล amenities ใน UIDorm 
+    // ถ้าต้องการใช้ต้องเพิ่มข้อมูลนี้ในอนาคต
+
+    return score;
+  }
+
+  // คำนวณความคล้ายของชื่อ (Simple string similarity)
+  calculateNameSimilarity(name1: string, name2: string): number {
+    const str1 = name1.toLowerCase();
+    const str2 = name2.toLowerCase();
+    
+    // ถ้ามีคำเดียวกัน
+    const words1 = str1.split(/\s+/);
+    const words2 = str2.split(/\s+/);
+    
+    let commonWords = 0;
+    for (const word1 of words1) {
+      if (word1.length > 2 && words2.some(word2 => word2.includes(word1) || word1.includes(word2))) {
+        commonWords++;
+      }
+    }
+    
+    return commonWords / Math.max(words1.length, words2.length);
+  }
+
+  // คำนวณความคล้ายของราคา
+  calculatePriceSimilarity(dormPrice: number, minPrice: number, maxPrice: number): number {
+    const midPrice = (minPrice + maxPrice) / 2;
+    const priceRange = maxPrice - minPrice;
+    
+    // ถ้าราคาอยู่ในช่วง ให้คะแนนเต็ม
+    if (dormPrice >= minPrice && dormPrice <= maxPrice) {
+      return 1;
+    }
+    
+    // คำนวณระยะห่างจากช่วงราคา
+    const distance = Math.min(Math.abs(dormPrice - minPrice), Math.abs(dormPrice - maxPrice));
+    const maxDistance = priceRange; // ระยะห่างสูงสุดที่ยังให้คะแนน
+    
+    return Math.max(0, 1 - (distance / maxDistance));
   }
 
   getDormsByZone(): Record<string, UIDorm[]> {
@@ -396,5 +530,20 @@ export class DormListComponent {
 
   toggleAmenity(amenity: any) {
     amenity.checked = !amenity.checked;
+  }
+
+  // ล้างการค้นหาหอพักที่คล้ายกัน
+  clearSimilarSearch() {
+    this.similarSearchParams = null;
+    this.selectedZone = '';
+    this.minPrice = null;
+    this.maxPrice = null;
+    this.sortOrder = '';
+    
+    // รีเซ็ตฟิลเตอร์ทั้งหมด
+    this.clearFilters();
+    
+    // โหลดข้อมูลใหม่
+    this.loadDormitories();
   }
 }

@@ -37,6 +37,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   forgotPasswordSuccess: string | null = null;
   isForgotPasswordLoading = false;
 
+
   sliderImages = [
     { src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Modern Dormitory Building' },
     { src: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Dormitory Room Interior' },
@@ -66,10 +67,27 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.userType = typeParam === 'owner' ? 'owner' : 'member';
     });
 
-    // Check for error query params (kept for compatibility)
+    // Check for query params
     this.route.queryParams.subscribe(params => {
       if (params['error'] === 'not-owner') {
         this.errorMessage = 'บัญชีนี้ไม่ใช่เจ้าของหอพัก ไม่สามารถเข้าสู่ระบบในหน้านี้ได้';
+      }
+      
+      // Pre-fill email if provided (from password reset)
+      if (params['email']) {
+        this.loginForm.patchValue({ email: params['email'] });
+      }
+      
+      // Show success message if password reset was successful
+      if (params['resetSuccess'] === 'true') {
+        // Don't show as error, just clear any existing error
+        this.errorMessage = null;
+        console.log('[LoginComponent] Password reset successful, email pre-filled');
+      }
+      
+      // Show message if provided
+      if (params['message']) {
+        this.errorMessage = params['message'];
       }
     });
   }
@@ -88,7 +106,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   private redirectBasedOnUserType(user: UserProfile): void {
     console.log('[LoginComponent] Redirecting user based on memberType:', user.memberType);
-    
+
     if (user.memberType === 'owner') {
       this.router.navigate(['/owner']);
     } else if (user.memberType === 'member') {
@@ -129,30 +147,30 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.isGoogleLoading = true;
     this.errorMessage = null;
     try {
-        console.log(`[LoginComponent] Starting Google OAuth for userType: ${this.userType}`);
+      console.log(`[LoginComponent] Starting Google OAuth for userType: ${this.userType}`);
 
-        if (this.userType !== 'member' && this.userType !== 'owner') {
-            this.errorMessage = 'ประเภทผู้ใช้ไม่ถูกต้อง';
-            this.isGoogleLoading = false;
-            return;
-        }
+      if (this.userType !== 'member' && this.userType !== 'owner') {
+        this.errorMessage = 'ประเภทผู้ใช้ไม่ถูกต้อง';
+        this.isGoogleLoading = false;
+        return;
+      }
 
-        const userProfile = await this.googleAuthService.signInWithGoogle(this.userType);
-        console.log('[LoginComponent] Google sign-in successful:', userProfile);
-        
-        // รอให้ auth state update เสร็จก่อน redirect
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Navigation ถูก handle โดย authService แล้ว
-        // ไม่ต้อง redirect ที่นี่
+      const userProfile = await this.googleAuthService.signInWithGoogle(this.userType);
+      console.log('[LoginComponent] Google sign-in successful:', userProfile);
+
+      // รอให้ auth state update เสร็จก่อน redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Navigation ถูก handle โดย authService แล้ว
+      // ไม่ต้อง redirect ที่นี่
 
     } catch (error: any) {
-        console.error('[LoginComponent] Google OAuth error:', error);
-        this.errorMessage = this.authService.errorMessageHandler(error);
+      console.error('[LoginComponent] Google OAuth error:', error);
+      this.errorMessage = this.authService.errorMessageHandler(error);
     } finally {
-        this.isGoogleLoading = false;
+      this.isGoogleLoading = false;
     }
-}
+  }
 
   async onSubmit(): Promise<void> {
     this.isLoginLoading = true;
@@ -172,7 +190,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       if (userProfile) {
         // รอให้ auth state update เสร็จ
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         console.log('[LoginComponent] Login successful, redirecting based on actual memberType:', userProfile.memberType);
         this.redirectBasedOnUserType(userProfile);
       }
@@ -183,7 +201,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.errorMessage = this.getGenericLoginError(error);
     } finally {
       this.isLoginLoading = false;
-    } 
+    }
   }
 
   private getGenericLoginError(error: any): string {
@@ -264,7 +282,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.isForgotPasswordLoading = false;
   }
 
-  sendForgotPasswordEmail(): void {
+  async sendForgotPasswordEmail(): Promise<void> {
     if (!this.forgotPasswordEmail) {
       this.forgotPasswordError = 'กรุณากรอกอีเมล';
       return;
@@ -281,15 +299,48 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.forgotPasswordError = null;
     this.forgotPasswordSuccess = null;
 
-    // Simulate API call (replace with actual implementation)
-    setTimeout(() => {
+    try {
+      // 1) เรียก backend ตรวจสอบสิทธิ์ก่อน
+      const precheck = await this.authService.precheckForgotPassword(this.forgotPasswordEmail);
+
+      if (precheck && precheck.code === 'reset-allowed' && precheck.allowed) {
+        // 2) อนุญาตให้ส่งอีเมลผ่าน Firebase
+        await this.authService.sendForgotPasswordEmail(this.forgotPasswordEmail, this.userType);
+
+        // แสดงข้อความสำเร็จ
+        this.forgotPasswordSuccess = 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบอีเมล';
+
+        // ปิด modal หลังจาก 3 วินาที
+        setTimeout(() => {
+          this.closeForgotPasswordModal();
+        }, 3000);
+        return;
+      }
+
+      if (precheck && precheck.code === 'google-only') {
+        this.forgotPasswordError = 'บัญชีนี้เข้าสู่ระบบด้วย Google เท่านั้น';
+        return;
+      }
+
+      // เงื่อนไขอื่นให้โยนไป catch เพื่อ map ข้อความจาก status code
+      throw new Error('invalid_precheck_state');
+
+    } catch (error: any) {
+      console.error('[LoginComponent] Forgot password error:', error);
+      // แปลตามสเปคของ backend
+      if (error?.status === 400 && error?.error?.code === 'invalid-email-format') {
+        this.forgotPasswordError = 'รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+      } else if (error?.status === 404 && error?.error?.code === 'email-not-found') {
+        this.forgotPasswordError = 'ไม่พบอีเมลนี้ในระบบ';
+      } else if (error?.ok === false && error?.message) {
+        this.forgotPasswordError = error.message;
+      } else {
+        this.forgotPasswordError = 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+      }
+    } finally {
       this.isForgotPasswordLoading = false;
-      this.forgotPasswordSuccess = 'ระบบได้ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบอีเมล';
-      
-      // Auto close modal after 3 seconds
-      setTimeout(() => {
-        this.closeForgotPasswordModal();
-      }, 3000);
-    }, 2000);
+    }
   }
+
+
 }

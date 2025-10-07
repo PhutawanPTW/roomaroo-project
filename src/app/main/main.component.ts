@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { AuthService, UserProfile } from '../services/auth.service';
 import { DormitoryService, Dorm } from '../services/dormitory.service';
 import { NavbarComponent } from './navbar/navbar.component';
+import { AboutComponent } from './about/about.component';
 import { ComparePopupComponent } from './shared/compare-popup/compare-popup.component';
 import { Subscription } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -26,12 +27,13 @@ interface UIDorm {
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavbarComponent, ComparePopupComponent],
+  imports: [CommonModule, RouterModule, NavbarComponent, ComparePopupComponent, AboutComponent],
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.css'],
 })
 export class MainComponent implements OnInit, OnDestroy {
   currentRoute: string = '';
+  pendingApproval = false;
 
   // Banner slider images - ใช้รูปภาพจากอินเทอร์เน็ต
   sliderImages = [
@@ -91,6 +93,7 @@ export class MainComponent implements OnInit, OnDestroy {
 
     this.authSubscription = this.authService.currentUser$.subscribe((user: UserProfile | null | undefined) => {
       if (user) {
+        this.pendingApproval = !!user.pendingApproval;
         if (user.memberType === 'owner') {
           this.router.navigate(['/owner']);
         } else if (user.memberType === 'member') {

@@ -14,6 +14,7 @@ import { AdminComponent } from './main/admin/admin.component';
 import { AdminLoginComponent } from './main/admin/login/admin-login.component';
 import { AdminDormDetailComponent } from './main/admin/dorm-detail/admin-dorm-detail.component';
 import { TenantListComponent } from './main/tenant-list/tenant-list.component';
+import { ResetPasswordComponent } from './main/reset-password/reset-password.component';
 import { AuthRedirectGuard } from './guards/auth-redirect.guard';
 
 export const routes: Routes = [
@@ -46,6 +47,9 @@ export const routes: Routes = [
   // Redirect legacy paths without type param
   { path: 'login', redirectTo: 'login/member', pathMatch: 'full' },
   { path: 'register', redirectTo: 'register/member', pathMatch: 'full' },
+
+  // Reset password route
+  { path: 'reset-password', component: ResetPasswordComponent },
 
   // Owner routes
   {

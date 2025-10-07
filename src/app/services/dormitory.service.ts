@@ -65,8 +65,12 @@ export interface DormImage {
 
 export interface RoomType {
   room_type_id: number;
-  dorm_id: number;
-  name: string;
+  // Backend currently does not return dorm_id in room types response
+  // so make it optional to prevent undefined typing issues
+  dorm_id?: number;
+  // Backend returns room_name; keep both for compatibility
+  name?: string;
+  room_name?: string;
   bed_type: string;
   size_sqm?: number;
   monthly_price?: number;
@@ -166,7 +170,21 @@ export class DormitoryService {
   /** Get room types for a specific dormitory */
   getRoomTypes(dormId: number): Observable<RoomType[]> {
     // moved to new base: /edit-dormitory
-    return this.http.get<RoomType[]>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`).pipe(
+    return this.http.get<any[]>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`).pipe(
+      // Normalize backend fields so frontend can always use rt.name
+      map((rows: any[]) => {
+        const safeRows = Array.isArray(rows) ? rows : [];
+        return safeRows.map((rt: any) => ({
+          ...rt,
+          // prefer explicit name, otherwise map from room_name
+          name: rt?.name ?? rt?.room_name ?? '',
+          // accept missing dorm_id - backend doesn't send it in this endpoint
+          dorm_id: rt?.dorm_id,
+        })) as RoomType[];
+      }),
+      tap((resp) => {
+        console.log(`[DormitoryService] GET /edit-dormitory/${dormId}/room-types ->`, resp);
+      }),
       catchError(err => {
         console.error(`[DormitoryService] Error fetching room types for dorm ${dormId}:`, err);
         return of([]);

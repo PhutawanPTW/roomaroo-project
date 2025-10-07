@@ -376,11 +376,11 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       utilities: this.fb.group({
         electricity: this.fb.group({
           electricity_type: ['คิดตามหน่วย', Validators.required],
-          electricity_rate: [''],
+          electricity_rate: ['', [Validators.min(1)]],
         }),
         water: this.fb.group({
           water_type: ['คิดตามหน่วย', Validators.required],
-          water_rate: [''],
+          water_rate: ['', [Validators.min(1)]],
         }),
       }),
       location: this.fb.group({
@@ -452,7 +452,9 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       ?.valueChanges.subscribe((type: string) => {
         const rateControl = this.electricity.get('electricity_rate')!;
         if (type === 'คิดตามหน่วย') {
-          rateControl.setValidators([Validators.required, Validators.min(0)]);
+          rateControl.setValidators([Validators.required, Validators.min(1)]);
+          // เคลียร์ค่าเดิมเมื่อเปลี่ยนเป็นคิดตามหน่วย (เคลียร์ทุกครั้ง)
+          rateControl.setValue('');
         } else {
           // ตามมิเตอร์ = ไม่ต้องใส่ราคา
           rateControl.clearValidators();
@@ -465,7 +467,9 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     this.water.get('water_type')?.valueChanges.subscribe((type: string) => {
       const rateControl = this.water.get('water_rate')!;
       if (type === 'คิดตามหน่วย' || type === 'เหมาจ่าย') {
-        rateControl.setValidators([Validators.required, Validators.min(0)]);
+        rateControl.setValidators([Validators.required, Validators.min(1)]);
+        // เคลียร์ค่าเดิมเมื่อเปลี่ยนเป็นคิดตามหน่วย/เหมาจ่าย (เคลียร์ทุกครั้ง)
+        rateControl.setValue('');
       } else {
         // ตามมิเตอร์ = ไม่ต้องใส่ราคา
         rateControl.clearValidators();
@@ -499,10 +503,10 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       type: ['', Validators.required],
       customType: [''],
         bed_type: ['', Validators.required], // เพิ่มประเภทเตียง
-      pricePerMonth: [''],
-      pricePerDay: [''],
-      pricePerTerm: [''],
-        pricePerSummer: [''],
+      pricePerMonth: ['', [Validators.min(1)]],
+      pricePerDay: ['', [Validators.min(1)]],
+      pricePerTerm: ['', [Validators.min(1)]],
+        pricePerSummer: ['', [Validators.min(1)]],
       },
       { validators: this.requireMonthOrDay }
     );
@@ -682,7 +686,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       // 2. ประเภทห้อง
       const roomTypesArray = this.roomTypes;
       if (roomTypesArray.length === 0) {
-        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error', '#room-types-header');
         return;
       }
 
@@ -733,7 +737,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
         (amenity: boolean) => amenity === true
       );
       if (selectedAmenities.length === 0) {
-        this.showCustomPopup('กรุณาเลือกสิ่งอำนวยความสะดวกอย่างน้อย 1 รายการ', 'error', 'input[type="checkbox"]');
+        this.showCustomPopup('กรุณาเลือกสิ่งอำนวยความสะดวกอย่างน้อย 1 รายการ', 'error', '#amenities-header');
         return;
       }
 
@@ -799,7 +803,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       const roomTypesArray = this.roomTypes;
 
       if (roomTypesArray.length === 0) {
-        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error', '#room-types-header');
         return;
       }
 
@@ -960,7 +964,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     );
 
     if (roomTypesArray.length === 0) {
-      this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+      this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error', '#room-types-header');
       this.isSubmittingGuard = false; // รีเซ็ต guard
       return;
     }
@@ -1667,11 +1671,15 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     
     if (targetElement) {
       console.log('[DormAdd] Element found, scrolling to:', targetElement);
-      // ปรับให้ scroll สมูทขึ้น
-      targetElement.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
+      
+      // ใช้ window.scrollTo แบบคำนวณ offset เอง
+      const elementRect = targetElement.getBoundingClientRect();
+      const offsetTop = elementRect.top + window.scrollY;
+      const navbarHeight = 100; // ความสูง Navbar
+      
+      window.scrollTo({
+        top: offsetTop - navbarHeight,
+        behavior: 'smooth'
       });
       
       // รอให้ scroll เสร็จแล้วค่อย focus
@@ -1685,15 +1693,21 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
   // แยก concerns: หา element ด้วย multiple selectors
   private findTargetElement(selector: string): HTMLElement | null {
+    console.log('[DormAdd] Searching for selector:', selector);
+    
     // Primary selector
     let element = this.document.querySelector<HTMLElement>(selector);
     
-    if (element) return element;
+    if (element) {
+      console.log('[DormAdd] Found element with primary selector:', selector, element);
+      return element;
+    }
 
     // Fallback: หาจาก room type index
     const roomTypeMatch = selector.match(/room-type-(\d+)/);
     if (roomTypeMatch) {
       const index = parseInt(roomTypeMatch[1]);
+      console.log('[DormAdd] Trying room type fallback for index:', index);
       
       // Try multiple selectors
       const selectors = [
@@ -1704,11 +1718,16 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       ];
 
       for (const sel of selectors) {
+        console.log('[DormAdd] Trying fallback selector:', sel);
         element = this.document.querySelector<HTMLElement>(sel);
-        if (element) return element;
+        if (element) {
+          console.log('[DormAdd] Found element with fallback selector:', sel, element);
+          return element;
+        }
       }
     }
 
+    console.log('[DormAdd] No element found for selector:', selector);
     return null;
   }
 
@@ -1720,5 +1739,14 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
         element instanceof HTMLTextAreaElement) {
       element.focus();
     }
+  }
+
+  // ตรวจสอบว่ามีราคา 0 บาทหรือไม่
+  hasZeroPriceError(roomType: AbstractControl): boolean {
+    const priceFields = ['pricePerDay', 'pricePerMonth', 'pricePerTerm', 'pricePerSummer'];
+    return priceFields.some(field => {
+      const control = roomType.get(field);
+      return control && control.touched && control.value === '0';
+    });
   }
 }

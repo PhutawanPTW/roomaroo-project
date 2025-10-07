@@ -7,6 +7,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  confirmPasswordReset,
+  verifyPasswordResetCode,
+  updatePassword,
   User
 } from '@angular/fire/auth';
 import { Router } from '@angular/router';
@@ -34,6 +38,10 @@ export interface UserProfile {
   secondary_phone?: string | null;
   line_id?: string | null;
   manager_name?: string | null;
+  // Backend: whether member has a pending dorm approval request
+  pendingApproval?: boolean;
+  pendingDormId?: number | null;
+  pendingDormName?: string | null;
 }
 
 @Injectable({
@@ -282,6 +290,15 @@ export class AuthService {
       const needsProfileSetup = rawResponse.needs_profile_setup !== undefined
           ? rawResponse.needs_profile_setup
           : rawResponse.needsProfileSetup || false;
+      const pendingApproval = rawResponse.pending_approval !== undefined
+          ? rawResponse.pending_approval
+          : rawResponse.pendingApproval || false;
+      const pendingDormId = rawResponse.pending_dorm_id !== undefined
+          ? rawResponse.pending_dorm_id
+          : rawResponse.pendingDormId !== undefined ? rawResponse.pendingDormId : null;
+      const pendingDormName = rawResponse.pending_dorm_name !== undefined
+          ? rawResponse.pending_dorm_name
+          : rawResponse.pendingDormName !== undefined ? rawResponse.pendingDormName : null;
 
       const userProfile: UserProfile = {
         uid: firebaseUser.uid,
@@ -306,6 +323,9 @@ export class AuthService {
         secondary_phone: rawResponse.secondary_phone || null,
         line_id: rawResponse.line_id || null,
         manager_name: rawResponse.manager_name || null,
+        pendingApproval: pendingApproval,
+        pendingDormId: pendingDormId,
+        pendingDormName: pendingDormName,
       };
 
       return userProfile;
@@ -395,6 +415,23 @@ export class AuthService {
     return this.http
       .put(`${this.backendUrl}/profile/`, serverPayload, { headers })
       .toPromise();
+  }
+
+  /**
+   * เปลี่ยนรหัสผ่านผู้ใช้ที่ล็อกอินอยู่ (Firebase)
+   * หมายเหตุ: อาจต้องมีการเข้าสู่ระบบล่าสุด (requires-recent-login)
+   */
+  async changePassword(newPassword: string): Promise<void> {
+    const firebaseUser = this.auth.currentUser;
+    if (!firebaseUser) {
+      throw new Error('ไม่พบสถานะการเข้าสู่ระบบ');
+    }
+    try {
+      await updatePassword(firebaseUser, newPassword);
+    } catch (error: any) {
+      // ส่งต่อให้ component แปลข้อความตามเหมาะสม
+      throw error;
+    }
   }
 
   /**
@@ -557,6 +594,125 @@ async signInAdmin(email: string, password: string) {
     return profile;
   } finally {
     this.authState.skipAuthStateChange = false;
+  }
+}
+
+
+// ==========================================
+// 🔥 Firebase Password Reset Methods
+// ==========================================
+
+  /**
+   * เรียก backend เพื่อตรวจสอบสิทธิ์ก่อนส่งอีเมลรีเซ็ตรหัสผ่าน
+   * POST /api/auth/forgot-password
+   */
+  async precheckForgotPassword(email: string): Promise<{ code: string; allowed: boolean }> {
+    try {
+      const response = await this.http
+        .post<{ code: string; allowed: boolean }>(`${this.backendUrl}/auth/forgot-password`, { email })
+        .toPromise();
+      if (!response) throw new Error('invalid_response');
+      return response;
+    } catch (error: any) {
+      // ส่งต่อ error ให้ผู้เรียกไปแปลข้อความตามสเปคของ backend
+      throw error;
+    }
+  }
+
+/**
+ * ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Firebase
+ * @param email อีเมลของผู้ใช้
+ * @param userType ประเภทผู้ใช้ ('member' หรือ 'owner')
+ * @returns Promise<void>
+ */
+async sendForgotPasswordEmail(email: string, userType: 'member' | 'owner'): Promise<void> {
+  try {
+    console.log('[AuthService] Sending password reset email to:', email, 'for userType:', userType);
+    
+    // ตั้งค่าภาษาเป็นไทย
+    this.auth.languageCode = 'th';
+    
+    // ตั้งค่า action code settings เพื่อให้ redirect มาหน้าเว็บเรา พร้อม userType
+    const actionCodeSettings = {
+      url: `${window.location.origin}/reset-password?userType=${userType}`, // URL ที่จะ redirect หลังจากคลิกลิงก์
+      handleCodeInApp: true, // ให้จัดการ oobCode ในแอปเรา
+    };
+    
+    await sendPasswordResetEmail(this.auth, email, actionCodeSettings);
+    console.log('[AuthService] Password reset email sent successfully');
+    
+  } catch (error: any) {
+    console.error('[AuthService] Error sending password reset email:', error);
+    
+    const errorCode = error?.code;
+    switch (errorCode) {
+      case 'auth/user-not-found':
+        throw new Error('ไม่พบอีเมลนี้ในระบบ');
+      case 'auth/invalid-email':
+        throw new Error('รูปแบบอีเมลไม่ถูกต้อง');
+      case 'auth/too-many-requests':
+        throw new Error('ส่งคำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่');
+      default:
+        throw new Error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    }
+  }
+}
+
+/**
+ * ตรวจสอบรหัส oobCode และคืนค่าอีเมล
+ * @param oobCode รหัสจากลิงก์อีเมล
+ * @returns Promise<string> อีเมลของผู้ใช้
+ */
+async verifyResetCode(oobCode: string): Promise<string> {
+  try {
+    console.log('[AuthService] Verifying reset code');
+    
+    const email = await verifyPasswordResetCode(this.auth, oobCode);
+    console.log('[AuthService] Reset code verified for email:', email);
+    
+    return email;
+  } catch (error: any) {
+    console.error('[AuthService] Error verifying reset code:', error);
+    throw error; // ส่งต่อ error ให้ component จัดการ
+  }
+}
+
+/**
+ * ยืนยันการรีเซ็ตรหัสผ่านด้วย oobCode และรหัสผ่านใหม่
+ * @param oobCode รหัสจากลิงก์อีเมล
+ * @param newPassword รหัสผ่านใหม่
+ * @returns Promise<void>
+ */
+async confirmResetPassword(oobCode: string, newPassword: string): Promise<void> {
+  try {
+    console.log('[AuthService] Confirming password reset');
+    
+    await confirmPasswordReset(this.auth, oobCode, newPassword);
+    console.log('[AuthService] Password reset confirmed successfully');
+    
+  } catch (error: any) {
+    console.error('[AuthService] Error confirming password reset:', error);
+    throw error; // ส่งต่อ error ให้ component จัดการ
+  }
+}
+
+/**
+ * เช็ค user type จาก email ที่ได้จาก reset code
+ * @param email อีเมลของผู้ใช้
+ * @returns Promise<'member' | 'owner' | null>
+ */
+async getUserTypeByEmail(email: string): Promise<'member' | 'owner' | null> {
+  try {
+    console.log('[AuthService] Getting user type for email:', email);
+    
+    const response = await this.http.get<any>(
+      `${this.backendUrl}/auth/user-type/${encodeURIComponent(email)}`
+    ).toPromise();
+    
+    return response?.memberType || null;
+  } catch (error: any) {
+    console.error('[AuthService] Error getting user type:', error);
+    return null; // ถ้าเกิดข้อผิดพลาด ให้ fallback เป็น member
   }
 }
 

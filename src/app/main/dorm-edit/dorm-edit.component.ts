@@ -1,4 +1,4 @@
-  import {
+import {
   Component,
   AfterViewInit,
   OnDestroy,
@@ -20,7 +20,11 @@ import {
   AbstractControl,
   ValidatorFn,
 } from '@angular/forms';
-import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import {
+  DragDropModule,
+  CdkDragDrop,
+  moveItemInArray,
+} from '@angular/cdk/drag-drop';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { MapService } from '../../services/map.service';
@@ -30,7 +34,13 @@ import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
 import { DormitoryService, RoomType } from '../../services/dormitory.service';
 import { forkJoin, of } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { trigger, transition, animate, keyframes, style } from '@angular/animations';
+import {
+  trigger,
+  transition,
+  animate,
+  keyframes,
+  style,
+} from '@angular/animations';
 
 interface Amenity {
   id: string;
@@ -44,7 +54,13 @@ interface ZoneOption {
 @Component({
   selector: 'app-dorm-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NavbarComponent, DragDropModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NavbarComponent,
+    DragDropModule,
+  ],
   templateUrl: './dorm-edit.component.html',
   styleUrls: ['./dorm-edit.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,22 +68,52 @@ interface ZoneOption {
     trigger('slideCenter', [
       // next -> slide from right to center
       transition(':increment', [
-        animate('420ms cubic-bezier(0.22, 0.61, 0.36, 1)', keyframes([
-          style({ transform: 'translate(calc(-40% - 0px), -50%)', opacity: 0.8, offset: 0 }),
-          style({ transform: 'translate(calc(-48% - 0px), -50%)', opacity: 0.95, offset: 0.6 }),
-          style({ transform: 'translate(-50%, -50%)', opacity: 1, offset: 1 })
-        ]))
+        animate(
+          '420ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+          keyframes([
+            style({
+              transform: 'translate(calc(-40% - 0px), -50%)',
+              opacity: 0.8,
+              offset: 0,
+            }),
+            style({
+              transform: 'translate(calc(-48% - 0px), -50%)',
+              opacity: 0.95,
+              offset: 0.6,
+            }),
+            style({
+              transform: 'translate(-50%, -50%)',
+              opacity: 1,
+              offset: 1,
+            }),
+          ])
+        ),
       ]),
       // prev -> slide from left to center
       transition(':decrement', [
-        animate('420ms cubic-bezier(0.22, 0.61, 0.36, 1)', keyframes([
-          style({ transform: 'translate(calc(-60% - 0px), -50%)', opacity: 0.8, offset: 0 }),
-          style({ transform: 'translate(calc(-52% - 0px), -50%)', opacity: 0.95, offset: 0.6 }),
-          style({ transform: 'translate(-50%, -50%)', opacity: 1, offset: 1 })
-        ]))
-      ])
-    ])
-  ]
+        animate(
+          '420ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+          keyframes([
+            style({
+              transform: 'translate(calc(-60% - 0px), -50%)',
+              opacity: 0.8,
+              offset: 0,
+            }),
+            style({
+              transform: 'translate(calc(-52% - 0px), -50%)',
+              opacity: 0.95,
+              offset: 0.6,
+            }),
+            style({
+              transform: 'translate(-50%, -50%)',
+              opacity: 1,
+              offset: 1,
+            }),
+          ])
+        ),
+      ]),
+    ]),
+  ],
 })
 export class DormEditComponent implements AfterViewInit, OnDestroy {
   dormForm!: FormGroup;
@@ -93,13 +139,15 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   // edit mode
   isEditMode = false;
   editingDormId: number | null = null;
-  
+  originalRoomTypes: any[] = []; // เก็บข้อมูลประเภทห้องเดิมสำหรับเปรียบเทียบ
+
   // drag & drop
   isDragOver = false;
   draggedIndex: number | null = null;
 
   sliderImages: Array<{ src: string; alt: string }> = [];
 
+  private readonly SCROLL_OFFSET_PX = 100; // NEW: ถ้า navbar เตี้ย/สูงกว่าปรับเลขนี้
   private readonly mapRetryDelayMs = 1000;
   private readonly maxMapInitAttempts = 20;
   private locationMapInitAttempts = 0;
@@ -111,11 +159,16 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   currentImageIndex = 0;
 
   get hasImages(): boolean {
-    return Array.isArray(this.imagePreviewUrls) && this.imagePreviewUrls.length > 0;
+    return (
+      Array.isArray(this.imagePreviewUrls) && this.imagePreviewUrls.length > 0
+    );
   }
   get prevImageIndex(): number {
     if (!this.hasImages) return 0;
-    return (this.currentImageIndex - 1 + this.imagePreviewUrls.length) % this.imagePreviewUrls.length;
+    return (
+      (this.currentImageIndex - 1 + this.imagePreviewUrls.length) %
+      this.imagePreviewUrls.length
+    );
   }
   get nextImageIndex(): number {
     if (!this.hasImages) return 0;
@@ -231,25 +284,39 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   private async loadDormitoryForEdit(dormId: number): Promise<void> {
     try {
       // โหลดข้อมูลหลัก + room types + images พร้อมกัน (ใช้เส้น edit สำหรับ room-types/images)
-      const detail$ = this.dormitoryService.getDormitoryById(dormId).toPromise();
+      const detail$ = this.dormitoryService
+        .getDormitoryById(dormId)
+        .toPromise();
       const roomTypes$ = this.dormitoryService.getRoomTypes(dormId).toPromise();
       const images$ = this.dormitoryService.getImages(dormId).toPromise();
-      const [detail, roomTypes, images] = await Promise.all([detail$, roomTypes$, images$]);
+      const [detail, roomTypes, images] = await Promise.all([
+        detail$,
+        roomTypes$,
+        images$,
+      ]);
 
       if (detail) {
         // General
         this.dormForm.get('generalInfo.name')?.setValue(detail.dorm_name || '');
-        this.dormForm.get('generalInfo.zone_id')?.setValue((detail as any).zone_id || '');
-        this.dormForm.get('generalInfo.address')?.setValue(detail.address || '');
-        this.dormForm.get('generalInfo.description')?.setValue(detail.dorm_description || detail.description || '');
+        this.dormForm
+          .get('generalInfo.zone_id')
+          ?.setValue((detail as any).zone_id || '');
+        this.dormForm
+          .get('generalInfo.address')
+          ?.setValue(detail.address || '');
+        this.dormForm
+          .get('generalInfo.description')
+          ?.setValue(detail.dorm_description || detail.description || '');
 
         // Utilities (normalize using *_type and *_rate)
         const eType = detail.electricity_type || 'ตามมิเตอร์';
         const wType = detail.water_type || 'ตามมิเตอร์';
         this.electricity.get('electricity_type')?.setValue(eType);
-        this.electricity.get('electricity_rate')?.setValue(detail.electricity_rate || '');
+        this.electricity
+          .get('electricity_rate')
+          ?.setValue(detail.electricity_rate && Number(detail.electricity_rate) > 0 ? detail.electricity_rate : '');
         this.water.get('water_type')?.setValue(wType);
-        this.water.get('water_rate')?.setValue(detail.water_rate || '');
+        this.water.get('water_rate')?.setValue(detail.water_rate && Number(detail.water_rate) > 0 ? detail.water_rate : '');
 
         // Location
         const lat = Number(detail.latitude) || this.defaultLocation.lat;
@@ -263,49 +330,93 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       if (Array.isArray(roomTypes)) {
         roomTypeList = roomTypes as any[];
       } else if (roomTypes && typeof roomTypes === 'object') {
-        const rt = (roomTypes as any).room_types || (roomTypes as any).data || (roomTypes as any).items || [];
+        const rt =
+          (roomTypes as any).room_types ||
+          (roomTypes as any).data ||
+          (roomTypes as any).items ||
+          [];
         roomTypeList = Array.isArray(rt) ? rt : [];
       }
 
       if (roomTypeList.length) {
+        // เก็บข้อมูลเดิมไว้สำหรับเปรียบเทียบ
+        this.originalRoomTypes = roomTypeList.map(rt => ({
+          room_type_id: rt.room_type_id || rt.id || (rt as any).roomTypeId || null,
+          name: rt.name || rt.room_name || rt.type || '',
+          bed_type: rt.bed_type || rt.bedType || '',
+          monthly_price: rt.monthly_price ?? rt.monthlyPrice ?? null,
+          daily_price: rt.daily_price ?? rt.dailyPrice ?? null,
+          term_price: (rt as any).term_price ?? (rt as any).termPrice ?? null,
+          summer_price: (rt as any).summer_price ?? (rt as any).summerPrice ?? null
+        }));
+        
+        console.log('[DormEdit] Stored original room types:', this.originalRoomTypes);
+        
         // clear existing
         while (this.roomTypes.length) this.roomTypes.removeAt(0);
-        roomTypeList.forEach(rt => {
+        roomTypeList.forEach((rt) => {
           const g = this.createRoomType();
           const name = rt.name || rt.room_name || rt.type || '';
           const bedType = rt.bed_type || rt.bedType || '';
           const monthly = rt.monthly_price ?? rt.monthlyPrice ?? null;
           const daily = rt.daily_price ?? rt.dailyPrice ?? null;
           const term = (rt as any).term_price ?? (rt as any).termPrice ?? null;
-          const summer = (rt as any).summer_price ?? (rt as any).summerPrice ?? null;
+          const summer =
+            (rt as any).summer_price ?? (rt as any).summerPrice ?? null;
 
-          g.get('type')?.setValue(name);
-          g.get('customType')?.setValue('');
+          // ตรวจสอบว่าเป็นประเภทมาตรฐานหรือไม่
+          const standardTypes = ['ห้องแอร์', 'ห้องพัดลม', 'ห้องพัดลม + แอร์'];
+          console.log('[DormEdit] Loading room type:', { name, isStandard: standardTypes.includes(name) });
+          
+          if (standardTypes.includes(name)) {
+            g.get('type')?.setValue(name);
+            g.get('customType')?.setValue('');
+            console.log('[DormEdit] Set as standard type:', name);
+          } else {
+            // ถ้าไม่ใช่ประเภทมาตรฐาน ให้เป็น "อื่นๆ"
+            g.get('type')?.setValue('other');
+            g.get('customType')?.setValue(name);
+            console.log('[DormEdit] Set as custom type:', name);
+          }
           g.get('bed_type')?.setValue(String(bedType));
-          g.get('room_type_id')?.setValue(rt.room_type_id || rt.id || (rt as any).roomTypeId || null);
-          if (monthly !== null && monthly !== undefined) g.get('pricePerMonth')?.setValue(String(monthly));
-          if (daily !== null && daily !== undefined) g.get('pricePerDay')?.setValue(String(daily));
-          if (term !== null && term !== undefined) g.get('pricePerTerm')?.setValue(String(term));
-          if (summer !== null && summer !== undefined) g.get('pricePerSummer')?.setValue(String(summer));
+          g.get('room_type_id')?.setValue(
+            rt.room_type_id || rt.id || (rt as any).roomTypeId || null
+          );
+          if (monthly !== null && monthly !== undefined)
+            g.get('pricePerMonth')?.setValue(String(monthly));
+          if (daily !== null && daily !== undefined)
+            g.get('pricePerDay')?.setValue(String(daily));
+          if (term !== null && term !== undefined)
+            g.get('pricePerTerm')?.setValue(String(term));
+          if (summer !== null && summer !== undefined)
+            g.get('pricePerSummer')?.setValue(String(summer));
           this.roomTypes.push(g);
         });
       }
 
       // Images
       if (Array.isArray(images) && images.length) {
-        this.imagePreviewUrls = images.map((img: any) => img.image_url).filter(Boolean);
+        this.imagePreviewUrls = images
+          .map((img: any) => img.image_url)
+          .filter(Boolean);
         // sync form array for previews (no File objects in edit)
         while (this.imagesArray.length) this.imagesArray.removeAt(0);
-        this.imagePreviewUrls.forEach(url => {
-          this.imagesArray.push(this.fb.group({ file: [null], preview: [url], image_type: [''] }));
+        this.imagePreviewUrls.forEach((url) => {
+          this.imagesArray.push(
+            this.fb.group({ file: [null], preview: [url], image_type: [''] })
+          );
         });
         this.updateSliderImages();
       }
 
       // Amenities: map using names present in detail.amenities
-      const amenitiesFromApi = Array.isArray((detail as any)?.amenities) ? (detail as any).amenities : [];
+      const amenitiesFromApi = Array.isArray((detail as any)?.amenities)
+        ? (detail as any).amenities
+        : [];
       const amenityNames = new Set<string>(
-        amenitiesFromApi.map((a: any) => (a.name || a.amenity_name || '').toString().trim())
+        amenitiesFromApi.map((a: any) =>
+          (a.name || a.amenity_name || '').toString().trim()
+        )
       );
       const arr = this.dormForm.get('amenities') as FormArray;
       this.AMENITIES.forEach((a, idx) => {
@@ -412,14 +523,14 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       }),
       roomTypes: this.fb.array([this.createRoomType()]),
       utilities: this.fb.group({
-        electricity: this.fb.group({
-          electricity_type: ['คิดตามหน่วย', Validators.required],
-          electricity_rate: [''],
-        }),
-        water: this.fb.group({
-          water_type: ['คิดตามหน่วย', Validators.required],
-          water_rate: [''],
-        }),
+          electricity: this.fb.group({
+            electricity_type: ['คิดตามหน่วย', Validators.required],
+            electricity_rate: ['', [Validators.min(1)]],
+          }),
+          water: this.fb.group({
+            water_type: ['คิดตามหน่วย', Validators.required],
+            water_rate: ['', [Validators.min(1)]],
+          }),
       }),
       location: this.fb.group({
         latitude: [this.defaultLocation.lat, Validators.required],
@@ -490,7 +601,9 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       ?.valueChanges.subscribe((type: string) => {
         const rateControl = this.electricity.get('electricity_rate')!;
         if (type === 'คิดตามหน่วย') {
-          rateControl.setValidators([Validators.required, Validators.min(0)]);
+          rateControl.setValidators([Validators.required, Validators.min(1)]);
+          // เคลียร์ค่าเดิมเมื่อเปลี่ยนเป็นคิดตามหน่วย (เคลียร์ทุกครั้ง)
+          rateControl.setValue('');
         } else {
           // ตามมิเตอร์ = ไม่ต้องใส่ราคา
           rateControl.clearValidators();
@@ -503,7 +616,9 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     this.water.get('water_type')?.valueChanges.subscribe((type: string) => {
       const rateControl = this.water.get('water_rate')!;
       if (type === 'คิดตามหน่วย' || type === 'เหมาจ่าย') {
-        rateControl.setValidators([Validators.required, Validators.min(0)]);
+        rateControl.setValidators([Validators.required, Validators.min(1)]);
+        // เคลียร์ค่าเดิมเมื่อเปลี่ยนเป็นคิดตามหน่วย/เหมาจ่าย (เคลียร์ทุกครั้ง)
+        rateControl.setValue('');
       } else {
         // ตามมิเตอร์ = ไม่ต้องใส่ราคา
         rateControl.clearValidators();
@@ -534,14 +649,14 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   createRoomType() {
     return this.fb.group(
       {
-      type: ['', Validators.required],
-      customType: [''],
-        bed_type: ['', Validators.required], // เพิ่มประเภทเตียง
-      pricePerMonth: [''],
-      pricePerDay: [''],
-      pricePerTerm: [''],
-        pricePerSummer: [''],
-        room_type_id: [null],
+        type: ['', Validators.required],
+          customType: [''],
+          bed_type: ['', Validators.required], // เพิ่มประเภทเตียง
+          pricePerMonth: ['', [Validators.min(1)]],
+          pricePerDay: ['', [Validators.min(1)]],
+          pricePerTerm: ['', [Validators.min(1)]],
+          pricePerSummer: ['', [Validators.min(1)]],
+          room_type_id: [null],
       },
       { validators: this.requireMonthOrDay }
     );
@@ -576,8 +691,8 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         const el = this.document.querySelector<HTMLInputElement>(
           'input[formcontrolname="customType"]'
         );
-      el?.focus();
-    });
+        el?.focus();
+      });
     this.cdr.markForCheck();
   }
   confirmOther(i: number) {
@@ -657,7 +772,8 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
   // Display helpers for room table
   getRoomDisplayName(rt: any): string {
-    const nameRaw = rt?.type === 'other' ? (rt?.customType || '').trim() : rt?.type || '-';
+    const nameRaw =
+      rt?.type === 'other' ? (rt?.customType || '').trim() : rt?.type || '-';
     return nameRaw || '-';
   }
 
@@ -672,7 +788,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     this.roomTypes.push(this.createRoomType());
   }
   removeRoomType(index: number) {
-    if (this.roomTypes.length > 1) this.roomTypes.removeAt(index);
+    this.roomTypes.removeAt(index);
   }
 
   // จำกัดให้กรอกเฉพาะตัวเลขในช่องราคา
@@ -702,26 +818,42 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       const description = generalInfoGroup.get('description')?.value?.trim();
 
       if (!name) {
-        this.showCustomPopup('กรุณากรอกชื่อหอพัก', 'error', 'input[formControlName="name"]');
+        this.showCustomPopup(
+          'กรุณากรอกชื่อหอพัก',
+          'error',
+          'input[formControlName="name"]'
+        );
         return;
       }
       if (!zone_id) {
-        this.showCustomPopup('กรุณาเลือกโซน', 'error', 'select[formControlName="zone_id"]');
+        this.showCustomPopup(
+          'กรุณาเลือกโซน',
+          'error',
+          'select[formControlName="zone_id"]'
+        );
         return;
       }
       if (!address) {
-        this.showCustomPopup('กรุณากรอกที่อยู่', 'error', 'input[formControlName="address"]');
+        this.showCustomPopup(
+          'กรุณากรอกที่อยู่',
+          'error',
+          'input[formControlName="address"]'
+        );
         return;
       }
       if (!description) {
-        this.showCustomPopup('กรุณากรอกรายละเอียดเพิ่มเติม', 'error', 'textarea[formControlName="description"]');
+        this.showCustomPopup(
+          'กรุณากรอกรายละเอียดเพิ่มเติม',
+          'error',
+          'textarea[formControlName="description"]'
+        );
         return;
       }
 
       // 2. ประเภทห้อง
       const roomTypesArray = this.roomTypes;
       if (roomTypesArray.length === 0) {
-        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error', '#room-types-header');
         return;
       }
 
@@ -734,33 +866,63 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         const dailyPrice = roomType.get('pricePerDay')?.value?.trim();
 
         if (!typeField) {
-          this.showCustomPopup(`กรุณาเลือกประเภทห้องที่ ${i + 1}`, 'error', `#room-type-header-${i}`);
+          this.showCustomPopup(
+            `กรุณาเลือกประเภทห้องที่ ${i + 1}`,
+            'error',
+            `#room-type-header-${i}`
+          );
           return;
         }
         if (!bedTypeField) {
-          this.showCustomPopup(`กรุณาเลือกประเภทเตียงที่ ${i + 1}`, 'error', `#room-type-header-${i}`);
+          this.showCustomPopup(
+            `กรุณาเลือกประเภทเตียงที่ ${i + 1}`,
+            'error',
+            `#room-type-header-${i}`
+          );
           return;
         }
         // ตรวจสอบว่าค่าที่กรอกเป็นตัวเลขและขั้นต่ำ 1
-        const isMonthlyValid = !monthlyPrice || (/^\d+$/.test(monthlyPrice) && Number(monthlyPrice) >= 1);
-        const isDailyValid = !dailyPrice || (/^\d+$/.test(dailyPrice) && Number(dailyPrice) >= 1);
+        const isMonthlyValid =
+          !monthlyPrice ||
+          (/^\d+$/.test(monthlyPrice) && Number(monthlyPrice) >= 1);
+        const isDailyValid =
+          !dailyPrice || (/^\d+$/.test(dailyPrice) && Number(dailyPrice) >= 1);
 
         if (!monthlyPrice && !dailyPrice) {
-          this.showCustomPopup(`กรุณากรอกราคารายเดือนหรือรายวันที่ ${i + 1}`, 'error', `#room-type-header-${i}`);
+          this.showCustomPopup(
+            `กรุณากรอกราคารายเดือนหรือรายวันที่ ${i + 1}`,
+            'error',
+            `#room-type-header-${i}`
+          );
           return;
         }
 
         if (monthlyPrice && !/^\d+$/.test(monthlyPrice)) {
-          this.showCustomPopup(`กรุณากรอกราคารายเดือนเป็นตัวเลขเท่านั้นที่ ${i + 1}`, 'error', `#room-type-header-${i}`);
+          this.showCustomPopup(
+            `กรุณากรอกราคารายเดือนเป็นตัวเลขเท่านั้นที่ ${i + 1}`,
+            'error',
+            `#room-type-header-${i}`
+          );
           return;
         }
 
         if (dailyPrice && !/^\d+$/.test(dailyPrice)) {
-          this.showCustomPopup(`กรุณากรอกราคารายวันเป็นตัวเลขเท่านั้นที่ ${i + 1}`, 'error', `#room-type-header-${i}`);
+          this.showCustomPopup(
+            `กรุณากรอกราคารายวันเป็นตัวเลขเท่านั้นที่ ${i + 1}`,
+            'error',
+            `#room-type-header-${i}`
+          );
           return;
         }
-        if ((monthlyPrice && Number(monthlyPrice) === 0) || (dailyPrice && Number(dailyPrice) === 0)) {
-          this.showCustomPopup(`กรุณากรอกราคาอย่างน้อย 1 บาท ที่ประเภทห้อง ${i + 1}`, 'error', `#room-type-header-${i}`);
+        if (
+          (monthlyPrice && Number(monthlyPrice) === 0) ||
+          (dailyPrice && Number(dailyPrice) === 0)
+        ) {
+          this.showCustomPopup(
+            `กรุณากรอกราคาอย่างน้อย 1 บาท ที่ประเภทห้อง ${i + 1}`,
+            'error',
+            `#room-type-header-${i}`
+          );
           return;
         }
       }
@@ -771,7 +933,11 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         (amenity: boolean) => amenity === true
       );
       if (selectedAmenities.length === 0) {
-        this.showCustomPopup('กรุณาเลือกสิ่งอำนวยความสะดวกอย่างน้อย 1 รายการ', 'error', 'input[type="checkbox"]');
+        this.showCustomPopup(
+          'กรุณาเลือกสิ่งอำนวยความสะดวกอย่างน้อย 1 รายการ',
+          'error',
+          '#amenities-header'
+        );
         return;
       }
 
@@ -781,26 +947,44 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         'electricity.electricity_type'
       )?.value;
       const waterType = utilities.get('water.water_type')?.value;
-      const electricityRate = utilities.get('electricity.electricity_rate')?.value?.trim();
+      const electricityRate = utilities
+        .get('electricity.electricity_rate')
+        ?.value?.trim();
       const waterRate = utilities.get('water.water_rate')?.value?.trim();
 
       if (!electricityType) {
-        this.showCustomPopup('กรุณาเลือกประเภทค่าไฟ', 'error', 'button[ng-reflect-ng-switch-case], select[formControlName="electricity_type"]');
+        this.showCustomPopup(
+          'กรุณาเลือกประเภทค่าไฟ',
+          'error',
+          'button[ng-reflect-ng-switch-case], select[formControlName="electricity_type"]'
+        );
         return;
       }
       if (!waterType) {
-        this.showCustomPopup('กรุณาเลือกประเภทค่าน้ำ', 'error', 'button[ng-reflect-ng-switch-case], select[formControlName="water_type"]');
+        this.showCustomPopup(
+          'กรุณาเลือกประเภทค่าน้ำ',
+          'error',
+          'button[ng-reflect-ng-switch-case], select[formControlName="water_type"]'
+        );
         return;
       }
 
       // ตรวจสอบอัตราค่าไฟ
       if (electricityType === 'คิดตามหน่วย') {
         if (!electricityRate) {
-          this.showCustomPopup('กรุณากรอกอัตราค่าไฟ', 'error', 'input[formControlName="electricity_rate"]');
+          this.showCustomPopup(
+            'กรุณากรอกอัตราค่าไฟ',
+            'error',
+            'input[formControlName="electricity_rate"]'
+          );
           return;
         }
         if (!/^\d+(\.\d{1,2})?$/.test(electricityRate)) {
-          this.showCustomPopup('กรุณากรอกอัตราค่าไฟเป็นตัวเลขเท่านั้น', 'error', 'input[formControlName="electricity_rate"]');
+          this.showCustomPopup(
+            'กรุณากรอกอัตราค่าไฟเป็นตัวเลขเท่านั้น',
+            'error',
+            'input[formControlName="electricity_rate"]'
+          );
           return;
         }
       }
@@ -808,11 +992,19 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       // ตรวจสอบอัตราค่าน้ำ
       if (waterType === 'คิดตามหน่วย' || waterType === 'เหมาจ่าย') {
         if (!waterRate) {
-          this.showCustomPopup('กรุณากรอกอัตราค่าน้ำ', 'error', 'input[formControlName="water_rate"]');
+          this.showCustomPopup(
+            'กรุณากรอกอัตราค่าน้ำ',
+            'error',
+            'input[formControlName="water_rate"]'
+          );
           return;
         }
         if (!/^\d+(\.\d{1,2})?$/.test(waterRate)) {
-          this.showCustomPopup('กรุณากรอกอัตราค่าน้ำเป็นตัวเลขเท่านั้น', 'error', 'input[formControlName="water_rate"]');
+          this.showCustomPopup(
+            'กรุณากรอกอัตราค่าน้ำเป็นตัวเลขเท่านั้น',
+            'error',
+            'input[formControlName="water_rate"]'
+          );
           return;
         }
       }
@@ -829,7 +1021,11 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
       // 6. รูปภาพ
       if (this.imagePreviewUrls.length < 5) {
-        this.showCustomPopup('กรุณาอัปโหลดรูปภาพอย่างน้อย 5 ภาพ', 'error', '#file-upload');
+        this.showCustomPopup(
+          'กรุณาอัปโหลดรูปภาพอย่างน้อย 5 ภาพ',
+          'error',
+          '#file-upload'
+        );
         return;
       }
     } else if (this.currentStep === 2) {
@@ -837,7 +1033,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       const roomTypesArray = this.roomTypes;
 
       if (roomTypesArray.length === 0) {
-        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+        this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error', '#room-types-header');
         return;
       }
 
@@ -974,13 +1170,13 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   // submit
   onSubmit() {
     console.log('[DormEdit] onSubmit called, currentStep:', this.currentStep);
-    
+
     // *** Guard against multiple simultaneous submissions ***
     if (this.isSubmittingGuard) {
       console.log('[DormEdit] Submission already in progress, ignoring');
       return;
     }
-    
+
     // เซ็ต guard flag
     this.isSubmittingGuard = true;
 
@@ -1005,7 +1201,12 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     );
 
     if (roomTypesArray.length === 0) {
-      this.showCustomPopup('กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท', 'error');
+      console.log('[DormEdit] About to call showCustomPopup for room types');
+      this.showCustomPopup(
+        'กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท',
+        'error',
+        '#room-types-header'
+      );
       this.isSubmittingGuard = false; // รีเซ็ต guard
       return;
     }
@@ -1135,16 +1336,30 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       zoneId: Number(v.generalInfo.zone_id),
       electricityType: v.utilities.electricity.electricity_type,
       waterType: v.utilities.water.water_type,
-      latitude: typeof v.location.latitude === 'string' ? Number(v.location.latitude) : v.location.latitude,
-      longitude: typeof v.location.longitude === 'string' ? Number(v.location.longitude) : v.location.longitude
+      latitude:
+        typeof v.location.latitude === 'string'
+          ? Number(v.location.latitude)
+          : v.location.latitude,
+      longitude:
+        typeof v.location.longitude === 'string'
+          ? Number(v.location.longitude)
+          : v.location.longitude,
     };
     // Optional numeric rates: only include when present
     const eraw = v.utilities.electricity.electricity_rate;
-    if (eraw !== null && eraw !== undefined && String(eraw).toString().trim() !== '') {
+    if (
+      eraw !== null &&
+      eraw !== undefined &&
+      String(eraw).toString().trim() !== ''
+    ) {
       payloadBasic.electricityRate = Number(String(eraw).replace(/[,\s]/g, ''));
     }
     const wraw = v.utilities.water.water_rate;
-    if (wraw !== null && wraw !== undefined && String(wraw).toString().trim() !== '') {
+    if (
+      wraw !== null &&
+      wraw !== undefined &&
+      String(wraw).toString().trim() !== ''
+    ) {
       payloadBasic.waterRate = Number(String(wraw).replace(/[,\s]/g, ''));
     }
     console.log('[DormEdit] payload basic ->', payloadBasic);
@@ -1158,73 +1373,102 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     if (this.isEditMode && this.editingDormId) {
       const dormId = this.editingDormId;
       console.log('[DormEdit] Updating basic dormitory via service');
-      this.ownerDormitoryService.updateDormitoryBasic(dormId, payloadBasic).subscribe({
-        next: (resp) => {
-          console.log('[DormEdit] Basic dormitory updated:', resp);
-          console.log('[DormEdit] Diff room types for dorm ID:', dormId);
-          const existingIds = new Set<number>();
-          const toAdd: Array<Partial<RoomType>> = [];
-          const toUpdate: Array<{ id: number; data: Partial<RoomType> }> = [];
+      this.ownerDormitoryService
+        .updateDormitoryBasic(dormId, payloadBasic)
+        .subscribe({
+          next: (resp) => {
+            console.log('[DormEdit] Basic dormitory updated:', resp);
+            console.log('[DormEdit] Diff room types for dorm ID:', dormId);
+            const existingIds = new Set<number>();
+            const toAdd: Array<Partial<RoomType>> = [];
+            const toUpdate: Array<{ id: number; data: Partial<RoomType> }> = [];
 
-          // Collect form rows
-          (this.roomTypes.controls as FormGroup[]).forEach((g) => {
-            const idRaw = g.get('room_type_id')?.value;
-            const id = idRaw !== null && idRaw !== undefined && idRaw !== '' ? Number(idRaw) : null;
-            const type = g.get('type')?.value;
-            const customType = g.get('customType')?.value;
-            const bedType = g.get('bed_type')?.value;
-            const monthly = this.toNumber(g.get('pricePerMonth')?.value);
-            const daily = this.toNumber(g.get('pricePerDay')?.value);
-            const term = this.toNumber(g.get('pricePerTerm')?.value);
-            const summer = this.toNumber(g.get('pricePerSummer')?.value);
-            const hasAny = [monthly, daily, term, summer].some(v => v !== null);
-            if (!hasAny) return;
-            const data: Partial<RoomType> = {
-              name: type === 'other' ? (customType || '').trim() : type,
-              bed_type: bedType
-            };
-            if (monthly !== null) data.monthly_price = monthly;
-            if (daily !== null) data.daily_price = daily;
-            if (term !== null) (data as any).term_price = term;
-            if (summer !== null) (data as any).summer_price = summer;
+            // Collect form rows
+            (this.roomTypes.controls as FormGroup[]).forEach((g) => {
+              const idRaw = g.get('room_type_id')?.value;
+              const id =
+                idRaw !== null && idRaw !== undefined && idRaw !== ''
+                  ? Number(idRaw)
+                  : null;
+              const type = g.get('type')?.value;
+              const customType = g.get('customType')?.value;
+              const bedType = g.get('bed_type')?.value;
+              const monthly = this.toNumber(g.get('pricePerMonth')?.value);
+              const daily = this.toNumber(g.get('pricePerDay')?.value);
+              const term = this.toNumber(g.get('pricePerTerm')?.value);
+              const summer = this.toNumber(g.get('pricePerSummer')?.value);
+              const hasAny = [monthly, daily, term, summer].some(
+                (v) => v !== null
+              );
+              if (!hasAny) return;
+              const data: Partial<RoomType> = {
+                name: type === 'other' ? (customType || '').trim() : type,
+                bed_type: bedType,
+              };
+              if (monthly !== null) data.monthly_price = monthly;
+              if (daily !== null) data.daily_price = daily;
+              if (term !== null) (data as any).term_price = term;
+              if (summer !== null) (data as any).summer_price = summer;
 
-            if (id) {
-              existingIds.add(id);
-              toUpdate.push({ id, data });
-            } else {
-              toAdd.push(data);
-            }
-          });
+              if (id) {
+                existingIds.add(id);
+                toUpdate.push({ id, data });
+              } else {
+                toAdd.push(data);
+              }
+            });
 
-          // Fire requests: updates then adds
-          const calls = [
-            ...toUpdate.map(({ id, data }) => this.dormitoryService.updateRoomType(id, data)),
-            ...toAdd.map((data) => this.dormitoryService.addRoomTypeForEdit(dormId, data))
-          ];
-          forkJoin(calls.length ? calls : [of(null)]).subscribe({
-            next: (individualResp) => {
-              console.log('[DormEdit] Room types saved (edit) successfully:', individualResp);
-              this.uploadImagesIfAny(dormId);
-            },
-            error: (err2) => {
-              console.error('[DormEdit] Save room types (edit) error:', err2);
-              this.isSubmittingGuard = false;
-              this.isSubmitting = false;
-              this.submitErrorMessage = 'บันทึกประเภทห้องไม่สำเร็จ: ' + (err2?.message || 'ไม่ทราบสาเหตุ');
-              this.showErrorModal = true;
-              this.cdr.markForCheck();
-            }
-          });
-        },
-        error: (err) => {
-          console.error('[DormEdit] Update dormitory error:', err);
-          this.isSubmittingGuard = false;
-          this.isSubmitting = false;
-          this.submitErrorMessage = 'บันทึกไม่สำเร็จ: ' + (err?.message || 'ไม่ทราบสาเหตุ');
-          this.showErrorModal = true;
-          this.cdr.markForCheck();
-        }
-      });
+            // ลบประเภทห้องที่ไม่ได้ส่งมาใหม่
+            const toDelete = this.originalRoomTypes
+              .filter(rt => rt.room_type_id && !existingIds.has(rt.room_type_id))
+              .map(rt => rt.room_type_id!);
+            
+            console.log('[DormEdit] Room types to delete:', toDelete);
+            console.log('[DormEdit] Room types to update:', toUpdate.map(u => u.id));
+            console.log('[DormEdit] Room types to add:', toAdd.length);
+
+            // Fire requests: deletes, updates, then adds
+            const calls = [
+              ...toDelete.map((id) =>
+                this.dormitoryService.deleteRoomType(id)
+              ),
+              ...toUpdate.map(({ id, data }) =>
+                this.dormitoryService.updateRoomType(id, data)
+              ),
+              ...toAdd.map((data) =>
+                this.dormitoryService.addRoomTypeForEdit(dormId, data)
+              ),
+            ];
+            forkJoin(calls.length ? calls : [of(null)]).subscribe({
+              next: (individualResp) => {
+                console.log(
+                  '[DormEdit] Room types saved (edit) successfully:',
+                  individualResp
+                );
+                this.uploadImagesIfAny(dormId);
+              },
+              error: (err2) => {
+                console.error('[DormEdit] Save room types (edit) error:', err2);
+                this.isSubmittingGuard = false;
+                this.isSubmitting = false;
+                this.submitErrorMessage =
+                  'บันทึกประเภทห้องไม่สำเร็จ: ' +
+                  (err2?.message || 'ไม่ทราบสาเหตุ');
+                this.showErrorModal = true;
+                this.cdr.markForCheck();
+              },
+            });
+          },
+          error: (err) => {
+            console.error('[DormEdit] Update dormitory error:', err);
+            this.isSubmittingGuard = false;
+            this.isSubmitting = false;
+            this.submitErrorMessage =
+              'บันทึกไม่สำเร็จ: ' + (err?.message || 'ไม่ทราบสาเหตุ');
+            this.showErrorModal = true;
+            this.cdr.markForCheck();
+          },
+        });
       return;
     }
 
@@ -1240,7 +1484,9 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
           null;
 
         if (!dormId) {
-          console.error('[DormEdit] No dorm ID received from backend (create mode)');
+          console.error(
+            '[DormEdit] No dorm ID received from backend (create mode)'
+          );
           this.isSubmittingGuard = false;
           this.isSubmitting = false;
           this.submitErrorMessage = 'ไม่สามารถสร้างหอพักได้ กรุณาลองอีกครั้ง';
@@ -1259,15 +1505,21 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         const calls = roomPayloads.map((p) =>
           this.dormitoryService.addRoomType(dormId, p)
         );
-        
+
         forkJoin(calls.length ? calls : [of(null)]).subscribe({
           next: (individualResp) => {
-            console.log('[DormEdit] Individual room types added successfully (create mode):', individualResp);
+            console.log(
+              '[DormEdit] Individual room types added successfully (create mode):',
+              individualResp
+            );
             // อัปโหลดรูปภาพ (ถ้ามี)
             this.uploadImagesIfAny(dormId);
           },
           error: (err2) => {
-            console.error('[DormEdit] Save room types error (create mode):', err2);
+            console.error(
+              '[DormEdit] Save room types error (create mode):',
+              err2
+            );
             this.isSubmittingGuard = false;
             this.isSubmitting = false;
             this.submitErrorMessage =
@@ -1366,7 +1618,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       const summer = this.toNumber(g.get('pricePerSummer')?.value);
       const hasAny = [monthly, daily, term, summer].some((v) => v !== null);
       if (!hasAny) continue;
-              // ยกเลิกการกำหนด price_type; ให้หลังบ้านคำนวณเอง
+      // ยกเลิกการกำหนด price_type; ให้หลังบ้านคำนวณเอง
       let priceType = 'รายเดือน'; // default
       if (daily !== null && monthly === null) {
         priceType = 'รายวัน';
@@ -1375,10 +1627,10 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       }
 
       const payload: Partial<RoomType> = {
-          name: type === 'other' ? (customType || '').trim() : type,
-          bed_type: bedType, // เพิ่มประเภทเตียงใน payload
-          // price_type ตัดออก ให้หลังบ้านคำนวณเอง
-        };
+        name: type === 'other' ? (customType || '').trim() : type,
+        bed_type: bedType, // เพิ่มประเภทเตียงใน payload
+        // price_type ตัดออก ให้หลังบ้านคำนวณเอง
+      };
       if (monthly !== null) payload.monthly_price = monthly;
       if (daily !== null) payload.daily_price = daily;
       if (term !== null) payload.term_price = term;
@@ -1406,88 +1658,88 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-// ฟังก์ชัน initLocationMap แบบเดียวกับหน้า DormAdd (เช็ค DOM และขนาดก่อน สร้างเฉพาะเมื่อพร้อม)
-initLocationMap() {
-  console.log('[DormEdit] initLocationMap called');
+  // ฟังก์ชัน initLocationMap แบบเดียวกับหน้า DormAdd (เช็ค DOM และขนาดก่อน สร้างเฉพาะเมื่อพร้อม)
+  initLocationMap() {
+    console.log('[DormEdit] initLocationMap called');
 
-  setTimeout(() => {
-    const mapElement = this.document.getElementById('location-map');
-    if (!mapElement) {
-      setTimeout(() => this.initLocationMap(), 1000);
-      return;
-    }
+    setTimeout(() => {
+      const mapElement = this.document.getElementById('location-map');
+      if (!mapElement) {
+        setTimeout(() => this.initLocationMap(), 1000);
+        return;
+      }
 
-    if (mapElement.offsetWidth === 0 || mapElement.offsetHeight === 0) {
-      console.error('[DormEdit] Map element has zero dimensions, waiting...');
-      setTimeout(() => this.initLocationMap(), 500);
-      return;
-    }
+      if (mapElement.offsetWidth === 0 || mapElement.offsetHeight === 0) {
+        console.error('[DormEdit] Map element has zero dimensions, waiting...');
+        setTimeout(() => this.initLocationMap(), 500);
+        return;
+      }
 
-    if (this.mapService.isMapInitialized('location-map')) {
-      console.log('[DormEdit] Location map already initialized, skipping');
-      return;
-    }
+      if (this.mapService.isMapInitialized('location-map')) {
+        console.log('[DormEdit] Location map already initialized, skipping');
+        return;
+      }
 
-    const loc = this.dormForm.get('location')!;
-    const lat = loc.get('latitude')?.value || this.defaultLocation.lat;
-    const lng = loc.get('longitude')?.value || this.defaultLocation.lng;
+      const loc = this.dormForm.get('location')!;
+      const lat = loc.get('latitude')?.value || this.defaultLocation.lat;
+      const lng = loc.get('longitude')?.value || this.defaultLocation.lng;
 
-    console.log('[DormEdit] Map coordinates:', { lat, lng });
+      console.log('[DormEdit] Map coordinates:', { lat, lng });
 
-    try {
-      console.log('[DormEdit] Calling mapService.initializeMap...');
-      this.mapService.initializeMap('location-map', lat, lng);
+      try {
+        console.log('[DormEdit] Calling mapService.initializeMap...');
+        this.mapService.initializeMap('location-map', lat, lng);
 
-      console.log('[DormEdit] Calling mapService.enablePickLocation...');
-      this.mapService.enablePickLocation(({ lat, lng }) => {
-        console.log('[DormEdit] Location picked:', { lat, lng });
-        loc.get('latitude')?.setValue(lat);
-        loc.get('longitude')?.setValue(lng);
-        this.cdr.markForCheck();
-      });
+        console.log('[DormEdit] Calling mapService.enablePickLocation...');
+        this.mapService.enablePickLocation(({ lat, lng }) => {
+          console.log('[DormEdit] Location picked:', { lat, lng });
+          loc.get('latitude')?.setValue(lat);
+          loc.get('longitude')?.setValue(lng);
+          this.cdr.markForCheck();
+        });
 
-      console.log('[DormEdit] Map initialized successfully');
-    } catch (error) {
-      console.error('[DormEdit] Map initialization error:', error);
-    }
-  }, 200);
-}
+        console.log('[DormEdit] Map initialized successfully');
+      } catch (error) {
+        console.error('[DormEdit] Map initialization error:', error);
+      }
+    }, 200);
+  }
 
-// ฟังก์ชัน initPreviewMap แบบเดียวกับหน้า DormAdd (เช็ค DOM และขนาดก่อน สร้างเฉพาะเมื่อพร้อม)
-initPreviewMap() {
-  // console.log('[DormEdit] initPreviewMap called');
+  // ฟังก์ชัน initPreviewMap แบบเดียวกับหน้า DormAdd (เช็ค DOM และขนาดก่อน สร้างเฉพาะเมื่อพร้อม)
+  initPreviewMap() {
+    // console.log('[DormEdit] initPreviewMap called');
 
-  setTimeout(() => {
-    const mapElement = this.document.getElementById('preview-map');
-    if (!mapElement) {
-      setTimeout(() => this.initPreviewMap(), 1000);
-      return;
-    }
+    setTimeout(() => {
+      const mapElement = this.document.getElementById('preview-map');
+      if (!mapElement) {
+        setTimeout(() => this.initPreviewMap(), 1000);
+        return;
+      }
 
-    if (this.mapService.isMapInitialized('preview-map')) {
-      console.log('[DormEdit] Preview map already initialized, skipping');
-      return;
-    }
+      if (this.mapService.isMapInitialized('preview-map')) {
+        console.log('[DormEdit] Preview map already initialized, skipping');
+        return;
+      }
 
-    const loc = this.dormForm.get('location')!;
-    const lat = loc.get('latitude')?.value;
-    const lng = loc.get('longitude')?.value;
+      const loc = this.dormForm.get('location')!;
+      const lat = loc.get('latitude')?.value;
+      const lng = loc.get('longitude')?.value;
 
-    if (!lat || !lng) {
-      console.log('[DormEdit] No coordinates available for preview map');
-      return;
-    }
+      if (!lat || !lng) {
+        console.log('[DormEdit] No coordinates available for preview map');
+        return;
+      }
 
-    console.log('[DormEdit] Preview map coordinates:', { lat, lng });
+      console.log('[DormEdit] Preview map coordinates:', { lat, lng });
 
-    try {
-      this.mapService.initializeMap('preview-map', lat, lng, 'ตำแหน่งหอพัก');
-      console.log('[DormEdit] Preview map initialized successfully');
-    } catch (error) {
-      console.error('[DormEdit] Preview map initialization error:', error);
-    }
-  }, 300);
-}
+      try {
+        this.mapService.initializeMap('preview-map', lat, lng, 'ตำแหน่งหอพัก');
+        console.log('[DormEdit] Preview map initialized successfully');
+      } catch (error) {
+        console.error('[DormEdit] Preview map initialization error:', error);
+      }
+    }, 300);
+  }
 
   // ---------- Drag & Drop Methods ----------
   onDragOver(event: DragEvent): void {
@@ -1514,7 +1766,9 @@ initPreviewMap() {
   }
 
   triggerFileInput(): void {
-    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    const fileInput = document.getElementById(
+      'file-upload'
+    ) as HTMLInputElement;
     fileInput?.click();
   }
 
@@ -1522,8 +1776,16 @@ initPreviewMap() {
     if (event.previousIndex === event.currentIndex) return;
 
     // Reorder both arrays using CDK's moveItemInArray
-    moveItemInArray(this.selectedImages, event.previousIndex, event.currentIndex);
-    moveItemInArray(this.imagePreviewUrls, event.previousIndex, event.currentIndex);
+    moveItemInArray(
+      this.selectedImages,
+      event.previousIndex,
+      event.currentIndex
+    );
+    moveItemInArray(
+      this.imagePreviewUrls,
+      event.previousIndex,
+      event.currentIndex
+    );
 
     // Update form array
     this.updateFormArray();
@@ -1534,7 +1796,7 @@ initPreviewMap() {
     console.log('[DormEdit] Image reordered:', {
       from: event.previousIndex,
       to: event.currentIndex,
-      mainImage: this.imagePreviewUrls[0]
+      mainImage: this.imagePreviewUrls[0],
     });
   }
 
@@ -1597,17 +1859,17 @@ initPreviewMap() {
     files.forEach((file, index) => {
       // ใช้ createObjectURL แทน readAsDataURL เพื่อความเร็ว
       const url = URL.createObjectURL(file);
-        this.imagePreviewUrls.push(url);
-        this.imageError = false;
+      this.imagePreviewUrls.push(url);
+      this.imageError = false;
 
       // เก็บไฟล์ในฟอร์ม
-        this.imagesArray.push(
-          this.fb.group({
-            file: [file],
-            preview: [url],
-            image_type: [''],
-          })
-        );
+      this.imagesArray.push(
+        this.fb.group({
+          file: [file],
+          preview: [url],
+          image_type: [''],
+        })
+      );
 
       processedCount++;
 
@@ -1645,8 +1907,6 @@ initPreviewMap() {
 
     this.updateSliderImages();
   }
-
-
 
   private uploadImagesIfAny(dormId: number): void {
     if (this.selectedImages.length === 0) {
@@ -1693,7 +1953,7 @@ initPreviewMap() {
     console.log('[DormAdd] Calling cdr.markForCheck()');
     this.cdr.markForCheck();
     console.log('[DormAdd] finishSubmission completed');
-    
+
     // Force change detection
     setTimeout(() => {
       console.log('[DormAdd] Force change detection after timeout');
@@ -1755,11 +2015,15 @@ initPreviewMap() {
     }
 
     // disconnect observers
-    try { this.locationResizeObserver?.disconnect(); } catch {}
-    try { this.previewResizeObserver?.disconnect(); } catch {}
+    try {
+      this.locationResizeObserver?.disconnect();
+    } catch {}
+    try {
+      this.previewResizeObserver?.disconnect();
+    } catch {}
 
     // Cleanup object URLs เพื่อป้องกัน memory leaks
-    this.imagePreviewUrls.forEach(url => {
+    this.imagePreviewUrls.forEach((url) => {
       if (url.startsWith('blob:')) {
         URL.revokeObjectURL(url);
       }
@@ -1772,82 +2036,131 @@ initPreviewMap() {
     type: 'error' | 'warning' | 'success' = 'error',
     scrollTargetSelector?: string
   ) {
+    console.log('[DormEdit] showCustomPopup called with:', { message, type, scrollTargetSelector });
     this.popupMessage = message;
     this.popupType = type;
     this.popupTargetSelector = scrollTargetSelector || null;
+    console.log('[DormEdit] popupTargetSelector set to:', this.popupTargetSelector);
     this.showPopup = true;
   }
 
   closePopup(shouldMove: boolean = false) {
+    console.log('[DormEdit] closePopup called, shouldMove:', shouldMove, 'targetSelector:', this.popupTargetSelector);
     this.showPopup = false;
     if (shouldMove && this.popupTargetSelector) {
       // รอให้ modal ปิดสมบูรณ์ก่อน scroll
       setTimeout(() => {
+        console.log('[DormEdit] About to scroll to:', this.popupTargetSelector);
         this.scrollToRoomTypeWithHighlight(this.popupTargetSelector!);
         this.popupTargetSelector = null;
       }, 200);
     }
   }
 
-  // แยก concerns: จัดการ scroll
+  // CHANGED: ให้รองรับ default ไปที่ header เสมอ
   private scrollToRoomTypeWithHighlight(selector: string) {
-    console.log('[DormAdd] Looking for element with selector:', selector);
+    console.log(
+      '[DormEdit] Looking for element with selector:',
+      selector
+    );
     const targetElement = this.findTargetElement(selector);
-    
+
     if (targetElement) {
-      console.log('[DormAdd] Element found, scrolling to:', targetElement);
-      // ปรับให้ scroll สมูทขึ้น
-      targetElement.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
-      });
-      
-      // รอให้ scroll เสร็จแล้วค่อย focus
+      console.log('[DormEdit] Element found, scrolling to:', targetElement);
+
+      // เลื่อนแบบคำนวณระยะเอง เพื่อชดเชย navbar/sticky header
+      const rect = targetElement.getBoundingClientRect();
+      const absoluteTop = window.scrollY + rect.top;
+      const topWithOffset = Math.max(absoluteTop - this.SCROLL_OFFSET_PX, 0);
+
+      window.scrollTo({ top: topWithOffset, behavior: 'smooth' });
+
+      // รอให้เลื่อนแล้วค่อย focus + flash
       setTimeout(() => {
         this.focusIfInput(targetElement);
-      }, 300);
+        this.flashHighlight(targetElement); // NEW
+      }, 350);
     } else {
-      console.error('[DormAdd] Element not found with selector:', selector);
+      console.error(
+        '[DormEdit] Element not found with selector:',
+        selector
+      );
     }
   }
 
   // แยก concerns: หา element ด้วย multiple selectors
   private findTargetElement(selector: string): HTMLElement | null {
-    // Primary selector
-    let element = this.document.querySelector<HTMLElement>(selector);
+    console.log('[DormEdit] Searching for selector:', selector);
     
-    if (element) return element;
+    // Handle comma-separated selectors
+    const selectors = selector.split(',').map(s => s.trim());
+    
+    for (const sel of selectors) {
+      console.log('[DormEdit] Trying selector:', sel);
+      let element = this.document.querySelector<HTMLElement>(sel);
+      if (element) {
+        console.log('[DormEdit] Found element with selector:', sel, element);
+        return element;
+      }
+    }
 
     // Fallback: หาจาก room type index
     const roomTypeMatch = selector.match(/room-type-(\d+)/);
     if (roomTypeMatch) {
       const index = parseInt(roomTypeMatch[1]);
+      console.log('[DormEdit] Trying room type fallback for index:', index);
       
       // Try multiple selectors
-      const selectors = [
+      const fallbackSelectors = [
         `#room-type-${index}`,
         `#room-type-header-${index}`,
         `.room-type-container:nth-child(${index + 1})`,
         `div[formGroupName="${index}"] span.font-medium`
       ];
 
-      for (const sel of selectors) {
-        element = this.document.querySelector<HTMLElement>(sel);
-        if (element) return element;
+      for (const sel of fallbackSelectors) {
+        console.log('[DormEdit] Trying fallback selector:', sel);
+        const element = this.document.querySelector<HTMLElement>(sel);
+        if (element) {
+          console.log('[DormEdit] Found element with fallback selector:', sel, element);
+          return element;
+        }
       }
     }
 
+    console.log('[DormEdit] No element found for selector:', selector);
     return null;
   }
 
+  // NEW: ไฮไลต์ชั่วคราวให้เห็นชัดว่าเลื่อนไปถึง
+  private flashHighlight(el: HTMLElement) {
+    el.classList.add('scroll-flash'); // ใส่คลาสชั่วคราว
+    el.setAttribute('tabindex', '-1'); // ให้ focus ได้แม้ไม่ใช่ input
+    el.focus({ preventScroll: true });
+
+    setTimeout(() => {
+      el.classList.remove('scroll-flash');
+      el.removeAttribute('tabindex');
+    }, 1200);
+  }
 
   // แยก concerns: focus input elements
   private focusIfInput(element: HTMLElement) {
-    if (element instanceof HTMLInputElement || 
-        element instanceof HTMLSelectElement || 
-        element instanceof HTMLTextAreaElement) {
+    if (
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLTextAreaElement
+    ) {
       element.focus();
     }
+  }
+
+  // ตรวจสอบว่ามีราคา 0 บาทหรือไม่
+  hasZeroPriceError(roomType: AbstractControl): boolean {
+    const priceFields = ['pricePerDay', 'pricePerMonth', 'pricePerTerm', 'pricePerSummer'];
+    return priceFields.some(field => {
+      const control = roomType.get(field);
+      return control && control.touched && control.value === '0';
+    });
   }
 }

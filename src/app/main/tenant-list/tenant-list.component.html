@@ -162,7 +162,7 @@
                     {{ tenant.display_name || tenant.username }}
                   </div>
                   <div class="text-sm text-gray-500 font-thai">
-                    {{ tenant.time_ago || getTimeAgo(tenant.created_at) }}
+                    {{ formatRequestDate(tenant.request_date) || formatRequestDate(tenant.created_at) }}
                   </div>
                 </div>
               </div>
@@ -278,10 +278,21 @@
                     tenant.status === 'ปฏิเสธ'
                   "
                 >
-                  <span
-                    class="px-4 py-2 text-sm rounded-lg bg-red-100 border border-red-200 text-red-700 font-medium font-thai"
-                  >
+                  <span class="text-red-600 font-medium font-thai">
                     ปฏิเสธแล้ว
+                  </span>
+                </ng-container>
+
+                <!-- สำหรับผู้เช่าที่ถูกยกเลิก -->
+                <ng-container
+                  *ngIf="
+                    tenant.status === 'ยกเลิก' ||
+                    tenant.status === 'cancelled' ||
+                    tenant.status === 'cancel'
+                  "
+                >
+                  <span class="text-red-600 font-medium font-thai">
+                    ยกเลิก
                   </span>
                 </ng-container>
 
@@ -295,7 +306,10 @@
                     tenant.status !== 'confirmed' &&
                     tenant.status !== 'ปฏิเสธแล้ว' &&
                     tenant.status !== 'rejected' &&
-                    tenant.status !== 'ปฏิเสธ'
+                    tenant.status !== 'ปฏิเสธ' &&
+                    tenant.status !== 'ยกเลิก' &&
+                    tenant.status !== 'cancelled' &&
+                    tenant.status !== 'cancel'
                   "
                 >
                 </ng-container>

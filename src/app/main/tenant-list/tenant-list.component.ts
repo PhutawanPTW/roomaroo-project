@@ -176,6 +176,32 @@ export class TenantListComponent implements OnInit, OnDestroy {
     }
   }
 
+  // แสดงวันที่ยื่นคำขอในรูปแบบที่อ่านง่าย
+  formatRequestDate(requestDate: string): string {
+    if (!requestDate) return '';
+    
+    try {
+      const date = new Date(requestDate);
+      
+      // แปลงเป็นรูปแบบ HH:mm:ss DD-MM-YYYY
+      const time = date.toLocaleTimeString('th-TH', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false 
+      });
+      
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      
+      return `${time} ${day}-${month}-${year}`;
+    } catch (error) {
+      console.error('Error formatting request date:', error);
+      return requestDate; // แสดงค่าเดิมถ้าแปลงไม่ได้
+    }
+  }
+
   getStatusText(status: string): string {
     // ใช้ status จาก API โดยตรง (เช่น "รออนุมัติ", "ยืนยันแล้ว")
     return status;

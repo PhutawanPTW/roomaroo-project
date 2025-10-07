@@ -158,10 +158,33 @@
 
 <!-- Results header - แก้ส่วนเรียงตามราคา -->
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-  <h2 class="text-lg md:text-xl font-medium font-thai mb-4 sm:mb-0">
-    พบข้อมูลหอพัก 
-    <span class="text-gray-500 font-normal text-sm">({{filteredDorms.length}} หอพัก)</span>
-  </h2>
+  <div>
+    <h2 class="text-lg md:text-xl font-medium font-thai mb-2 sm:mb-0">
+      <span *ngIf="similarSearchParams; else normalTitle">
+        หอพักที่คล้ายกับ "{{ similarSearchParams.similarName }}"
+      </span>
+      <ng-template #normalTitle>
+        พบข้อมูลหอพัก
+      </ng-template>
+      <span class="text-gray-500 font-normal text-sm">({{filteredDorms.length}} หอพัก)</span>
+    </h2>
+    <div *ngIf="similarSearchParams" class="text-sm text-gray-600 font-thai space-y-1">
+      <p>
+        <span class="font-medium">โซน:</span> {{ similarSearchParams.zone || 'ไม่ระบุ' }}
+        <span class="mx-2">|</span>
+        <span class="font-medium">ราคา:</span> {{ similarSearchParams.minPrice?.toLocaleString() || '0' }} - {{ similarSearchParams.maxPrice?.toLocaleString() || '0' }} บาท
+      </p>
+      <p *ngIf="similarSearchParams.amenities && similarSearchParams.amenities.length > 0">
+        <span class="font-medium">สิ่งอำนวยความสะดวก:</span> {{ similarSearchParams.amenities.slice(0, 5).join(', ') }}
+        <span *ngIf="similarSearchParams.amenities.length > 5">และอีก {{ similarSearchParams.amenities.length - 5 }} รายการ</span>
+      </p>
+      <button 
+        (click)="clearSimilarSearch()"
+        class="text-blue-600 hover:text-blue-800 text-sm hover:underline transition-colors duration-200">
+        ดูหอพักทั้งหมด
+      </button>
+    </div>
+  </div>
   <div class="w-full sm:w-48">
     <select 
       class="w-full h-10 px-3 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors font-thai appearance-none bg-white"
@@ -170,7 +193,7 @@
       (change)="applySelectedSort()">
       <option value="" disabled selected>เรียงตามราคา</option>
       <option value="asc">ราคาต่ำสุด</option>
-      <option value="desc">ราคาสูงสุดด</option>
+      <option value="desc">ราคาสูงสุด</option>
     </select>
   </div>
 </div>
@@ -238,7 +261,20 @@
       <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
       </svg>
-      <p class="text-lg text-gray-600 font-thai">ไม่พบหอพักที่ตรงกับเงื่อนไข กรุณาปรับเกณฑ์การค้นหา</p>
+      <p class="text-lg text-gray-600 font-thai">
+        <span *ngIf="similarSearchParams; else normalNoResult">
+          ไม่พบหอพักที่คล้ายกัน ลองปรับเกณฑ์การค้นหาหรือดูหอพักทั้งหมด
+        </span>
+        <ng-template #normalNoResult>
+          ไม่พบหอพักที่ตรงกับเงื่อนไข กรุณาปรับเกณฑ์การค้นหา
+        </ng-template>
+      </p>
+      <button 
+        *ngIf="similarSearchParams" 
+        (click)="clearSimilarSearch()"
+        class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-thai">
+        ดูหอพักทั้งหมด
+      </button>
     </div>
   </div>
 

@@ -1,5 +1,11 @@
 // src/app/main/navbar/navbar.component.ts
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, Router } from '@angular/router';
@@ -16,7 +22,7 @@ import { NavigationEnd } from '@angular/router';
   imports: [MatToolbarModule, MatButtonModule, CommonModule, RouterLink],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent implements OnInit, OnDestroy {
   menuOpen = false;
@@ -36,23 +42,29 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private googleAuthService: GoogleAuthService,
     private cdr: ChangeDetectorRef
-  ) { }
+  ) {}
 
   ngOnInit() {
     // ใช้ distinctUntilChanged เพื่อป้องกันการ trigger ซ้ำ แต่ไม่ใช้ take(1)
     this.authSubscription = this.authService.currentUser$
       .pipe(
-        filter(user => user !== undefined),
+        filter((user) => user !== undefined),
         distinctUntilChanged((prev, curr) => {
           // เปรียบเทียบเฉพาะข้อมูลที่จำเป็น
-          return prev?.uid === curr?.uid && 
-                 prev?.memberType === curr?.memberType &&
-                 prev?.photoURL === curr?.photoURL;
+          return (
+            prev?.uid === curr?.uid &&
+            prev?.memberType === curr?.memberType &&
+            prev?.photoURL === curr?.photoURL
+          );
         })
       )
-      .subscribe(user => {
+      .subscribe((user) => {
         // ไม่แสดงข้อมูล user ถ้าเป็น temporary user หรือยังไม่สมบูรณ์
-        if (user && !this.googleAuthService.isTemporaryUser() && !user.needsProfileSetup) {
+        if (
+          user &&
+          !this.googleAuthService.isTemporaryUser() &&
+          !user.needsProfileSetup
+        ) {
           this.currentUser = user;
           this.userType = user?.memberType ?? null;
           this.isOwner = user?.memberType === 'owner';
@@ -64,14 +76,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.cdr.markForCheck();
       });
-      
+
     // ตั้งค่า currentPath เริ่มต้น
     this.currentPath = this.router.url;
 
     // Listen to route changes to update menu if needed
     this.routerSub = this.router.events
       .pipe(
-        filter(event => event instanceof NavigationEnd),
+        filter((event) => event instanceof NavigationEnd),
         distinctUntilChanged((prev, curr) => {
           return (prev as NavigationEnd)?.url === (curr as NavigationEnd)?.url;
         })
@@ -170,11 +182,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.closeProfileDropdown();
   }
 
-  onPhotoLoad() { 
+  onPhotoLoad() {
     this.cdr.markForCheck();
   }
-  
-  onPhotoError() { 
+
+  onPhotoError() {
     this.cdr.markForCheck();
   }
 
@@ -190,5 +202,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
       return '/owner';
     }
     return '/main';
+  }
+
+  mobileMenuOpen = false;
+
+  toggleMobileMenu() {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  closeMobileMenu() {
+    this.mobileMenuOpen = false;
   }
 }

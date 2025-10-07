@@ -12,7 +12,7 @@
         <h1 class="text-2xl font-semibold text-gray-900 font-thai">
           ข้อมูลโปรไฟล์
         </h1>
-        <button
+        <button 
           (click)="toggleEditMode()"
           class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-thai font-medium"
         >
@@ -32,14 +32,14 @@
               <div
                 class="w-32 h-32 rounded-full overflow-hidden bg-gray-200 border-4 border-white shadow-lg"
               >
-                <img
-                  *ngIf="currentUser.photoURL"
-                  [src]="currentUser.photoURL"
+                <img 
+                  *ngIf="currentUser.photoURL" 
+                  [src]="currentUser.photoURL" 
                   [alt]="currentUser.displayName"
                   class="w-full h-full object-cover"
                 />
-                <div
-                  *ngIf="!currentUser.photoURL"
+                <div 
+                  *ngIf="!currentUser.photoURL" 
                   class="w-full h-full flex items-center justify-center text-gray-500"
                 >
                   <i class="fa-solid fa-user text-4xl"></i>
@@ -73,16 +73,16 @@
                       stroke-linejoin="round"
                       d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                     />
-                  </svg>
+                  </svg>                      
                 </div>
                 <div>
                   <p class="text-sm text-gray-500 font-thai">Username</p>
                   <p class="font-medium text-gray-900">
                     {{ currentUser.username || "ยังไม่มี username" }}
                   </p>
-                </div>
-              </div>
-
+        </div>
+        </div>
+              
               <div class="flex items-center space-x-3">
                 <div
                   class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"
@@ -100,14 +100,14 @@
                       d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                     ></path>
                   </svg>
-                </div>
+        </div>
                 <div>
                   <p class="text-sm text-gray-500 font-thai">อีเมล</p>
                   <p class="font-medium text-gray-900">
                     {{ currentUser.email }}
                   </p>
-                </div>
-              </div>
+        </div>
+      </div>
 
               <div class="flex items-center space-x-3">
                 <div
@@ -133,8 +133,8 @@
                   <p class="font-medium text-gray-900">
                     {{ currentUser.displayName || "ยังไม่ได้ตั้งชื่อ" }}
                   </p>
-                </div>
-              </div>
+        </div>
+      </div>
 
               <div class="flex items-center space-x-3">
                 <div
@@ -226,36 +226,29 @@
                   ></path>
                 </svg>
               </div>
-                <div>
-                  <p class="text-sm text-gray-500 font-thai">หอพักปัจจุบัน</p>
-                  <div
-                  *ngIf="currentUser.residenceDormId; else noDorm"
-                  class="flex items-center space-x-2"
-                >
+              <div>
+                <p class="text-sm text-gray-500 font-thai">หอพักปัจจุบัน</p>
+                <!-- กรณีมีหออยู่แล้ว -->
+                <div *ngIf="currentUser.residenceDormId as rid; else noDorm" class="flex items-center space-x-2">
                   <span class="font-medium text-gray-900">
-                    {{ getDormName(currentUser.residenceDormId) }} (ID:
-                    {{ currentUser.residenceDormId }})
+                    {{ getDormName(rid) }}
                   </span>
-                  <span
-                    class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium"
-                    >พักอยู่</span
-                  >
+                  <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">พักอยู่</span>
                 </div>
-                  <!-- แสดงสถานะกำลังย้าย (รออนุมัติ) ถ้ามีคำขออยู่ระหว่างดำเนินการ -->
-                  <div *ngIf="pendingChangeDormName" class="mt-2 flex items-center space-x-2">
-                    <span class="text-sm text-gray-500 font-thai">กำลังย้ายไป</span>
-                    <span class="font-medium text-gray-900">{{ pendingChangeDormName }}</span>
-                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">รออนุมัติ</span>
-                  </div>
+
+                <!-- กรณียังไม่มีหอ แต่มีคำขอรออนุมัติ ให้โชว์ชื่อหอที่ขอ -->
                 <ng-template #noDorm>
-                  <div class="flex items-center space-x-2">
-                    <span class="font-medium text-gray-500"
-                      >ยังไม่ได้เลือกหอพัก</span
-                    >
-                    <span
-                      class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium"
-                      >ไม่มีหอพัก</span
-                    >
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-medium text-gray-900" *ngIf="currentUser.pendingApproval && (currentUser.pendingDormName || currentUser.pendingDormId); else noDormLabel">
+                        {{ currentUser.pendingDormName || getDormName(currentUser.pendingDormId) }}
+                      </span>
+                      <ng-template #noDormLabel>
+                        <span class="font-medium text-gray-500">ยังไม่ได้เลือกหอพัก</span>
+                      </ng-template>
+                      <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium" *ngIf="currentUser.pendingApproval">รออนุมัติ</span>
+                      <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium" *ngIf="!currentUser.pendingApproval">ไม่มีหอพัก</span>
+                    </div>
                   </div>
                 </ng-template>
               </div>
@@ -273,20 +266,20 @@
                   <div
                     class="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-4 border-white shadow-lg"
                   >
-                    <img
+                    <img 
                       *ngIf="imagePreviewUrl || currentUser.photoURL"
                       [src]="imagePreviewUrl || currentUser.photoURL"
                       [alt]="currentUser.displayName"
                       class="w-full h-full object-cover"
                     />
-                    <div
+                    <div 
                       *ngIf="!imagePreviewUrl && !currentUser.photoURL"
                       class="w-full h-full flex items-center justify-center text-gray-500"
                     >
                       <i class="fa-solid fa-user text-3xl"></i>
                     </div>
                   </div>
-                  <button
+                  <button 
                     type="button"
                     (click)="uploadProfileImage()"
                     class="absolute -bottom-2 -right-2 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors shadow-lg"
@@ -314,7 +307,7 @@
               </div>
             </div>
 
-            <!-- ข้อมูลพื้นฐาน -->
+            <!-- ข้อมูลพื้นฐาน (สมาชิก) / ข้อมูลเจ้าของหอ (เจ้าของ) -->
             <div class="bg-gray-100 rounded-lg p-6">
               <h3
                 class="text-lg font-semibold text-gray-800 font-thai mb-6 flex items-center"
@@ -332,32 +325,44 @@
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   ></path>
                 </svg>
-                ข้อมูลพื้นฐาน
+                {{ isOwner ? 'ข้อมูลเจ้าของหอพัก' : 'ข้อมูลพื้นฐาน' }}
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="form-group">
                   <label class="block text-gray-700 font-thai mb-2 font-medium"
                     >Username</label
                   >
-                  <input
-                    type="text"
-                    [(ngModel)]="editForm.username"
+                  <input 
+                    type="text" 
+                    [(ngModel)]="editForm.username" 
                     name="username"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Username"
                   />
                 </div>
 
-                <div class="form-group">
-                  <label class="block text-gray-700 font-thai mb-2 font-medium"
-                    >ชื่อ/นามสกุล</label
-                  >
-                  <input
-                    type="text"
-                    [(ngModel)]="editForm.displayName"
+                <!-- สมาชิก: ชื่อ/นามสกุล -->
+                <div class="form-group" *ngIf="!isOwner">
+                  <label class="block text-gray-700 font-thai mb-2 font-medium">ชื่อ/นามสกุล</label>
+                  <input 
+                    type="text" 
+                    [(ngModel)]="editForm.displayName" 
                     name="displayName"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="ชื่อ/นามสกุล"
+                  />
+                </div>
+
+                <!-- เจ้าของ: ชื่อผู้จัดการ/เจ้าของหอพัก (บังคับ) -->
+                <div class="form-group" *ngIf="isOwner">
+                  <label class="block text-gray-700 font-thai mb-2 font-medium">ชื่อผู้จัดการ/เจ้าของหอพัก</label>
+                  <input 
+                    type="text" 
+                    [(ngModel)]="editForm.managerName" 
+                    name="managerName"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="กรุณากรอกชื่อผู้จัดการ/เจ้าของหอพัก"
+                    required
                   />
                 </div>
 
@@ -365,18 +370,46 @@
                   <label class="block text-gray-700 font-thai mb-2 font-medium"
                     >เบอร์โทรศัพท์</label
                   >
-                  <input
-                    type="tel"
-                    [(ngModel)]="editForm.phoneNumber"
+                  <input 
+                    type="tel" 
+                    [(ngModel)]="editForm.phoneNumber" 
                     name="phoneNumber"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="เบอร์โทรศัพท์"
                   />
                 </div>
+
+                <!-- เฉพาะเจ้าของ: เบอร์โทรศัพท์สำรอง -->
+                <div class="form-group" *ngIf="isOwner">
+                  <label class="block text-gray-700 font-thai mb-2 font-medium">
+                    เบอร์โทรศัพท์สำรอง
+                  </label>
+                  <input 
+                    type="tel" 
+                    [(ngModel)]="editForm.secondaryPhone" 
+                    name="secondaryPhone"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="เบอร์โทรศัพท์สำรอง (ไม่บังคับ)"
+                  />
+                </div>
+
+                <!-- เฉพาะเจ้าของ: Line ID -->
+                <div class="form-group" *ngIf="isOwner">
+                  <label class="block text-gray-700 font-thai mb-2 font-medium">
+                    Line ID
+                  </label>
+                  <input 
+                    type="text" 
+                    [(ngModel)]="editForm.lineId" 
+                    name="lineId"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Line ID สำหรับให้ลูกค้าติดต่อสอบถามหอพัก (ไม่บังคับ)"
+                  />
+                </div>
               </div>
             </div>
 
-            <!-- อีเมล -->
+            <!-- อีเมล (ไม่อนุญาตให้แก้ไขสำหรับผู้ใช้ทั่วไปทั้งสมาชิกและเจ้าของ) -->
             <div class="bg-gray-100 rounded-lg p-6">
               <h3
                 class="text-lg font-semibold text-gray-800 font-thai mb-6 flex items-center"
@@ -396,23 +429,9 @@
                 </svg>
                 อีเมล
               </h3>
-
-              <!-- สำหรับ Email User -->
-              <div class="form-group" *ngIf="!isGoogleUser">
-                <label class="block text-gray-700 font-thai mb-2 font-medium"
-                  >อีเมล</label
-                >
-                <input
-                  type="email"
-                  [(ngModel)]="editForm.email"
-                  name="email"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="อีเมล"
-                />
-              </div>
-
-              <!-- สำหรับ Google User -->
-              <div class="form-group" *ngIf="isGoogleUser">
+              
+              <!-- แสดงแบบอ่านอย่างเดียวสำหรับทุกประเภท -->
+              <div class="form-group">
                 <label class="block text-gray-700 font-thai mb-2 font-medium"
                   >อีเมล</label
                 >
@@ -421,6 +440,7 @@
                 >
                   {{ currentUser.email }}
                 </div>
+                <p class="text-xs text-gray-500 mt-2 font-thai">ไม่สามารถแก้ไขอีเมลได้</p>
               </div>
             </div>
 
@@ -444,34 +464,35 @@
                 </svg>
                 รหัสผ่าน
               </h3>
+              <p *ngIf="passwordError" class="text-sm text-red-600 mb-4">{{ passwordError }}</p>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="form-group">
                   <label class="block text-gray-700 font-thai mb-2 font-medium"
                     >รหัสผ่านใหม่</label
                   >
-                  <input
-                    type="password"
-                    [(ngModel)]="editForm.password"
+                  <input 
+                    type="password" 
+                    [(ngModel)]="editForm.password" 
                     name="password"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="รหัสผ่านใหม่"
+                    placeholder="อย่างน้อย 10 ตัว, A-Z, a-z, 0-9, สัญลักษณ์"
                   />
-                </div>
+        </div>
 
                 <div class="form-group">
                   <label class="block text-gray-700 font-thai mb-2 font-medium"
                     >ยืนยันรหัสผ่าน</label
                   >
-                  <input
-                    type="password"
-                    [(ngModel)]="editForm.confirmPassword"
+                  <input 
+                    type="password" 
+                    [(ngModel)]="editForm.confirmPassword" 
                     name="confirmPassword"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="ยืนยันรหัสผ่าน"
                   />
-                </div>
-              </div>
-            </div>
+        </div>
+      </div>
+    </div>
 
             <!-- เลือกหอพัก (สำหรับ Member เท่านั้น) -->
             <div class="bg-gray-100 rounded-lg p-6" *ngIf="isMember">
@@ -498,22 +519,28 @@
                   >เลือกหอพัก</label
                 >
                 <div class="relative">
-                  <select
+                <select 
                     [(ngModel)]="editForm.dormId"
-                    name="dormId"
+                  name="dormId"
                     class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent appearance-none"
                    >
-                    <option
+                    <!-- Placeholder option -->
+                    <option value="" disabled selected class="text-gray-500">
+                      เลือกหอพัก
+                    </option>
+                    
+                    <!-- Dormitory options -->
+                    <option 
                       *ngFor="let dorm of availableDorms"
                       [value]="dorm.dorm_id"
-                      [disabled]="isCurrentDorm(dorm.dorm_id.toString())"
+                      [disabled]="shouldDisableDorm(dorm.dorm_id.toString())"
                     >
                       {{ dorm.dorm_name }}
-                      <span *ngIf="isCurrentDorm(dorm.dorm_id.toString())">
-                        (หอปัจจุบัน)</span
-                      >
+                      <span *ngIf="getDormStatusText(dorm.dorm_id.toString())">
+                        ({{ getDormStatusText(dorm.dorm_id.toString()) }})
+                      </span>
                     </option>
-                  </select>
+                </select>
 
                   <!-- caret custom -->
                   <svg
@@ -533,14 +560,14 @@
                 </div>
 
                 <p class="text-sm text-gray-500 mt-2 font-thai">
-                  * หอพักที่คุณพักอยู่ปัจจุบันจะไม่สามารถเลือกได้
+                  * หอพักที่คุณพักอยู่ปัจจุบันและหอพักที่รออนุมัติจะไม่สามารถเลือกได้
                 </p>
               </div>
             </div>
 
             <!-- ปุ่มบันทึก -->
             <div class="flex justify-center pt-4">
-              <button
+              <button 
                 type="submit"
                 [disabled]="isSaving"
                 class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-thai font-medium shadow-lg"
@@ -553,10 +580,10 @@
               </button>
             </div>
           </form>
-        </div>
       </div>
+    </div>
 
-      <ng-template #loading>
+    <ng-template #loading>
         <div class="flex justify-center items-center py-12">
           <div class="text-center">
             <div
@@ -564,8 +591,8 @@
             ></div>
             <p class="text-gray-600 font-thai">กำลังโหลดข้อมูล...</p>
           </div>
-        </div>
-      </ng-template>
+      </div>
+    </ng-template>
     </div>
 
     <!-- Image Upload Modal -->

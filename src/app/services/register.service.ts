@@ -4,7 +4,10 @@ import { Router } from '@angular/router';
 import { 
   Auth, 
   createUserWithEmailAndPassword, 
-  updateProfile 
+  updateProfile,
+  deleteUser,
+  signOut,
+  User
 } from '@angular/fire/auth';
 import { environment } from '../../environments/environment';
 
@@ -241,6 +244,17 @@ export class RegisterService {
 
       return userProfile;
     } catch (error: any) {
+      // ✅ Cleanup: ลบ Firebase User ถ้า Backend profile completion ล้มเหลว
+      if (currentUser) {
+        try {
+          console.log('[RegisterService] Backend profile completion failed, cleaning up Firebase user');
+          await deleteUser(currentUser);
+          console.log('[RegisterService] Firebase user deleted successfully');
+        } catch (deleteError: any) {
+          console.error('[RegisterService] Failed to cleanup Firebase user:', deleteError);
+          // ไม่ throw deleteError เพื่อให้ original error ถูกส่งต่อไป
+        }
+      }
       throw error;
     } finally {
       this.registrationState.isRegistrationInProgress = false;
@@ -259,23 +273,29 @@ export class RegisterService {
     dormitoryId?: number
   ): Promise<void> {
     this.registrationState.isRegistrationInProgress = true;
+    let firebaseUser: User | null = null;
 
     try {
       const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
-      const firebaseUser = userCredential.user;
+      firebaseUser = userCredential.user;
 
       await updateProfile(firebaseUser, { displayName: fullName });
       const idToken = await firebaseUser.getIdToken();
 
+      // ✅ ตัดข้อมูลให้ไม่เกิน 255 ตัวอักษร เพื่อป้องกัน Backend error
+      const truncateString = (str: string, maxLength: number = 255): string => {
+        return str && str.length > maxLength ? str.substring(0, maxLength) : str;
+      };
+
       const payload: any = {
         email: firebaseUser.email,
-        fullName: fullName,
+        fullName: truncateString(fullName, 255),
         memberType: memberType,
       };
 
       // เพิ่ม phoneNumber เฉพาะเมื่อมีค่า
       if (phoneNumber) {
-        payload.phoneNumber = phoneNumber;
+        payload.phoneNumber = truncateString(phoneNumber, 20); // เบอร์โทรไม่ควรยาวมาก
       }
 
       // ส่ง dormitoryId เฉพาะเมื่อเป็น member และมีค่า
@@ -303,6 +323,35 @@ export class RegisterService {
         this.router.navigate(['/main']);
       }
     } catch (error: any) {
+      console.error('[RegisterService] Backend registration failed:', error);
+      
+      // ✅ Cleanup: ลบ Firebase User ถ้า Backend registration ล้มเหลว
+      if (firebaseUser) {
+        try {
+          console.log('[RegisterService] Backend registration failed, cleaning up Firebase user:', firebaseUser.uid);
+          
+          // ตรวจสอบว่า user ยังอยู่ใน Firebase หรือไม่
+          await firebaseUser.reload();
+          console.log('[RegisterService] Firebase user still exists, proceeding with deletion');
+          
+          await deleteUser(firebaseUser);
+          console.log('[RegisterService] Firebase user deleted successfully');
+        } catch (deleteError: any) {
+          console.error('[RegisterService] Failed to cleanup Firebase user:', deleteError);
+          
+          // ถ้า delete ไม่ได้ ให้ลอง sign out แทน
+          try {
+            console.log('[RegisterService] Attempting to sign out instead');
+            await signOut(this.auth);
+            console.log('[RegisterService] Signed out successfully');
+          } catch (signOutError) {
+            console.error('[RegisterService] Sign out also failed:', signOutError);
+          }
+        }
+      } else {
+        console.log('[RegisterService] No Firebase user to cleanup');
+      }
+      
       throw error;
     } finally {
       this.registrationState.isRegistrationInProgress = false;
