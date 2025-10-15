@@ -24,6 +24,14 @@ export class TenantListComponent implements OnInit, OnDestroy {
   processingAction: string | null = null; // สำหรับติดตาม action ที่กำลังประมวลผล (approve, reject, cancel)
   private refreshSub: Subscription | null = null;
 
+  // Modal states
+  showRejectModal = false;
+  showCancelModal = false;
+  selectedTenant: any = null;
+  rejectionReason = '';
+  cancelReason = '';
+  isSubmittingReason = false;
+
   constructor(
     private ownerDormitoryService: OwnerDormitoryService,
     private authService: AuthService
@@ -240,57 +248,103 @@ export class TenantListComponent implements OnInit, OnDestroy {
   }
 
   onRejectTenant(tenant: any) {
-    console.log('PUT /api/dormitories/{dormId}/tenants/{userId}/reject - tenant:', tenant);
+    // แสดง modal สำหรับกรอกเหตุผลการปฏิเสธ
+    this.selectedTenant = tenant;
+    this.rejectionReason = '';
+    this.showRejectModal = true;
+  }
+
+  // ยืนยันการปฏิเสธพร้อมเหตุผล
+  confirmRejectTenant() {
+    if (!this.rejectionReason.trim()) {
+      alert('กรุณาระบุเหตุผลการปฏิเสธ');
+      return;
+    }
+
+    if (!this.selectedTenant) return;
+
+    console.log('PUT /api/dormitories/{dormId}/tenants/{userId}/reject - tenant:', this.selectedTenant);
+    console.log('Rejection reason:', this.rejectionReason);
     
-    this.processingTenantId = tenant.id;
-    this.processingAction = 'reject';
+    this.isSubmittingReason = true;
     this.errorMessage = '';
     
-    this.ownerDormitoryService.rejectTenant(tenant.residence_dorm_id, tenant.id).subscribe({
+    this.ownerDormitoryService.rejectTenantWithReason(
+      this.selectedTenant.residence_dorm_id, 
+      this.selectedTenant.id,
+      this.rejectionReason.trim()
+    ).subscribe({
       next: (response) => {
         console.log('Reject success:', response);
-        console.log('Reject response details:', {
-          message: response.message,
-          status: response.status,
-          data: response.data
-        });
-        this.processingTenantId = null;
-        this.processingAction = null;
+        this.isSubmittingReason = false;
+        this.closeRejectModal();
         this.loadTenants(); // โหลดข้อมูลใหม่
       },
       error: (error) => {
         console.error('Reject error:', error);
-        this.processingTenantId = null;
-        this.processingAction = null;
+        this.isSubmittingReason = false;
         this.errorMessage = 'ไม่สามารถปฏิเสธผู้เช่าได้';
       }
     });
   }
 
   onCancelConfirmation(tenant: any) {
-    console.log('PUT /api/dormitories/{dormId}/tenants/{userId}/cancel - tenant:', tenant);
+    // แสดง modal สำหรับกรอกเหตุผลการยกเลิก
+    this.selectedTenant = tenant;
+    this.cancelReason = '';
+    this.showCancelModal = true;
+  }
+
+  // ยืนยันการยกเลิกพร้อมเหตุผล
+  confirmCancelTenant() {
+    if (!this.cancelReason.trim()) {
+      alert('กรุณาระบุเหตุผลการยกเลิก');
+      return;
+    }
+
+    if (!this.selectedTenant) return;
+
+    console.log('PUT /api/dormitories/{dormId}/tenants/{userId}/cancel - tenant:', this.selectedTenant);
+    console.log('Cancel reason:', this.cancelReason);
     
-    this.processingTenantId = tenant.id;
-    this.processingAction = 'cancel';
+    this.isSubmittingReason = true;
     this.errorMessage = '';
     
-    this.ownerDormitoryService.cancelTenantApproval(tenant.residence_dorm_id, tenant.id).subscribe({
+    this.ownerDormitoryService.cancelTenantApprovalWithReason(
+      this.selectedTenant.residence_dorm_id, 
+      this.selectedTenant.id,
+      this.cancelReason.trim()
+    ).subscribe({
       next: (response) => {
         console.log('Cancel approval success:', response);
-        this.processingTenantId = null;
-        this.processingAction = null;
+        this.isSubmittingReason = false;
+        this.closeCancelModal();
         this.loadTenants(); // โหลดข้อมูลใหม่
       },
       error: (error) => {
         console.error('Cancel approval error:', error);
-        this.processingTenantId = null;
-        this.processingAction = null;
+        this.isSubmittingReason = false;
         this.errorMessage = 'ไม่สามารถยกเลิกการอนุมัติได้';
       }
     });
   }
 
 
+
+  // Modal control methods
+  closeRejectModal() {
+    this.showRejectModal = false;
+    this.selectedTenant = null;
+    this.rejectionReason = '';
+    this.isSubmittingReason = false;
+  }
+
+  closeCancelModal() {
+    this.showCancelModal = false;
+    this.selectedTenant = null;
+    this.cancelReason = '';
+    this.isSubmittingReason = false;
+  }
 
   onImageError(event: any) {
     // เมื่อรูปโหลดไม่สำเร็จ ให้ซ่อนรูปและแสดง fallback แทน

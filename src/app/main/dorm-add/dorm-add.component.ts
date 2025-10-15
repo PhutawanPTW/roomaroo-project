@@ -31,6 +31,7 @@ import { OwnerDormitoryService } from '../../services/owner-dormitory.service';
 import { DormitoryService, RoomType } from '../../services/dormitory.service';
 import { forkJoin, of } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { DistanceService } from '../../services/distance.service';
 
 interface Amenity {
   id: string;
@@ -186,7 +187,8 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     private http: HttpClient,
     private ownerDormitoryService: OwnerDormitoryService,
     private dormitoryService: DormitoryService,
-    private authService: AuthService
+    private authService: AuthService,
+    private distanceService: DistanceService
   ) {
     this.initForm();
     this.loadZones();
@@ -1281,6 +1283,31 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  // ---------- Distance Calculation ----------
+  private calculateAndUpdateDistance(lat: number, lng: number): void {
+    const dormName = this.dormForm.get('generalInfo.name')?.value?.trim() || '';
+    const zoneId = this.dormForm.get('generalInfo.zone_id')?.value;
+    const zoneName = this.zones.find(z => z.zone_id === Number(zoneId))?.zone_name || '';
+    
+    if (!dormName || !zoneName) {
+      console.log('[DormAdd] Cannot calculate distance: missing dorm name or zone');
+      return;
+    }
+    
+    const distance = this.distanceService.calculateDistance(lat, lng);
+    const distanceText = this.distanceService.createDistanceText(dormName, zoneName, distance);
+    
+    console.log('[DormAdd] Distance calculated:', { distance, distanceText });
+    
+    // อัปเดต description ด้วย distance text
+    const currentDescription = this.dormForm.get('generalInfo.description')?.value || '';
+    const { description: cleanDescription } = this.distanceService.splitDescription(currentDescription);
+    const newDescription = this.distanceService.combineDescription(distanceText, cleanDescription);
+    
+    this.dormForm.get('generalInfo.description')?.setValue(newDescription);
+    this.cdr.markForCheck();
+  }
+
   // ---------- Map ----------
   initLocationMap() {
     console.log('[DormAdd] initLocationMap called');
@@ -1321,6 +1348,10 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
           console.log('[DormAdd] Location picked:', { lat, lng });
       loc.get('latitude')?.setValue(lat);
       loc.get('longitude')?.setValue(lng);
+      
+      // คำนวณระยะทางทันทีเมื่อปักหมุด
+      this.calculateAndUpdateDistance(lat, lng);
+      
       this.cdr.markForCheck();
     });
 
@@ -1523,6 +1554,38 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     this.updateFormArray();
 
     this.updateSliderImages();
+  }
+
+  // ตั้งรูปภาพเป็นภาพหลัก (ย้ายไปตำแหน่งแรก)
+  setAsMainImage(index: number): void {
+    if (index === 0 || index < 0 || index >= this.imagePreviewUrls.length) return;
+
+    // ย้ายรูปภาพไปตำแหน่งแรก
+    const imageToMove = this.imagePreviewUrls[index];
+    const fileToMove = this.selectedImages[index];
+
+    // ลบจากตำแหน่งเดิม
+    this.imagePreviewUrls.splice(index, 1);
+    this.selectedImages.splice(index, 1);
+
+    // เพิ่มไปตำแหน่งแรก
+    this.imagePreviewUrls.unshift(imageToMove);
+    this.selectedImages.unshift(fileToMove);
+
+    // Update form array และ slider
+    this.updateFormArray();
+    this.updateSliderImages();
+
+    // Reset current image index to show the new main image
+    this.currentImageIndex = 0;
+
+    // แสดงข้อความแจ้งเตือน
+    this.showCustomPopup('ตั้งเป็นภาพหลั��แล้ว', 'success');
+  }
+
+  // ตรวจสอบว่าเป็นภาพหลักหรือไม่
+  isMainImage(index: number): boolean {
+    return index === 0;
   }
 
 

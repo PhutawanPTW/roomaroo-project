@@ -193,12 +193,38 @@ export class OwnerDormitoryService {
       );
   }
 
+  // ปฏิเสธการสมัครของผู้เช่าพร้อมเหตุผล
+  rejectTenantWithReason(dormId: number, userId: number, reason: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/dormitories/${dormId}/tenants/${userId}/reject`, {
+      response_note: reason
+    })
+      .pipe(
+        tap((resp) => {
+          console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/reject with reason -> success', resp);
+        }),
+        catchError(this.handleError)
+      );
+  }
+
   // ยกเลิกการยืนยันผู้เช่า
   cancelTenantApproval(dormId: number, userId: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/dormitories/${dormId}/tenants/${userId}/cancel`, {})
       .pipe(
         tap((resp) => {
           console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/cancel -> success', resp);
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // ยกเลิกการยืนยันผู้เช่าพร้อมเหตุผล
+  cancelTenantApprovalWithReason(dormId: number, userId: number, reason: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/dormitories/${dormId}/tenants/${userId}/cancel`, {
+      response_note: reason
+    })
+      .pipe(
+        tap((resp) => {
+          console.log('[OwnerDormitoryService] PUT /api/dormitories/${dormId}/tenants/${userId}/cancel with reason -> success', resp);
         }),
         catchError(this.handleError)
       );

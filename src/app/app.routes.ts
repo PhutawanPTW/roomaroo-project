@@ -105,7 +105,8 @@ export const routes: Routes = [
   // Admin login route
   {
     path: 'admin/login',
-    component: AdminLoginComponent
+    component: AdminLoginComponent,
+    canActivate: [AuthRedirectGuard]
   },
 
   // Admin dormitory detail route

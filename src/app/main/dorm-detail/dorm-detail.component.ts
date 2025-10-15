@@ -131,64 +131,11 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   // Loading states to prevent duplicate actions
   isSubmittingComment: boolean = false;
   
-  // Mockup reviews data
-  mockupReviews: Review[] = [
-    {
-      username: 'สมหมาย',
-      avatar: '../../../assets/images/image-removebg-preview.png',
-      comment: 'หอนี้ดีมาก สะอาด ปลอดภัย เจ้าของใจดี',
-      rating: 5,
-      isPositive: true,
-      date: new Date('2024-01-15'),
-      isResident: true,
-      isCurrentUser: false,
-      isEditing: false
-    },
-    {
-      username: 'น้องแอม',
-      avatar: '../../../assets/images/image-removebg-preview.png',
-      comment: 'หอพักนี้ดีมากเลย ใกล้มหาวิทยาลัย ราคาไม่แพง',
-      rating: 5,
-      isPositive: true,
-      date: new Date('2024-01-10'),
-      isResident: true,
-      isCurrentUser: false,
-      isEditing: false
-    },
-    {
-      username: 'คุณสมชาย',
-      avatar: '../../../assets/images/image-removebg-preview.png',
-      comment: 'หอพักสะอาด มีสิ่งอำนวยความสะดวกครบครัน',
-      rating: 4,
-      isPositive: true,
-      date: new Date('2024-01-08'),
-      isResident: true,
-      isCurrentUser: false,
-      isEditing: false
-    },
-    {
-      username: 'คุณสมหญิง',
-      avatar: '../../../assets/images/image-removebg-preview.png',
-      comment: 'หอพักนี้โอเค แต่เสียงรบกวนบ้าง',
-      rating: 3,
-      isPositive: false,
-      date: new Date('2024-01-05'),
-      isResident: true,
-      isCurrentUser: false,
-      isEditing: false
-    },
-    {
-      username: 'คุณปัจจุบัน',
-      avatar: '../../../assets/images/image-removebg-preview.png',
-      comment: 'หอพักนี้ดีมากเลย อยู่สบายมาก',
-      rating: 5,
-      isPositive: true,
-      date: new Date('2024-01-20'),
-      isResident: true,
-      isCurrentUser: true, // รีวิวของผู้ใช้ปัจจุบัน
-      isEditing: false
-    }
-  ];
+  // Compare state
+  isInCompareList: boolean = false;
+  
+  // Compare state
+  isInCompare: boolean = false;
 
   // Similar properties (using real data)
   similarProperties: SimilarProperty[] = [];
@@ -235,11 +182,18 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     // Check login status
     this.checkLoginStatus();
     
+    // Subscribe to compare list changes
+    this.dormCompareService.compareIds$.subscribe(ids => {
+      this.isInCompareList = ids.includes(this.dormId);
+    });
+    
     // รับ dormId จาก URL และโหลดข้อมูล
     this.route.params.subscribe(params => {
       const id = params['id'];
       if (id && !isNaN(+id) && +id > 0) {
         this.dormId = +id;
+        // ตรวจสอบสถานะเปรียบเทียบ
+        this.isInCompareList = this.dormCompareService.isInCompare(this.dormId);
         // ทำลายแมพเก่าเมื่อเปลี่ยน dormId
         this.resetMapState();
         
@@ -387,9 +341,13 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
 
       // จัดการราคา
-      if (detail.min_price && detail.max_price) {
-        this.priceRange = `${detail.min_price.toLocaleString()} - ${detail.max_price.toLocaleString()} บาท/เดือน`;
-      } else if (detail.monthly_price) {
+      if (detail.min_price != null && detail.max_price != null) {
+        const minVal = Number(detail.min_price);
+        const maxVal = Number(detail.max_price);
+        this.priceRange = (minVal === maxVal)
+          ? `${minVal.toLocaleString()} บาท/เดือน`
+          : `${minVal.toLocaleString()} - ${maxVal.toLocaleString()} บาท/เดือน`;
+      } else if (detail.monthly_price != null) {
         this.dormPrice = `${detail.monthly_price.toLocaleString()} บาท/เดือน`;
       }
 
@@ -516,8 +474,12 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     }
 
-    if (dorm.min_price && dorm.max_price) {
-      monthlyPrice = `${dorm.min_price.toLocaleString()} - ${dorm.max_price.toLocaleString()} บาท/เดือน`;
+    if (dorm.min_price != null && dorm.max_price != null) {
+      const minVal = Number(dorm.min_price);
+      const maxVal = Number(dorm.max_price);
+      monthlyPrice = (minVal === maxVal)
+        ? `${minVal.toLocaleString()} บาท/เดือน`
+        : `${minVal.toLocaleString()} - ${maxVal.toLocaleString()} บาท/เดือน`;
       if (!priceDisplay) {
         priceDisplay = monthlyPrice;
       }
@@ -539,7 +501,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       zone: zoneDisplay,
       image: dorm.main_image_url || dorm.thumbnail_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
       rating: 5.0,
-      date: dorm.updated_date ? `อัพเดทล่าสุด ${new Date(dorm.updated_date).toLocaleDateString('th-TH')}` : '',
+      date: dorm.updated_date ? this.formatThaiDate(dorm.updated_date) : '',
     };
   }
 
@@ -1190,16 +1152,105 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       zone: this.dormDetail.zone_name || 'ไม่ระบุโซน'
     };
 
-    // เพิ่มเข้าสู่รายการเปรียบเทียบ
-    const success = this.dormCompareService.addToCompare(compareItem);
-    
-    if (!success) {
-      if (this.dormCompareService.isInCompare(this.dormId)) {
-        console.log('[DormDetail] หอพักนี้อยู่ในรายการเปรียบเทียบแล้ว');
+    // ตรวจสอบว่าหอพักอยู่ในรายการเปรียบเทียบแล้วหรือไม่
+    if (this.dormCompareService.isInCompare(this.dormId)) {
+      // ถ้าอยู่แล้ว ให้ลบออก
+      this.dormCompareService.removeFromCompare(this.dormId);
+      this.isInCompareList = false;
+      console.log('[DormDetail] ลบหอพักออกจากรายการเปรียบเทียบ');
+    } else {
+      // ถ้ายังไม่อยู่ ให้เพิ่มเข้า
+      const success = this.dormCompareService.addToCompare(compareItem);
+      
+      if (success) {
+        this.isInCompareList = true;
+        console.log('[DormDetail] เพิ่มหอพักเข้าสู่รายการเปรียบเทียบ');
       } else {
         console.log('[DormDetail] ไม่สามารถเพิ่มหอพักได้ (เกินจำนวนสูงสุด)');
       }
     }
+  }
+
+  // Format date to Thai format
+  formatThaiDate(dateString: string): string {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const thaiMonths = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
+    
+    const day = date.getDate();
+    const month = thaiMonths[date.getMonth()];
+    const year = date.getFullYear() + 543; // Convert to Buddhist Era
+    
+    return `อัพเดทล่าสุด: ${day} ${month} ${year}`;
+  }
+
+  // Handle thumbnail click
+  selectThumbnail(index: number): void {
+    this.currentImageIndex = index;
+  }
+
+  // Thumbnail navigation
+  thumbnailStartIndex: number = 0;
+  maxVisibleThumbnails: number = 10;
+  Math = Math; // Make Math available in template
+
+  getVisibleThumbnails(): string[] {
+    return this.images.slice(this.thumbnailStartIndex, this.thumbnailStartIndex + this.maxVisibleThumbnails);
+  }
+
+  getVisibleThumbnailIndices(): number[] {
+    const indices: number[] = [];
+    for (let i = this.thumbnailStartIndex; i < Math.min(this.thumbnailStartIndex + this.maxVisibleThumbnails, this.images.length); i++) {
+      indices.push(i);
+    }
+    return indices;
+  }
+
+  canScrollThumbnailsLeft(): boolean {
+    return this.thumbnailStartIndex > 0;
+  }
+
+  canScrollThumbnailsRight(): boolean {
+    return this.thumbnailStartIndex + this.maxVisibleThumbnails < this.images.length;
+  }
+
+  scrollThumbnailsLeft(): void {
+    if (this.canScrollThumbnailsLeft()) {
+      this.thumbnailStartIndex = Math.max(0, this.thumbnailStartIndex - this.maxVisibleThumbnails);
+    }
+  }
+
+  scrollThumbnailsRight(): void {
+    if (this.canScrollThumbnailsRight()) {
+      this.thumbnailStartIndex = Math.min(
+        this.images.length - this.maxVisibleThumbnails,
+        this.thumbnailStartIndex + this.maxVisibleThumbnails
+      );
+    }
+  }
+
+  onThumbnailClick(index: number): void {
+    this.currentImageIndex = index;
+    // Auto-scroll thumbnail strip to show current image
+    if (index < this.thumbnailStartIndex) {
+      this.thumbnailStartIndex = Math.max(0, index);
+    } else if (index >= this.thumbnailStartIndex + this.maxVisibleThumbnails) {
+      this.thumbnailStartIndex = Math.min(
+        this.images.length - this.maxVisibleThumbnails,
+        index - this.maxVisibleThumbnails + 1
+      );
+    }
+  }
+
+  // Get thumbnail classes
+  getThumbnailClasses(index: number): string {
+    const baseClasses = 'thumbnail-item';
+    const activeClass = index === this.currentImageIndex ? ' active' : '';
+    return baseClasses + activeClass;
   }
 
 }

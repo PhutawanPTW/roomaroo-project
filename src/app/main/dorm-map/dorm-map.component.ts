@@ -222,17 +222,17 @@ export class DormMapComponent implements OnInit, OnDestroy {
     const img = (d as any).main_image_url || (d as any).thumbnail_url || '';
     const price = this.getPriceDisplay(d);
     const rating = (d.rating ?? 0).toFixed(1);
+    const dormId = d.dorm_id;
 
     return `
-    <div class="font-thai w-[280px]">
-      <div class="m-4">                       <!-- ระยะห่างจากขอบ popup -->
-        ${
-          img
-            ? `
+    <div class="font-thai w-[280px] cursor-pointer" onclick="window.location.href='/dorm-detail/${dormId}'">
+      <div class="m-4 hover:opacity-90 transition-opacity">
+        ${img
+        ? `
           <img src="${img}" alt="${d.dorm_name || ''}"
                class="w-full h-[140px] object-cover mb-3">`
-            : ''
-        }
+        : ''
+      }
 
         <div class="text-lg leading-7 font-semibold font-thai text-slate-900">
           ${price}
@@ -249,7 +249,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
         <div class="mt-3 flex items-center gap-2">
   <span class="text-[13px] font-bold text-slate-900 relative top-[1px]">${rating}</span>
   <div class="flex items-center gap-1">
-    ${this.starRow(5)}
+    ${this.getStarIcons(Number(rating))}
   </div>
 </div>
       </div>
@@ -345,11 +345,10 @@ export class DormMapComponent implements OnInit, OnDestroy {
 
     return `
       <div class="popup-content">
-        ${
-          imageUrl
-            ? `<img src="${imageUrl}" alt="${dormDetail.dorm_name}" class="popup-image">`
-            : ''
-        }
+        ${imageUrl
+        ? `<img src="${imageUrl}" alt="${dormDetail.dorm_name}" class="popup-image">`
+        : ''
+      }
         <div class="popup-info">
           <h3 class="popup-title">${dormDetail.dorm_name}</h3>
           <p class="popup-price">${priceDisplay}</p>
@@ -358,11 +357,10 @@ export class DormMapComponent implements OnInit, OnDestroy {
             <span class="rating-text">${rating.toFixed(1)}</span>
             <div class="stars">${stars}</div>
           </div>
-          ${
-            dormDetail.dorm_description
-              ? `<p class="popup-description">${dormDetail.dorm_description}</p>`
-              : ''
-          }
+          ${dormDetail.dorm_description
+        ? `<p class="popup-description">${dormDetail.dorm_description}</p>`
+        : ''
+      }
         </div>
       </div>
     `;

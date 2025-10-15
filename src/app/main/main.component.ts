@@ -178,9 +178,15 @@ export class MainComponent implements OnInit, OnDestroy {
     this.currentSlide = (this.currentSlide - 1 + this.sliderImages.length) % this.sliderImages.length;
   }
 
-  getStars(rating: number | undefined): number[] {
-    // Always return 5 stars for mock data
-    return Array(5).fill(0);
+  getStars(rating: number | undefined): { filled: boolean }[] {
+    const stars: { filled: boolean }[] = [];
+    const actualRating = rating || 0;
+    
+    for (let i = 1; i <= 5; i++) {
+      stars.push({ filled: i <= actualRating });
+    }
+    
+    return stars;
   }
 
   isAuthPage(): boolean {
@@ -264,10 +270,19 @@ export class MainComponent implements OnInit, OnDestroy {
     let priceDisplay = '';
 
     // จัดการราคารายเดือน
-    if (d.min_price && d.max_price) {
-      priceDisplay = `${d.min_price.toLocaleString()} - ${d.max_price.toLocaleString()} บาท/เดือน`;
-    } else if (d.monthly_price) {
-      priceDisplay = `${d.monthly_price.toLocaleString()} บาท/เดือน`;
+    if (d.min_price != null && d.max_price != null) {
+      const minVal = Number(d.min_price);
+      const maxVal = Number(d.max_price);
+      if (!Number.isNaN(minVal) && !Number.isNaN(maxVal)) {
+        priceDisplay = minVal === maxVal
+          ? `${minVal.toLocaleString()} บาท/เดือน`
+          : `${minVal.toLocaleString()} - ${maxVal.toLocaleString()} บาท/เดือน`;
+      }
+    } else if (d.monthly_price != null) {
+      const single = Number(d.monthly_price);
+      if (!Number.isNaN(single)) {
+        priceDisplay = `${single.toLocaleString()} บาท/เดือน`;
+      }
     }
 
     // เพิ่มราคารายวันในบรรทัดที่สอง (ถ้ามี)
@@ -288,8 +303,8 @@ export class MainComponent implements OnInit, OnDestroy {
       name: d.dorm_name,
       location: locationDisplay,
       zone: d.zone_name || 'ไม่ระบุโซน',
-      date: d.updated_date ? new Date(d.updated_date).toLocaleDateString('th-TH') : '',
-      rating: d.rating || 5.0
+      date: d.updated_date ? this.formatThaiDate(d.updated_date) : '',
+      rating: d.rating || 0.0
     };
   }
 
@@ -301,5 +316,22 @@ export class MainComponent implements OnInit, OnDestroy {
         img.src = dorm.image;
       }
     });
+  }
+
+  // Format date to Thai format
+  formatThaiDate(dateString: string): string {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const thaiMonths = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
+    
+    const day = date.getDate();
+    const month = thaiMonths[date.getMonth()];
+    const year = date.getFullYear() + 543; // Convert to Buddhist Era
+    
+    return `อัพเดทล่าสุด: ${day} ${month} ${year}`;
   }
 }

@@ -369,9 +369,14 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     const hasMax = maxPriceRaw !== null && maxPriceRaw !== undefined && !Number.isNaN(Number(maxPriceRaw));
 
     if (hasMin && hasMax) {
-      const minText = Number(minPriceRaw).toLocaleString();
-      const maxText = Number(maxPriceRaw).toLocaleString();
-      return `${minText} - ${maxText} บาท/เดือน`;
+      const minVal = Number(minPriceRaw);
+      const maxVal = Number(maxPriceRaw);
+      if (!Number.isNaN(minVal) && !Number.isNaN(maxVal)) {
+        if (minVal === maxVal) {
+          return `${minVal.toLocaleString()} บาท/เดือน`;
+        }
+        return `${minVal.toLocaleString()} - ${maxVal.toLocaleString()} บาท/เดือน`;
+      }
     }
 
     // Fallback: ราคาเดือนไม่เป็นช่วง แต่มีราคาเดียว

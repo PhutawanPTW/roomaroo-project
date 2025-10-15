@@ -26,6 +26,7 @@ export class AuthRedirectGuard implements CanActivate {
         const isOwnerPage = destPath === 'owner';
         const isAdminPage = destPath === 'admin';
         const isAdminLoginPage = destPath === 'admin/login';
+        const isAdminDormDetailPage = destPath.startsWith('admin/dorm-detail');
         const queryParams = route.queryParams;
 
         console.log(`[AuthRedirectGuard] Checking access to ${destPath}, user:`, user ? `${user.memberType}` : 'null');
@@ -57,6 +58,12 @@ export class AuthRedirectGuard implements CanActivate {
                 return true;
               }
               
+              // ถ้าเป็น admin dorm detail page ให้อนุญาต
+              if (isAdminDormDetailPage) {
+                console.log('[AuthRedirectGuard] Admin accessing admin dorm detail page, allowing');
+                return true;
+              }
+              
               // ถ้าเป็น admin login page ให้ redirect ไป admin
               if (isAdminLoginPage) {
                 console.log('[AuthRedirectGuard] Admin accessing admin login, redirecting to /admin');
@@ -71,6 +78,21 @@ export class AuthRedirectGuard implements CanActivate {
             console.error('[AuthRedirectGuard] Error parsing admin profile:', error);
             localStorage.removeItem('adminProfile');
             localStorage.removeItem('firebaseToken');
+          }
+        }
+
+        // ===== SECURITY: PREVENT LOGGED-IN USERS FROM ACCESSING ADMIN LOGIN =====
+        if (isAdminLoginPage && user) {
+          console.log('[AuthRedirectGuard] SECURITY: Logged-in user trying to access admin login, redirecting to their dashboard');
+          // ลบข้อมูล admin ที่อาจเหลืออยู่
+          localStorage.removeItem('adminProfile');
+          localStorage.removeItem('firebaseToken');
+          
+          // Redirect ไปยัง dashboard ที่เหมาะสม
+          if (user.memberType === 'owner') {
+            return this.router.createUrlTree(['/owner']);
+          } else {
+            return this.router.createUrlTree(['/main']);
           }
         }
 

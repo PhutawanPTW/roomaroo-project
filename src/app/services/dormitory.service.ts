@@ -418,4 +418,15 @@ export class DormitoryService {
       })
     );
   }
+
+  /** Compare dormitories - Get comparison data for multiple dormitories */
+  compareDormitories(dormIds: number[]): Observable<any> {
+    const idsParam = dormIds.join(',');
+    return this.http.get<any>(`${this.backendUrl}/dormitories/compare?ids=${idsParam}`).pipe(
+      catchError(err => {
+        console.error(`[DormitoryService] Error comparing dormitories:`, err);
+        throw err;
+      })
+    );
+  }
 } 

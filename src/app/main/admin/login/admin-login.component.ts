@@ -1,10 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { AdminService } from '../../../services/admin.service';
-import { signInWithEmailAndPassword } from '@angular/fire/auth';
+import { signInWithEmailAndPassword, signOut } from '@angular/fire/auth';
 import { Auth } from '@angular/fire/auth';
 
 @Component({
@@ -14,7 +14,7 @@ import { Auth } from '@angular/fire/auth';
   templateUrl: './admin-login.component.html',
   styleUrl: './admin-login.component.css'
 })
-export class AdminLoginComponent {
+export class AdminLoginComponent implements OnInit {
   form: FormGroup;
   isSubmitting = false;
   showPassword = false;
@@ -33,6 +33,45 @@ export class AdminLoginComponent {
       password: ['', [Validators.required, Validators.minLength(6)]],
       remember: [true]
     });
+  }
+
+  ngOnInit(): void {
+    this.checkExistingAuth();
+  }
+
+  /**
+   * ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่แล้วหรือไม่
+   * ถ้ามี ให้ logout และลบข้อมูล admin ที่อาจเหลืออยู่
+   */
+  private async checkExistingAuth(): Promise<void> {
+    try {
+      // ตรวจสอบว่ามี admin profile อยู่แล้วหรือไม่
+      const adminProfile = localStorage.getItem('adminProfile');
+      if (adminProfile) {
+        console.log('[AdminLogin] Admin already logged in, redirecting to admin dashboard');
+        await this.router.navigate(['/admin']);
+        return;
+      }
+
+      // ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่แล้วหรือไม่
+      const currentUser = this.firebaseAuth.currentUser;
+      if (currentUser) {
+        console.log('[AdminLogin] SECURITY: User already logged in, forcing logout before admin access');
+        
+        // บังคับ logout จาก Firebase
+        await signOut(this.firebaseAuth);
+        
+        // ลบข้อมูลทั้งหมดจาก localStorage
+        localStorage.removeItem('userProfile');
+        localStorage.removeItem('adminProfile');
+        localStorage.removeItem('firebaseToken');
+        
+        console.log('[AdminLogin] User logged out successfully, admin login page is now accessible');
+      }
+    } catch (error) {
+      console.error('[AdminLogin] Error during auth check:', error);
+      // ยังคงให้เข้าหน้า admin login ได้แม้เกิด error
+    }
   }
 
   get email() { return this.form.get('email'); }

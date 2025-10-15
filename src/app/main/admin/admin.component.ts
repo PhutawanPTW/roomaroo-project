@@ -36,6 +36,7 @@ export class AdminComponent implements OnInit {
   showImageModalFlag = false;
   selectedImageUrl = '';
   selectedImageTitle = '';
+  isMobileSidebarOpen = false;
 
   // --- Dormitory Data ---
   dorms: Dormitory[] = [];
@@ -266,6 +267,15 @@ export class AdminComponent implements OnInit {
 
   closeProfileDropdown(): void {
     this.profileDropdownOpen = false;
+  }
+
+  // --- Mobile Sidebar ---
+  toggleMobileSidebar(): void {
+    this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
+  }
+
+  closeMobileSidebar(): void {
+    this.isMobileSidebarOpen = false;
   }
 
 

@@ -940,9 +940,10 @@
               <!-- Main Image Badge -->
               <div
                 *ngIf="i === 0"
-                class="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium z-10"
+                class="absolute top-1 left-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium z-10 shadow-md flex items-center space-x-1"
               >
-                ภาพหลัก
+                <i class="fas fa-star text-xs"></i>
+                <span>ภาพหลัก</span>
               </div>
 
               <!-- Drag Handle -->
@@ -962,8 +963,20 @@
 
               <!-- Overlay on hover -->
               <div
-                class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center"
+                class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex flex-col items-center justify-center space-y-1"
               >
+                <!-- Set as main image button (only show if not already main) -->
+                <button
+                  *ngIf="!isMainImage(i)"
+                  type="button"
+                  (click)="setAsMainImage(i)"
+                  class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-600 flex items-center space-x-1"
+                >
+                  <i class="fas fa-star text-xs"></i>
+                  <span>ตั้งเป็นหลัก</span>
+                </button>
+                
+                <!-- Remove button -->
                 <button
                   type="button"
                   (click)="removeImage(i)"
@@ -1459,9 +1472,13 @@
         type="button"
         *ngIf="currentStep === 2"
         (click)="onSubmit()"
-        class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed"
+        class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
         [disabled]="isSubmitting"
       >
+        <span
+          *ngIf="isSubmitting"
+          class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+        ></span>
         <span *ngIf="!isSubmitting">บันทึก</span>
         <span *ngIf="isSubmitting">กำลังบันทึก...</span>
       </button>

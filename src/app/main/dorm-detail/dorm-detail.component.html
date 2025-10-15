@@ -56,13 +56,18 @@
     <div class="min-w-0 overflow-hidden">
       <!-- Header Section -->
       <div class="mb-6 pt-6">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h1 class="text-3xl font-bold mb-2" style="color: #4f5356">
+        <div
+          class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4"
+        >
+          <div class="flex-1 min-w-0">
+            <h1
+              class="text-2xl lg:text-3xl font-bold mb-2"
+              style="color: #4f5356"
+            >
               {{ dormName }}
             </h1>
             <div class="flex flex-col gap-1">
-              <div class="text-gray-600 font-medium">
+              <div class="text-gray-600 font-medium break-words">
                 <span>{{ location }}</span>
               </div>
               <div class="text-gray-600">
@@ -72,18 +77,27 @@
               <!-- ปุ่มเปรียบเทียบหอพัก -->
               <button
                 (click)="compareDormitory()"
-                class="mt-2 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200 w-32"
+                [class]="
+                  isInCompareList
+                    ? 'mt-2 inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors duration-200 w-32'
+                    : 'mt-2 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200 w-32'
+                "
               >
                 <i class="fas fa-code-compare w-4 h-4 mr-2"></i>
-                เปรียบเทียบ
+                <span *ngIf="!isInCompareList; else inCompareText"
+                  >เปรียบเทียบ</span
+                >
+                <ng-template #inCompareText>
+                  <span>เลือกแล้ว</span>
+                </ng-template>
               </button>
             </div>
           </div>
-          <div class="text-right font-thai">
+          <div class="text-left lg:text-right font-thai flex-shrink-0">
             <!-- ช่วงราคา: ใช้ priceRange หรือ dormPrice เท่านั้น -->
             <div
               *ngIf="priceRange || dormPrice"
-              class="text-2xl font-bold text-[#6D6D6D]"
+              class="text-xl lg:text-2xl font-bold text-[#6D6D6D]"
             >
               <span class="font-english">{{ priceRange || dormPrice }}</span>
             </div>
@@ -165,22 +179,85 @@
           </button>
         </div>
         <!-- Thumbnails -->
-        <div
-          class="flex flex-nowrap overflow-x-auto border-t border-gray-200 bg-white p-2 space-x-2 max-w-full min-w-0"
-        >
+        <div class="border-t border-gray-200 bg-white py-2 -px-2">
+          <!-- Navigation arrows -->
           <div
-            *ngFor="let image of images; let i = index"
-            class="shrink-0 w-32 h-20 cursor-pointer transition-all duration-200"
-            [class.ring-2]="i === currentImageIndex"
-            [class.ring-blue-500]="i === currentImageIndex"
-            [class.opacity-60]="i !== currentImageIndex"
+            class="flex items-center justify-between mb-2"
+            *ngIf="images.length > maxVisibleThumbnails"
           >
-            <img
-              [src]="image"
-              alt="Thumbnail"
-              class="w-full h-full object-cover max-w-full"
-              (click)="openImageModal(i)"
-            />
+            <button
+              (click)="scrollThumbnailsLeft()"
+              [disabled]="!canScrollThumbnailsLeft()"
+              class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+            >
+              <svg
+                class="w-4 h-4 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                ></path>
+              </svg>
+            </button>
+
+            <div class="flex-1 flex justify-center">
+              <span class="text-xs text-gray-500">
+                {{ thumbnailStartIndex + 1 }}-{{
+                  Math.min(
+                    thumbnailStartIndex + maxVisibleThumbnails,
+                    images.length
+                  )
+                }}
+                / {{ images.length }}
+              </span>
+            </div>
+
+            <button
+              (click)="scrollThumbnailsRight()"
+              [disabled]="!canScrollThumbnailsRight()"
+              class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+            >
+              <svg
+                class="w-4 h-4 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                ></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Thumbnail strip -->
+          <div
+            class="flex flex-nowrap items-center gap-2.5 overflow-hidden px-1 py-1"
+          >
+            <div
+              *ngFor="let index of getVisibleThumbnailIndices(); let i = index"
+              class="flex-shrink-0 w-24 h-16 sm:w-28 sm:h-18 md:w-32 md:h-20 cursor-pointer transition-all duration-200 rounded-sm overflow-hidden flex items-center justify-center"
+              [class.ring-2]="index === currentImageIndex"
+              [class.ring-blue-500]="index === currentImageIndex"
+              [class.ring-offset-2]="index === currentImageIndex"
+              [class.opacity-60]="index !== currentImageIndex"
+              [class.opacity-100]="index === currentImageIndex"
+            >
+              <img
+                [src]="images[index]"
+                alt="Thumbnail"
+                class="w-full h-full object-cover object-center"
+                (click)="onThumbnailClick(index)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -220,16 +297,25 @@
             </p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="grid grid-cols-1 gap-6 mb-6">
             <div class="flex flex-col">
               <span class="text-[#4F5356] font-bold text-sm mb-1">ที่อยู่</span>
-              <span class="font-medium text-[#4F5356]">{{ location }}</span>
+              <span class="font-medium text-[#4F5356] break-words">{{
+                location
+              }}</span>
             </div>
+          </div>
 
+          <!-- Updated Date -->
+          <div *ngIf="dormDetail?.updated_date" class="mb-6">
             <div class="flex flex-col">
-              <span class="text-[#4F5356] font-bold text-sm mb-1">โซน</span>
+              <span class="text-[#4F5356] font-bold text-sm mb-1"
+                >ข้อมูลล่าสุด</span
+              >
               <span class="font-medium text-[#4F5356]">{{
-                dormDetail?.zone_name || "ไม่ระบุ"
+                dormDetail && dormDetail.updated_date
+                  ? formatThaiDate(dormDetail.updated_date)
+                  : ""
               }}</span>
             </div>
           </div>
@@ -589,7 +675,9 @@
                 <button
                   type="button"
                   class="absolute right-4 top-1/2 -translate-y-[60%] text-white bg-blue-600 hover:bg-blue-700 rounded-md h-8 w-8 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed outline-none focus:outline-none"
-                  [disabled]="!(newComment && newComment.trim()) || isSubmittingComment"
+                  [disabled]="
+                    !(newComment && newComment.trim()) || isSubmittingComment
+                  "
                   (click)="addComment(newComment)"
                   aria-label="ส่งความคิดเห็น"
                 >
@@ -597,7 +685,9 @@
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                   </ng-container>
                   <ng-template #loadingSend>
-                    <span class="inline-block h-4 w-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></span>
+                    <span
+                      class="inline-block h-4 w-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"
+                    ></span>
                   </ng-template>
                 </button>
 
@@ -758,21 +848,31 @@
               <div class="flex-1">
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center">
-                    <span class="font-bold text-[#4F5356] text-sm">{{ review.username }}</span>
+                    <span class="font-bold text-[#4F5356] text-sm">{{
+                      review.username
+                    }}</span>
                     <!-- Resident status pill -->
-                    <ng-container *ngIf="review.isResident; else formerResident">
-                      <span class="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">กำลังอาศัยอยู่</span>
+                    <ng-container
+                      *ngIf="review.isResident; else formerResident"
+                    >
+                      <span
+                        class="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium"
+                        >กำลังอาศัยอยู่</span
+                      >
                     </ng-container>
                     <ng-template #formerResident>
-                      <span class="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200 font-medium">เคยอาศัยอยู่</span>
+                      <span
+                        class="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200 font-medium"
+                        >เคยอาศัยอยู่</span
+                      >
                     </ng-template>
                   </div>
                   <div class="flex items-center space-x-3">
                     <!-- Edit Button (for current user's reviews) -->
-                      <button
+                    <button
                       *ngIf="review.isCurrentUser"
                       (click)="editReview(i)"
-                        class="text-blue-500 hover:text-blue-700 text-xs font-medium flex items-center"
+                      class="text-blue-500 hover:text-blue-700 text-xs font-medium flex items-center"
                     >
                       <i class="fa-regular fa-pen-to-square mr-1"></i>
                       <span class="sr-only">แก้ไข</span>
@@ -834,31 +934,34 @@
                 </div>
 
                 <!-- Date under content -->
-                <div class="mt-1 text-[11px] text-gray-500">{{ review.date | date: 'dd/MM/yyyy' }}</div>
+                <div class="mt-1 text-[11px] text-gray-500">
+                  {{ review.date | date : "dd/MM/yyyy" }}
+                </div>
 
                 <!-- Edit Mode -->
                 <ng-template #editMode>
                   <div class="space-y-3">
                     <textarea
-                    [(ngModel)]="review.editComment"
-                    class="w-full p-3 pr-4 border border-gray-300 rounded-lg 
-                           focus:ring-0 focus:outline-none focus:border-blue-500 
-                           resize-none overflow-auto scrollbar-thin 
-                           transition duration-200"
-                    rows="3"
-                    (input)="autoGrow($event)"
-                    placeholder="แก้ไขความคิดเห็นของคุณ..."
-                  ></textarea>
-                  
+                      [(ngModel)]="review.editComment"
+                      class="w-full p-3 pr-4 border border-gray-300 rounded-lg focus:ring-0 focus:outline-none focus:border-blue-500 resize-none overflow-auto scrollbar-thin transition duration-200"
+                      rows="3"
+                      (input)="autoGrow($event)"
+                      placeholder="แก้ไขความคิดเห็นของคุณ..."
+                    ></textarea>
+
                     <div class="flex space-x-2">
                       <button
                         (click)="saveReview(i)"
                         class="relative bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
                         [disabled]="review.saving"
                       >
-                        <span *ngIf="!review.saving; else savingEdit">บันทึก</span>
+                        <span *ngIf="!review.saving; else savingEdit"
+                          >บันทึก</span
+                        >
                         <ng-template #savingEdit>
-                          <span class="inline-block h-4 w-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></span>
+                          <span
+                            class="inline-block h-4 w-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"
+                          ></span>
                         </ng-template>
                       </button>
                       <button
@@ -1021,7 +1124,7 @@
                 {{ property.zone }}
               </div>
               <div class="text-xs text-[#4F5356] mb-2">
-                อัพเดทล่าสุด {{ property.date }}
+                {{ property.date }}
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
@@ -1196,11 +1299,11 @@
       <!-- Thumbnail Strip (Optional) -->
       <div
         *ngIf="images.length > 1 && images.length <= 10"
-        class="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-black/30 p-2 rounded-lg"
+        class="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-black/30 p-2 rounded-sm"
       >
         <div
           *ngFor="let image of images; let i = index"
-          class="w-12 h-8 cursor-pointer transition-all duration-200 border-2"
+          class="w-12 h-8 cursor-pointer transition-all duration-200 border-2 flex items-center justify-center overflow-hidden"
           [class.border-white]="i === modalImageIndex"
           [class.border-transparent]="i !== modalImageIndex"
           [class.opacity-60]="i !== modalImageIndex"
@@ -1209,7 +1312,7 @@
           <img
             [src]="image"
             alt="Thumbnail"
-            class="w-full h-full object-cover rounded-sm"
+            class="w-full h-full object-cover object-center rounded-sm"
           />
         </div>
       </div>

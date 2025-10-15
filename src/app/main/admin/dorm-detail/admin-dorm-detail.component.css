@@ -1,44 +1,14 @@
-/* Admin Dormitory Detail Component Styles */
-.aspect-square {
-  aspect-ratio: 1 / 1;
-}
+/* Match edit page carousel styles */
+.center-carousel { display: flex; justify-content: center; }
+.carousel-viewport { position: relative; width: 100%; max-width: 48rem; height: 22rem; margin: 0 auto; }
+.carousel-current, .carousel-side { position: absolute; top: 50%; transform: translateY(-50%); height: 100%; object-fit: cover; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,.15); will-change: transform, opacity; backface-visibility: hidden; }
+.carousel-current { left: 50%; transform: translate(-50%, -50%); width: 72%; z-index: 2; opacity: 1; }
+.carousel-side { width: 40%; opacity: .4; filter: blur(1px); z-index: 1; pointer-events: none; }
+.carousel-left { left: 8%; }
+.carousel-right { right: 8%; }
+.carousel-btn { position: absolute; top: 44%; transform: translateY(-50%); background: rgba(255,255,255,.8); padding: .5rem; border-radius: .5rem; border: 1px solid rgba(0,0,0,.08); box-shadow: 0 6px 18px rgba(0,0,0,.12); transition: all .2s ease; z-index: 3; }
+.carousel-btn.left { left: .75rem; }
+.carousel-btn.right { right: .75rem; }
+.carousel-btn:hover { background: #fff; }
 
-/* Custom scrollbar for better UX */
-::-webkit-scrollbar {
-  width: 6px;
-}
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Smooth transitions for interactive elements */
-button, img {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Hover effects for better user feedback */
-.hover\:opacity-80:hover {
-  opacity: 0.8;
-}
-
-/* Focus states for accessibility */
-button:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Modal backdrop blur effect */
-.fixed.inset-0 {
-  backdrop-filter: blur(4px);
-}

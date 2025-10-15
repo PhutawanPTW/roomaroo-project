@@ -346,3 +346,51 @@ input:focus, textarea:focus, select:focus {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+/* Image Gallery Enhancements */
+.main-image {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+.main-image:hover {
+  transform: scale(1.05);
+}
+
+/* Set as main button animation */
+.group:hover .opacity-0 {
+  animation: fadeInUp 0.2s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Main image badge glow effect */
+.main-image .bg-gradient-to-r {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+  }
+  to {
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+  }
+}
+
+/* Smooth transitions for image reordering */
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}

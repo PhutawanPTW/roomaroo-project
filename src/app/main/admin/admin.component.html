@@ -1,7 +1,7 @@
 <!-- Admin Dashboard Container -->
 <div class="min-h-screen bg-gray-50 flex">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white shadow-lg">
+  <!-- Sidebar (desktop) -->
+  <aside class="hidden md:block w-64 bg-white shadow-lg">
     <!-- Logo Section -->
     <div class="p-6 border-b border-gray-200">
       <div class="flex items-center justify-center">
@@ -47,38 +47,79 @@
     </nav>
   </aside>
 
+  <!-- Mobile sidebar drawer -->
+  <div class="md:hidden" [class.hidden]="!isMobileSidebarOpen">
+    <div class="fixed inset-0 bg-black/40 z-40" (click)="closeMobileSidebar()"></div>
+    <aside class="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg z-50">
+      <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div class="flex items-center">
+          <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo" class="w-10 h-10 object-contain">
+          <div class="ml-3">
+            <h1 class="text-lg font-bold text-gray-800"><span class="text-blue-600">Room</span><span class="text-gray-700">aroo</span></h1>
+            <p class="text-xs text-gray-500">Admin Dashboard</p>
+          </div>
+        </div>
+        <button (click)="closeMobileSidebar()" class="text-gray-500 hover:text-gray-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <nav class="p-4">
+        <div class="space-y-2">
+          <button (click)="setTab('all'); closeMobileSidebar()" [class]="selectedTab === 'all' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200'" class="w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 hover:bg-blue-50">
+            <div class="flex items-center">
+              <i class="fa-solid fa-table w-5 text-center mr-3"></i>
+              <span class="font-medium">รายการหอพักทั้งหมด</span>
+            </div>
+          </button>
+          <button (click)="setTab('รออนุมัติ'); closeMobileSidebar()" [class]="selectedTab === 'รออนุมัติ' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-600 border-gray-200'" class="w-full text-left px-4 py-3 rounded-lg border transition-all duration-200 hover:bg-blue-50">
+            <div class="flex items-center">
+              <i class="fa-regular fa-clock w-5 text-center mr-3"></i>
+              <span class="font-medium">รออนุมัติ</span>
+              <span *ngIf="getPendingCount() > 0" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ getPendingCount() }}</span>
+            </div>
+          </button>
+        </div>
+      </nav>
+    </aside>
+  </div>
+
   <!-- Main Content -->
   <main class="flex-1 flex flex-col">
     <!-- Top Navigation Bar - Full Width -->
-    <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 w-full">
+    <header class="bg-white shadow-sm border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 w-full">
       <div class="flex items-center justify-between">
         <!-- Page Title -->
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">จัดการหอพัก</h1>
-          <p class="text-sm text-gray-600 mt-1">ระบบจัดการหอพักสำหรับผู้ดูแลระบบ</p>
+        <div class="flex items-center">
+          <button class="md:hidden mr-3 text-gray-600 hover:text-gray-800" (click)="toggleMobileSidebar()" aria-label="เปิดเมนู">
+            <i class="fa-solid fa-bars text-xl"></i>
+          </button>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">จัดการหอพัก</h1>
+            <p class="hidden sm:block text-sm text-gray-600 mt-1">ระบบจัดการหอพักสำหรับผู้ดูแลระบบ</p>
+          </div>
         </div>
 
         <!-- Admin Profile -->
         <div class="relative">
           <button (click)="toggleProfileDropdown()" 
-                  class="flex items-center space-x-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 transition-all duration-200">
+                  class="flex items-center space-x-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all duration-200">
             <img [src]="adminProfile?.photoURL || 'assets/images/photo.png'" 
                  [alt]="adminProfile?.displayName || 'Admin Avatar'"
-                 class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm cursor-pointer"
+                 class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-white shadow-sm cursor-pointer"
                  (error)="onImageError($event)"
                  (click)="showProfileModal($event)">
-            <div class="text-left">
+            <div class="text-left hidden sm:block">
               <div class="text-sm font-semibold text-gray-900">{{ adminProfile?.displayName || 'Admin' }}</div>
               <div class="text-xs text-gray-500">{{ adminProfile?.username || 'N/A' }}</div>
             </div>
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="hidden sm:block w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
 
-          <!-- Profile Dropdown -->
+          <!-- Profile Dropdown (desktop only) -->
           <div *ngIf="profileDropdownOpen" 
-               class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+               class="hidden md:block absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
             <button (click)="onLogout()" 
                     class="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 flex items-center">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,57 +133,57 @@
     </header>
 
     <!-- Content Area -->
-    <div class="flex-1 p-6">
+    <div class="flex-1 p-4 sm:p-6">
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div class="flex items-center">
-            <div class="p-3 bg-blue-100 rounded-lg">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-              </svg>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+              </div>
+              <p class="ml-4 text-sm font-medium text-gray-600">หอพักทั้งหมด</p>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">หอพักทั้งหมด</p>
-              <p class="text-2xl font-bold text-gray-900">{{ dorms.length }}</p>
-            </div>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ dorms.length }}</p>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div class="flex items-center">
-            <div class="p-3 bg-yellow-100 rounded-lg">
-              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+        <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="p-3 bg-yellow-100 rounded-lg">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <p class="ml-4 text-sm font-medium text-gray-600">รออนุมัติ</p>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">รออนุมัติ</p>
-              <p class="text-2xl font-bold text-gray-900">{{ getPendingCount() }}</p>
-            </div>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ getPendingCount() }}</p>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div class="flex items-center">
-            <div class="p-3 bg-green-100 rounded-lg">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+        <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="p-3 bg-green-100 rounded-lg">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <p class="ml-4 text-sm font-medium text-gray-600">อนุมัติแล้ว</p>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">อนุมัติแล้ว</p>
-              <p class="text-2xl font-bold text-gray-900">{{ getApprovedCount() }}</p>
-            </div>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900">{{ getApprovedCount() }}</p>
           </div>
         </div>
       </div>
 
       <!-- Approved Dormitories Section -->
       <div *ngIf="selectedTab === 'all'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">รายการหอพักทั้งหมด</h2>
-          <p class="text-sm text-gray-600 mt-1">แสดงเฉพาะหอพักที่ผ่านการอนุมัติแล้ว</p>
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-900">รายการหอพักทั้งหมด</h2>
+          <p class="hidden sm:block text-sm text-gray-600 mt-1">แสดงเฉพาะหอพักที่ผ่านการอนุมัติแล้ว</p>
         </div>
 
         <!-- Loading State -->
@@ -161,16 +202,16 @@
           </div>
     </div>
 
-        <div *ngIf="!isLoading" class="overflow-x-auto">
-          <table class="w-full">
+        <div *ngIf="!isLoading" class="hidden md:block overflow-x-hidden">
+          <table class="w-full table-fixed">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูปภาพ</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อหอพัก</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เจ้าของ</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">โซน</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่เพิ่ม</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">รูปภาพ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">ชื่อหอพัก</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">เจ้าของ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">โซน</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">วันที่เพิ่ม</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">การจัดการ</th>
             </tr>
           </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -212,13 +253,31 @@
             </tbody>
           </table>
         </div>
+        <!-- Mobile Cards (All Approved) -->
+        <div *ngIf="!isLoading" class="md:hidden divide-y divide-gray-200">
+          <div *ngFor="let dorm of getApprovedDorms()" class="p-4">
+            <div class="flex items-center">
+              <img [src]="dorm.main_image_url || 'assets/images/photo.png'" [alt]="dorm.dorm_name" class="w-16 h-16 rounded-lg object-cover mr-3" (error)="onImageError($event)">
+              <div class="flex-1">
+                <div class="font-medium text-gray-900">{{ dorm.dorm_name }}</div>
+                <div class="text-sm text-gray-500">{{ dorm.address }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ dorm.owner_name }} • {{ dorm.zone_name }}</div>
+                <div class="text-xs text-gray-400">{{ dorm.submitted_date }}</div>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button (click)="editDormitory(dorm.dorm_id)" class="flex-1 bg-blue-600 text-white py-2 rounded-lg">แก้ไข</button>
+              <button (click)="deleteDormitory(dorm.dorm_id)" class="flex-1 bg-red-600 text-white py-2 rounded-lg">ลบ</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Pending Approval Section -->
       <div *ngIf="selectedTab === 'รออนุมัติ'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">รายการรออนุมัติ</h2>
-          <p class="text-sm text-gray-600 mt-1">หอพักที่เจ้าของส่งเข้ามารอการตรวจสอบ</p>
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-900">รายการรออนุมัติ</h2>
+          <p class="hidden sm:block text-sm text-gray-600 mt-1">หอพักที่เจ้าของส่งเข้ามารอการตรวจสอบ</p>
         </div>
 
         <!-- Loading State -->
@@ -237,16 +296,16 @@
           </div>
         </div>
 
-        <div *ngIf="!isLoading" class="overflow-x-auto">
-          <table class="w-full">
+        <div *ngIf="!isLoading" class="hidden md:block overflow-x-hidden">
+          <table class="w-full table-fixed">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูปภาพ</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อหอพัก</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เจ้าของ</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">โซน</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่ส่ง</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">รูปภาพ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">ชื่อหอพัก</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">เจ้าของ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">โซน</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">วันที่ส่ง</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">การจัดการ</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -281,7 +340,24 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+        <!-- Mobile Cards (Pending) -->
+        <div *ngIf="!isLoading" class="md:hidden divide-y divide-gray-200">
+          <div *ngFor="let dorm of getPendingDorms()" class="p-4">
+            <div class="flex items-center">
+              <img [src]="dorm.main_image_url || 'assets/images/photo.png'" [alt]="dorm.dorm_name" class="w-16 h-16 rounded-lg object-cover mr-3" (error)="onImageError($event)">
+              <div class="flex-1">
+                <div class="font-medium text-gray-900">{{ dorm.dorm_name }}</div>
+                <div class="text-sm text-gray-500">{{ dorm.address }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ dorm.owner_name }} • {{ dorm.zone_name }}</div>
+                <div class="text-xs text-gray-400">{{ dorm.submitted_date }}</div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <button (click)="reviewDormitory(dorm.dorm_id)" class="w-full bg-blue-600 text-white py-2 rounded-lg">ตรวจสอบ</button>
+            </div>
+          </div>
+        </div>
     </div>
     </div>
   </main>
@@ -307,6 +383,13 @@
       <h4 class="text-xl font-semibold text-gray-900 mb-2">{{ adminProfile?.displayName || 'Admin' }}</h4>
       <p class="text-gray-600 mb-4">{{ adminProfile?.username || 'N/A' }}</p>
       <p class="text-sm text-gray-500">{{ adminProfile?.email || 'N/A' }}</p>
+
+      <!-- Mobile-only Logout Button inside the card -->
+      <div class="mt-5 md:hidden">
+        <button (click)="onLogout()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg">
+          ออกจากระบบ
+        </button>
+      </div>
     </div>
   </div>
 </div>
