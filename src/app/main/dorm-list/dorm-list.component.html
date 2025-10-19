@@ -166,7 +166,7 @@
       <ng-template #normalTitle>
         พบข้อมูลหอพัก
       </ng-template>
-      <span class="text-gray-500 font-normal text-sm">({{filteredDorms.length}} หอพัก)</span>
+      <span class="text-gray-500 font-normal text-sm">({{displayedDorms.length}}/{{filteredDorms.length}} หอพัก)</span>
     </h2>
     <div *ngIf="similarSearchParams" class="text-sm text-gray-600 font-thai space-y-1">
       <p>
@@ -217,7 +217,7 @@
 
   <!-- Dorm grid (match main page card layout) -->
   <div *ngIf="!isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <ng-container *ngFor="let dorm of filteredDorms">
+    <ng-container *ngFor="let dorm of displayedDorms">
       <div
         class="bg-white shadow hover:shadow-lg transition p-4 flex flex-col border border-black/10 h-full card-hover-effect rounded-lg">
         <div class="w-full h-48 mb-3 overflow-hidden rounded-lg cursor-pointer" [routerLink]="['/dorm-detail', dorm.id]">
@@ -236,7 +236,7 @@
 
           <div class="text-gray-500 text-sm mb-1 font-thai min-h-[20px] line-clamp-2">{{ dorm.zone }}</div>
 
-          <div class="text-gray-400 text-xs font-thai mb-3">อัพเดทล่าสุด {{ dorm.date }}</div>
+          <div class="text-gray-400 text-xs font-thai mb-3">{{ dorm.date }}</div>
 
           <div class="mt-auto flex items-end">
             <div class="flex items-end">
@@ -255,8 +255,17 @@
     </ng-container>
   </div>
 
+  <!-- Load more button -->
+  <div *ngIf="!isLoading && showLoadMoreButton" class="text-center mt-8">
+    <button 
+      (click)="loadMoreDorms()"
+      class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-thai text-lg font-medium shadow-lg hover:shadow-xl">
+      ดูหอพักทั้งหมด ({{filteredDorms.length - displayedDorms.length}} หอพักที่เหลือ)
+    </button>
+  </div>
+
   <!-- No results message -->
-  <div *ngIf="!isLoading && filteredDorms.length === 0" class="text-center py-12">
+  <div *ngIf="!isLoading && displayedDorms.length === 0" class="text-center py-12">
     <div class="bg-white rounded-lg shadow-lg p-8">
       <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>

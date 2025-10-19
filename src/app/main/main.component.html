@@ -16,13 +16,46 @@
       >
         <div
           *ngFor="let img of sliderImages"
-          class="w-full h-full flex-shrink-0"
+          class="w-full h-full flex-shrink-0 relative cursor-pointer"
+          (click)="viewSlideDetail(img)"
         >
           <img
             [src]="img.src"
             [alt]="img.alt"
-            class="w-full h-full object-cover object-center"
+            class="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
           />
+          <!-- Gradient overlay -->
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
+          ></div>
+
+          <!-- Text overlay - anchored to slide container -->
+          <div
+            class="absolute inset-0 flex flex-col justify-end p-3 sm:p-4 md:p-6"
+          >
+            <div class="flex items-end justify-between gap-3">
+              <!-- Left: Dorm info -->
+              <div class="flex-1 min-w-0">
+                <h3
+                  class="text-white text-base sm:text-lg md:text-xl lg:text-2xl font-bold font-thai drop-shadow-lg mb-1 truncate"
+                >
+                  {{ img.title || "หอพัก" }}
+                </h3>
+                <p
+                  class="text-white/90 text-xs sm:text-sm md:text-base font-thai drop-shadow-md line-clamp-1"
+                >
+                  {{ img.subtitle }}
+                </p>
+              </div>
+
+              <!-- Right: Price text (no background) -->
+              <div *ngIf="img.priceText" class="flex-shrink-0">
+                <div class="text-white text-base sm:text-lg md:text-xl lg:text-2xl font-bold font-english drop-shadow-lg">
+                  {{ img.priceText }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -142,14 +175,14 @@
             <div
               class="text-gray-400 text-[10px] sm:text-[11px] font-thai mb-1.5 sm:mb-2"
             >
-              อัพเดทล่าสุด {{ dorm.date }}
+              อัพเดทล่าสุด: {{ dorm.date }}
             </div>
 
             <!-- Rating -->
             <div class="mt-auto flex items-center">
               <span
                 class="text-sm sm:text-base font-bold text-gray-700 font-english mr-1.5 sm:mr-2 relative top-[0.05rem]"
-                >{{ dorm.rating?.toFixed(1) || '0.0' }}</span
+                >{{ dorm.rating?.toFixed(1) || "0.0" }}</span
               >
               <span class="flex">
                 <ng-container *ngFor="let star of getStars(dorm.rating)">
@@ -273,14 +306,14 @@
             <div
               class="text-gray-400 text-[10px] sm:text-[11px] font-thai mb-1.5 sm:mb-2"
             >
-              อัพเดทล่าสุด {{ dorm.date }}
+              อัพเดทล่าสุด: {{ dorm.date }}
             </div>
 
             <!-- Rating -->
             <div class="mt-auto flex items-center">
               <span
                 class="text-sm sm:text-base font-bold text-gray-700 font-english mr-1.5 sm:mr-2"
-                >{{ dorm.rating?.toFixed(1) || '0.0' }}</span
+                >{{ dorm.rating?.toFixed(1) || "0.0" }}</span
               >
               <span class="flex">
                 <ng-container *ngFor="let star of getStars(dorm.rating)">

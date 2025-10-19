@@ -300,7 +300,7 @@ export class DormitoryService {
           main_image_url: dorm.image_url,
           min_price: dorm.price_range?.min,
           max_price: dorm.price_range?.max,
-          rating: dorm.rating?.average,
+          rating: dorm.avg_rating ? Number(dorm.avg_rating) : (dorm.rating?.average || 0),
           price_display: dorm.price_range ? 
             `${dorm.price_range.min.toLocaleString()} - ${dorm.price_range.max.toLocaleString()} บาท/เดือน` : 
             'ติดต่อสอบถาม'
@@ -336,7 +336,7 @@ export class DormitoryService {
           main_image_url: dorm.image_url,
           min_price: dorm.price_range?.min,
           max_price: dorm.price_range?.max,
-          rating: dorm.rating?.average,
+          rating: dorm.avg_rating ? Number(dorm.avg_rating) : (dorm.rating?.average || 0),
           price_display: dorm.price_range ? 
             `${dorm.price_range.min.toLocaleString()} - ${dorm.price_range.max.toLocaleString()} บาท/เดือน` : 
             'ติดต่อสอบถาม',

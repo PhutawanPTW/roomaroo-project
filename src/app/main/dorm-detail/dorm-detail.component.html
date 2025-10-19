@@ -874,7 +874,7 @@
                       (click)="editReview(i)"
                       class="text-blue-500 hover:text-blue-700 text-xs font-medium flex items-center"
                     >
-                      <i class="fa-regular fa-pen-to-square mr-1"></i>
+                      <i class="fa-regular fa-pen-to-square mr-1 translate-y-[0.5px] translate-x-[5px]"></i>
                       <span class="sr-only">แก้ไข</span>
                     </button>
 
@@ -883,11 +883,11 @@
                       <!-- Sentiment Icon (Font Awesome) -->
                       <i
                         *ngIf="review.isPositive"
-                        class="fa-solid fa-arrow-up text-green-500 mr-1 text-xs"
+                        class="fa-solid fa-arrow-up text-green-500 mr-1 text-xs translate-y-[0.5px] translate-x-[-1px]"
                       ></i>
                       <i
                         *ngIf="!review.isPositive"
-                        class="fa-solid fa-arrow-down text-red-500 mr-1 text-xs"
+                        class="fa-solid fa-arrow-down text-red-500 mr-1 text-xs translate-y-[0.5px] translate-x-[-1px]"
                       ></i>
 
                       <!-- Stars -->
@@ -1133,12 +1133,28 @@
                     >{{ property.rating.toFixed(1) }}</span
                   >
                   <div class="ml-2 flex relative top-[0.05rem]">
+                    <!-- ดาวเต็ม -->
                     <ng-container
                       *ngFor="let star of getStars(property.rating)"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="#FDD836"
+                        viewBox="0 0 20 20"
+                        class="w-4 h-4 relative"
+                      >
+                        <path
+                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                        />
+                      </svg>
+                    </ng-container>
+                    <!-- ดาวว่าง -->
+                    <ng-container
+                      *ngFor="let emptyStar of getEmptyStars(property.rating)"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="#E5E7EB"
                         viewBox="0 0 20 20"
                         class="w-4 h-4 relative"
                       >

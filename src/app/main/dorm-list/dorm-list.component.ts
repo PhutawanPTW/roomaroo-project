@@ -107,6 +107,11 @@ export class DormListComponent implements OnInit {
   latestDorms: UIDorm[] = [];
   isLoading = true;
 
+  // Pagination variables
+  displayedDorms: UIDorm[] = [];
+  showLoadMoreButton = false;
+  private readonly ITEMS_PER_PAGE = 20;
+
   private pendingLoads = 0;
 
   // เพิ่มตัวแปรสำหรับ similar search
@@ -177,6 +182,7 @@ export class DormListComponent implements OnInit {
         this.recommendedDorms = recommended.map(d => this.mapDormToUi(d));
         this.dorms = [...this.recommendedDorms]; // ใช้ recommended เป็นฐานข้อมูลเริ่มต้น
         this.applyFilters();
+        this.updateDisplayedDorms();
         this.markLoadDone();
       },
       error: (error) => {
@@ -198,6 +204,7 @@ export class DormListComponent implements OnInit {
         
         this.dorms = uniqueDorms;
         this.applyFilters();
+        this.updateDisplayedDorms();
         this.markLoadDone();
       },
       error: (error) => {
@@ -215,6 +222,13 @@ export class DormListComponent implements OnInit {
   }
 
   private mapDormToUi(d: APIDorm): UIDorm {
+    console.log('[DormListComponent] Raw dorm data from API:', d);
+    console.log('[DormListComponent] Rating fields:', {
+      rating: d.rating,
+      avg_rating: (d as any).avg_rating,
+      review_count: (d as any).review_count
+    });
+
     let priceDisplay = '';
 
     // จัดการราคารายเดือน
@@ -239,6 +253,12 @@ export class DormListComponent implements OnInit {
       locationDisplay = locationDisplay ? `${locationDisplay} (${d.zone_name})` : d.zone_name;
     }
 
+    // ใช้ avg_rating จาก API ใหม่ หรือ fallback ไป rating เก่า
+    // แปลง string เป็น number ก่อน
+    const avgRating = (d as any).avg_rating;
+    const finalRating = avgRating ? Number(avgRating) : (d.rating || 0.0);
+    console.log('[DormListComponent] Final rating used:', finalRating);
+
     return {
       id: d.dorm_id,
       image: d.thumbnail_url || d.main_image_url || 'assets/images/photo.png',
@@ -247,7 +267,7 @@ export class DormListComponent implements OnInit {
       location: locationDisplay,
       zone: d.zone_name || 'ไม่ระบุโซน',
       date: d.updated_date ? this.formatThaiDate(d.updated_date) : '',
-      rating: d.rating || 0.0
+      rating: finalRating
     };
   }
 
@@ -384,6 +404,7 @@ export class DormListComponent implements OnInit {
     }
 
     this.filteredDorms = filtered;
+    this.updateDisplayedDorms();
   }
 
   // Method สำหรับกรองหอพักที่คล้ายกัน
@@ -556,6 +577,22 @@ export class DormListComponent implements OnInit {
     
     // โหลดข้อมูลใหม่
     this.loadDormitories();
+  }
+
+  // Update displayed dorms based on pagination
+  updateDisplayedDorms() {
+    this.displayedDorms = this.filteredDorms.slice(0, this.ITEMS_PER_PAGE);
+    this.showLoadMoreButton = this.filteredDorms.length > this.ITEMS_PER_PAGE;
+  }
+
+  // Load more dorms when "ดูหอพักทั้งหมด" is clicked
+  loadMoreDorms() {
+    const currentLength = this.displayedDorms.length;
+    const nextBatch = this.filteredDorms.slice(currentLength, currentLength + this.ITEMS_PER_PAGE);
+    this.displayedDorms = [...this.displayedDorms, ...nextBatch];
+    
+    // Hide button if all dorms are displayed
+    this.showLoadMoreButton = this.displayedDorms.length < this.filteredDorms.length;
   }
 
   // Format date to Thai format

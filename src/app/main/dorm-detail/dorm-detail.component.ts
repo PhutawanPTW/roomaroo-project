@@ -457,6 +457,13 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private mapDormToSimilarProperty(dorm: Dorm): SimilarProperty {
+    console.log('[DormDetail] Similar property raw data:', dorm);
+    console.log('[DormDetail] Similar property rating fields:', {
+      rating: dorm.rating,
+      avg_rating: (dorm as any).avg_rating,
+      review_count: (dorm as any).review_count
+    });
+
     let priceDisplay = '';
     let dailyPrice: string | undefined;
     let monthlyPrice: string | undefined;
@@ -491,6 +498,12 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     let locationDisplay = dorm.location_display || dorm.address || '';
     let zoneDisplay = dorm.zone_name || '';
 
+    // ใช้ avg_rating จาก API ใหม่ หรือ fallback ไป rating เก่า
+    // แปลง string เป็น number ก่อน
+    const avgRating = (dorm as any).avg_rating;
+    const finalRating = avgRating ? Number(avgRating) : (dorm.rating || 0.0);
+    console.log('[DormDetail] Similar property final rating used:', finalRating);
+
     return {
       id: dorm.dorm_id,
       name: dorm.dorm_name,
@@ -500,14 +513,17 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       location: locationDisplay,
       zone: zoneDisplay,
       image: dorm.main_image_url || dorm.thumbnail_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      rating: 5.0,
+      rating: finalRating,
       date: dorm.updated_date ? this.formatThaiDate(dorm.updated_date) : '',
     };
   }
 
   // เพิ่ม method สำหรับการนำทางไปยังหอพักที่คล้ายกัน
   viewSimilarDorm(id: number) {
-    this.router.navigate(['/dorm-detail', id.toString()]);
+    this.router.navigate(['/dorm-detail', id.toString()]).then(() => {
+      // Scroll ไปด้านบนของหน้าเมื่อเปลี่ยนหน้าเสร็จ
+      window.scrollTo(0, 0);
+    });
   }
 
   private setupMapData(detail: DormDetail): void {
@@ -1132,6 +1148,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         from: 'dorm-detail',
         currentDormId: this.dormId
       }
+    }).then(() => {
+      // Scroll ไปด้านบนของหน้าเมื่อเปลี่ยนหน้าเสร็จ
+      window.scrollTo(0, 0);
     });
   }
 

@@ -83,6 +83,39 @@ export class OwnerDormitoryService {
       );
   }
 
+  // ===== Amenities (Edit flow) =====
+  // GET /api/edit-dormitory/:dormId/amenities
+  getDormAmenitiesForEdit(dormId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/edit-dormitory/${dormId}/amenities`)
+      .pipe(
+        tap((resp: any) => {
+          try {
+            const items = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.amenities) ? resp.amenities : []);
+            console.log('[OwnerDormitoryService] GET /api/edit-dormitory/:id/amenities -> items:', items.length);
+          } catch (e) {}
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // POST /api/edit-dormitory/:dormId/amenities
+  // ส่ง "รายการที่ต้องเปิดใช้งานทั้งหมด"
+  saveDormAmenitiesForEdit(
+    dormId: number,
+    enabledAmenities: Array<{ amenity_id?: number; name?: string }>
+  ): Observable<any> {
+    const payload = { amenities: enabledAmenities };
+    return this.http.post(`${this.apiUrl}/edit-dormitory/${dormId}/amenities`, payload)
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] POST /api/edit-dormitory/:id/amenities -> ok', resp);
+          } catch {}
+        }),
+        catchError(this.handleError)
+      );
+  }
+
   // อัปโหลดรูปหอพัก (Add flow)
   uploadDormImagesForAdd(dormId: number, formData: FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/add-dormitory/${dormId}/images`, formData)
@@ -103,6 +136,33 @@ export class OwnerDormitoryService {
         tap((resp) => {
           try {
             console.log('[OwnerDormitoryService] POST /api/edit-dormitory/:id/images -> ok', resp);
+          } catch {}
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // ===== Images (Edit flow) =====
+  // DELETE /api/edit-dormitory/:dormId/images/:imageId
+  deleteDormImageForEdit(dormId: number, imageId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/edit-dormitory/${dormId}/images/${imageId}`)
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] DELETE /api/edit-dormitory/:id/images/:imageId -> ok');
+          } catch {}
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // PUT /api/edit-dormitory/:dormId/images/:imageId/primary
+  setPrimaryDormImageForEdit(dormId: number, imageId: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/edit-dormitory/${dormId}/images/${imageId}/primary`, {})
+      .pipe(
+        tap((resp) => {
+          try {
+            console.log('[OwnerDormitoryService] PUT /api/edit-dormitory/:id/images/:imageId/primary -> ok');
           } catch {}
         }),
         catchError(this.handleError)

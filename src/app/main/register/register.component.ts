@@ -25,6 +25,7 @@ import { RegisterService, DormitoryOption, ZoneOption } from '../../services/reg
 import { GoogleAuthService } from '../../services/google-auth.service';
 import { Location } from '@angular/common';
 import { Auth } from '@angular/fire/auth';
+import { DormitoryService, Dorm } from '../../services/dormitory.service';
 
 // Add interface for grouped dormitories
 interface ZoneDormitories {
@@ -84,6 +85,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   currentSlide = 0;
   isLoading = false;
   private slideInterval: any;
+  isSliderLoading = true;
   photoURL: string | null = null;
   isFromGoogle: boolean = false;
   isRegisterLoading = false;
@@ -110,24 +112,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   selectedDormName: string = '';
 
   // Add sliderImages property
-  sliderImages = [
-    {
-      src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Modern Dormitory Building',
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Dormitory Room Interior',
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Student Common Area',
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Campus Dormitory View',
-    },
-  ];
+  sliderImages: Array<{ id?: number; src: string; alt: string; title?: string; subtitle?: string }> = [];
 
   // เพิ่ม flag เพื่อป้องกันการแสดงผลก่อนที่จะได้ userType ที่ถูกต้อง
   isInitializing = true;
@@ -159,7 +144,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
     private registerService: RegisterService,
     private googleAuthService: GoogleAuthService,
     private location: Location,
-    private auth: Auth
+    private auth: Auth,
+    private dormSvc: DormitoryService
   ) {
     this.registerForm = this.fb.group(
       {
@@ -280,7 +266,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Normalize URL to ensure ':type' is always 'member' or 'owner'
     this.ensureCanonicalRegisterUrl();
-    this.startSlideshow();
+    this.loadSliderImagesFromDorms();
     document.addEventListener('keydown', this.handleKeydown.bind(this));
 
     // ดึงข้อมูลหอพักจาก API
@@ -1479,6 +1465,68 @@ export class RegisterComponent implements OnInit, OnDestroy {
     const intervalId = window.setInterval(() => this.nextSlide(), 5000);
     this.intervals.push(intervalId);
     this.slideInterval = intervalId;
+  }
+
+  private async loadSliderImagesFromDorms(): Promise<void> {
+    try {
+      this.isSliderLoading = true;
+      const [recommended, latest] = await Promise.all([
+        this.dormSvc.getRecommended().toPromise(),
+        this.dormSvc.getLatest().toPromise(),
+      ]);
+
+      let pool: Dorm[] = [];
+      if (Array.isArray(recommended)) pool = pool.concat(recommended);
+      if (Array.isArray(latest)) pool = pool.concat(latest);
+
+      if (pool.length === 0) {
+        const all = await this.dormSvc.getAllDormitories({ limit: 50 }).toPromise();
+        if (Array.isArray(all)) pool = all;
+      }
+
+      const slides = pool
+        .map(d => {
+          const src = d.main_image_url || d.thumbnail_url || '';
+          if (!src) return null;
+          const title = d.dorm_name || 'หอพัก';
+          const zoneText = d.zone_name ? `โซน${d.zone_name}` : '';
+          return { id: d.dorm_id ?? 0, src, alt: title, title, subtitle: zoneText };
+        })
+        .filter(
+          (x): x is { id: number; src: string; alt: string; title: string; subtitle: string } =>
+            !!x && typeof x.id === 'number' && !!x.src && !!x.alt && !!x.title && !!x.subtitle
+        );
+
+      if (slides.length === 0) {
+        this.sliderImages = [{ src: 'assets/images/photo.png', alt: 'Dormitory' }];
+      } else {
+        const uniqueMap = new Map<string, { id?: number; src: string; alt: string; title?: string; subtitle?: string }>();
+        for (const s of slides) {
+          if (!uniqueMap.has(s.src)) uniqueMap.set(s.src, s);
+        }
+        const unique = Array.from(uniqueMap.values());
+        for (let i = unique.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [unique[i], unique[j]] = [unique[j], unique[i]];
+        }
+        this.sliderImages = unique.slice(0, Math.min(6, unique.length));
+      }
+
+      this.isSliderLoading = false;
+      this.startSlideshow();
+    } catch (err) {
+      console.error('[RegisterComponent] Failed to load slider images from dorms:', err);
+      this.sliderImages = [{ src: 'assets/images/photo.png', alt: 'Dormitory' }];
+      this.isSliderLoading = false;
+      this.startSlideshow();
+    }
+  }
+
+  onClickSlide(i: number): void {
+    const s = this.sliderImages[i];
+    if (s?.id != null) {
+      this.router.navigate(['/dorm-detail', s.id]);
+    }
   }
 
   handleKeydown(event: KeyboardEvent): void {

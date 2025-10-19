@@ -37,9 +37,7 @@ export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn):
           try {
             const role = authService.currentUser$.value?.memberType ?? 'unknown';
             // Only log in development mode and without sensitive data
-            if (!environment.production) {
-              console.log('[AuthInterceptor]', req.method, req.url, '| Attached Authorization Bearer token | role =', role);
-            }
+            
           } catch {}
           return next(clonedRequest);
         }),

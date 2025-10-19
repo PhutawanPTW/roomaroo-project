@@ -1,9 +1,52 @@
+.loader {
+  border: 4px solid #e0e7ef;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Card Styles */
 .card-owner {
   box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
-  transition: box-shadow 0.2s;
-  max-width: 320px;
-  min-width: 220px;
+  transition: box-shadow 0.2s, transform 0.2s;
+  border-radius: 8px;
+  overflow: hidden;
 }
+
 .card-owner:hover {
   box-shadow: 0 8px 24px 0 rgba(52, 144, 220, 0.18), 0 1.5px 6px 0 rgba(0,0,0,0.10);
+  transform: translateY(-2px);
+}
+
+/* Mobile specific styles */
+@media (max-width: 640px) {
+  .card-owner {
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.1);
+  }
+  
+  .card-owner:active {
+    box-shadow: 0 4px 12px 0 rgba(52, 144, 220, 0.15);
+    transform: scale(0.98);
+  }
+}
+
+/* Extra small breakpoint for very small phones */
+@media (min-width: 475px) {
+  .xs\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .xs\:h-36 {
+    height: 9rem;
+  }
 }

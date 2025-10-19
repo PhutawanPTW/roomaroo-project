@@ -122,7 +122,7 @@
   </div>
 </div>
 
-<form [formGroup]="dormForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="dormForm" (ngSubmit)="onSubmit()" [class.pointer-events-none]="isInitialLoading" [class.opacity-60]="isInitialLoading">
   <div class="max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 p-8">
     <!-- ==================== Step 1 ==================== -->
     <div *ngIf="currentStep === 1" class="space-y-8">
@@ -916,11 +916,15 @@
 
         <!-- Image Gallery with Drag & Drop Reordering -->
         <div
-          class="edit-image-gallery"
+          class="edit-image-gallery relative"
           *ngIf="imagePreviewUrls.length > 0"
           cdkDropList
           (cdkDropListDropped)="onImageReorder($event)"
         >
+          <!-- Overlay while setting primary or deleting -->
+          <div *ngIf="isSettingPrimary || isDeletingImage" class="absolute inset-0 z-10 bg-white/60 flex items-center justify-center rounded-lg">
+            <span class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+          </div>
           <div
             *ngFor="let image of imagePreviewUrls; let i = index"
             class="relative group"
@@ -972,17 +976,20 @@
                   (click)="setAsMainImage(i)"
                   class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-blue-600 flex items-center space-x-1"
                 >
-                  <i class="fas fa-star text-xs"></i>
-                  <span>ตั้งเป็นหลัก</span>
+                  <i class="fas fa-star text-xs" *ngIf="!(isSettingPrimary && settingPrimaryIndex===i)"></i>
+                  <span *ngIf="!(isSettingPrimary && settingPrimaryIndex===i)">ตั้งเป็นหลัก</span>
+                  <span *ngIf="isSettingPrimary && settingPrimaryIndex===i" class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 </button>
                 
                 <!-- Remove button -->
                 <button
                   type="button"
                   (click)="removeImage(i)"
-                  class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
+                  [disabled]="isDeletingImage"
+                  class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 disabled:opacity-50"
                 >
-                  ×
+                  <span *ngIf="!isDeletingImage || deletingImageIndex !== i">×</span>
+                  <span *ngIf="isDeletingImage && deletingImageIndex === i" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 </button>
               </div>
 
@@ -1131,8 +1138,9 @@
 
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="px-0 py-0">
-              <div class="text-sm text-gray-500">ค่าน้ำ</div>
-              <div class="mt-1 font-medium text-gray-800">
+              <div class="text-sm font-semibold text-gray-700">ค่าน้ำ</div>
+              
+              <div class="mt-1 text-gray-600 leading-relaxed">
                 <ng-container [ngSwitch]="water.value.water_type">
                   <span *ngSwitchCase="'เหมาจ่าย'"
                     >เหมาจ่าย:
@@ -1146,8 +1154,8 @@
               </div>
             </div>
             <div class="px-0 py-0">
-              <div class="text-sm text-gray-500">ค่าไฟ</div>
-              <div class="mt-1 font-medium text-gray-800">
+              <div class="text-sm font-semibold text-gray-700">ค่าไฟ</div>
+              <div class="mt-1 text-gray-600 leading-relaxed">
                 <ng-container [ngSwitch]="electricity.value.electricity_type">
                   <span *ngSwitchCase="'คิดตามหน่วย'"
                     >{{
@@ -1163,7 +1171,7 @@
           </div>
 
           <div class="mt-4">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">
               รายละเอียดหอพัก
             </h3>
             <p class="text-gray-600 leading-relaxed">
@@ -1178,7 +1186,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-gray-50 text-gray-600">
+              <tr class="bg-gray-50 font-bold leading-relaxed">
                 <th class="py-3 px-4 text-left font-medium">ประเภท</th>
                 <th class="py-3 px-4 text-right font-medium">รายเดือน</th>
                 <th class="py-3 px-4 text-right font-medium">รายวัน</th>
@@ -1191,19 +1199,19 @@
                 *ngFor="let rt of roomTypes.value; let i = index"
                 class="hover:bg-gray-50"
               >
-                <td class="py-3 px-4 text-gray-800">
+                <td class="py-3 px-4 text-gray-600 leading-relaxed">
                   {{ getRoomDisplayName(rt) }}
                 </td>
-                <td class="py-3 px-4 text-right font-medium">
+                <td class="py-3 px-4 text-right text-gray-600 leading-relaxed">
                   {{ formatNumberOrDash(rt.pricePerMonth) }}
                 </td>
-                <td class="py-3 px-4 text-right font-medium">
+                <td class="py-3 px-4 text-right text-gray-600 leading-relaxed">
                   {{ formatNumberOrDash(rt.pricePerDay) }}
                 </td>
-                <td class="py-3 px-4 text-right font-medium">
+                <td class="py-3 px-4 text-right text-gray-600 leading-relaxed">
                   {{ formatNumberOrDash(rt.pricePerTerm) }}
                 </td>
-                <td class="py-3 px-4 text-right font-medium">
+                <td class="py-3 px-4 text-right text-gray-600 leading-relaxed">
                   {{ formatNumberOrDash(rt.pricePerSummer) }}
                 </td>
               </tr>
@@ -1562,6 +1570,14 @@
   </div>
 </form>
 
+<!-- Initial loading overlay -->
+<div *ngIf="isInitialLoading" class="fixed inset-0 z-40 flex items-center justify-center bg-white/70">
+  <div class="flex flex-col items-center">
+    <span class="inline-block w-10 h-10 border-4 border-[#007AFF] border-t-transparent rounded-full animate-spin"></span>
+    <div class="mt-3 text-sm font-semibold text-gray-700">กำลังโหลดข้อมูลเดิม...</div>
+  </div>
+  </div>
+
 <!-- Elegant Popup Modal -->
 <div
   *ngIf="showPopup"
@@ -1591,23 +1607,19 @@
         [class]="
           popupType === 'error'
             ? 'bg-red-50 text-red-500'
-            : 'bg-blue-50 text-[#007AFF]'
+            : popupType === 'warning'
+            ? 'bg-yellow-50 text-yellow-600'
+            : 'bg-green-50 text-green-600'
         "
       >
-        <span
-          class="material-symbols-rounded text-4xl"
-          *ngIf="popupType === 'error'"
-          >error</span
-        >
-        <span
-          class="material-symbols-rounded text-4xl"
-          *ngIf="popupType === 'warning'"
-          >warning</span
-        >
+        <span class="material-symbols-rounded text-4xl" *ngIf="popupType === 'error'">error</span>
+        <span class="material-symbols-rounded text-4xl" *ngIf="popupType === 'warning'">warning</span>
+        <span class="material-symbols-rounded text-4xl" *ngIf="popupType === 'success'">check_circle</span>
       </div>
       <div class="text-2xl font-bold text-gray-900 mb-1">
         <span *ngIf="popupType === 'error'">ข้อผิดพลาด</span>
         <span *ngIf="popupType === 'warning'">เตือน</span>
+        <span *ngIf="popupType === 'success'">สำเร็จ</span>
       </div>
       <div class="text-gray-600 leading-relaxed whitespace-pre-line">
         {{ popupMessage }}

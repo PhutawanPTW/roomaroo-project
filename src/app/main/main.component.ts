@@ -24,6 +24,15 @@ interface UIDorm {
   rating: number;
 }
 
+type BannerSlide = {
+  src: string;
+  alt: string;
+  title: string;
+  subtitle: string;
+  priceText?: string;
+  dormId?: number;
+};
+
 @Component({
   selector: 'app-main',
   standalone: true,
@@ -35,25 +44,8 @@ export class MainComponent implements OnInit, OnDestroy {
   currentRoute: string = '';
   pendingApproval = false;
 
-  // Banner slider images - ใช้รูปภาพจากอินเทอร์เน็ต
-  sliderImages = [
-    {
-      src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Modern Dormitory Building'
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Dormitory Room Interior'
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Student Common Area'
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Campus Dormitory View'
-    }
-  ];
+  // Banner slider images - will be populated from dormitories
+  sliderImages: BannerSlide[] = [];
   currentSlide = 0;
   private slideInterval: number | undefined;
 
@@ -88,7 +80,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.startSlideshow();
+    this.loadSliderImagesFromDorms();
     this.loadDormitories();
 
     this.authSubscription = this.authService.currentUser$.subscribe((user: UserProfile | null | undefined) => {
@@ -102,6 +94,124 @@ export class MainComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  private async loadSliderImagesFromDorms(): Promise<void> {
+    try {
+      // Try to gather a broad pool: recommended + latest, fallback to all
+      const [recommended, latest] = await Promise.all([
+        this.dormSvc.getRecommended().toPromise(),
+        this.dormSvc.getLatest().toPromise(),
+      ]);
+
+      let pool: Dorm[] = [];
+      if (Array.isArray(recommended)) pool = pool.concat(recommended);
+      if (Array.isArray(latest)) pool = pool.concat(latest);
+
+      // If pool empty, fallback to a general fetch (limit for performance)
+      if (pool.length === 0) {
+        const all = await this.dormSvc.getAllDormitories({ limit: 50 }).toPromise();
+        if (Array.isArray(all)) pool = all;
+      }
+
+      // Build candidate slides with metadata (name, zone)
+      const candidates: Array<BannerSlide | null> = pool
+        .map(d => {
+          const src = d.main_image_url || d.thumbnail_url || '';
+          if (!src) return null;
+          let subtitle = '';
+          const zoneText = d.zone_name ? `โซน${d.zone_name}` : 'โซนไม่ระบุ';
+          
+          // แสดงแค่โซนเท่านั้น ไม่ต้องแสดงระยะทาง
+          subtitle = zoneText;
+
+          // Compute price text: prefer monthly; else daily
+          let priceText: string | undefined;
+          if (d.min_price != null && d.max_price != null) {
+            const minVal = Number(d.min_price);
+            const maxVal = Number(d.max_price);
+            if (!Number.isNaN(minVal) && !Number.isNaN(maxVal)) {
+              priceText = minVal === maxVal
+                ? `${minVal.toLocaleString()}-/เดือน.`
+                : `${minVal.toLocaleString()}-${maxVal.toLocaleString()}-/เดือน.`;
+            }
+          } else if ((d as any).monthly_price != null) {
+            const single = Number((d as any).monthly_price);
+            if (!Number.isNaN(single)) {
+              priceText = `${single.toLocaleString()}-/เดือน.`;
+            }
+          } else if ((d as any).daily_price != null) {
+            const daily = Number((d as any).daily_price);
+            if (!Number.isNaN(daily)) {
+              priceText = `${daily.toLocaleString()}-/วัน.`;
+            }
+          }
+          const slide: BannerSlide = {
+            src,
+            alt: d.dorm_name || 'Dormitory',
+            title: d.dorm_name || 'หอพัก',
+            subtitle,
+            priceText,
+            dormId: d.dorm_id,
+          };
+          
+          console.log('[MainComponent] Slider dorm data:', {
+            dorm_name: d.dorm_name,
+            rating: d.rating,
+            avg_rating: (d as any).avg_rating,
+            review_count: (d as any).review_count
+          });
+          return slide;
+        })
+        .filter((x): x is BannerSlide => x !== null);
+
+      // Debug logs: แสดงผลข้อมูลสไลด์ที่คำนวณได้
+      try {
+        console.group('[MainComponent] Slider candidates');
+        console.log('pool count:', pool.length, 'candidate count:', candidates.length);
+        const debugRows = (candidates.filter((x): x is BannerSlide => x !== null))
+          .map((c) => ({
+            title: c.title,
+            zone: c.subtitle,
+          }));
+        console.table(debugRows);
+        console.groupEnd();
+      } catch {}
+
+      // If still empty, keep existing behavior by showing nothing (UI handles empty),
+      // or use a local placeholder as a single slide
+      if (candidates.length === 0) {
+        this.sliderImages = [
+          { src: 'assets/images/photo.png', alt: 'Dormitory', title: 'DormRoomaroo', subtitle: 'ค้นหาหอที่ใช่สำหรับคุณ' },
+        ];
+      } else {
+        // Deduplicate by src
+        const uniqueMap = new Map<string, BannerSlide>();
+        for (const c of candidates) {
+          if (c && !uniqueMap.has(c.src)) uniqueMap.set(c.src, c);
+        }
+        const unique = Array.from(uniqueMap.values());
+        // Shuffle
+        for (let i = unique.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [unique[i], unique[j]] = [unique[j], unique[i]];
+        }
+        // Take up to 6 random images for the banner
+        const selected = unique.slice(0, Math.min(6, unique.length));
+        this.sliderImages = selected;
+      }
+
+      // Start slideshow after images are ready
+      this.startSlideshow();
+    } catch (err) {
+      console.error('[MainComponent] Failed to load slider images from dorms:', err);
+      // Fallback to a single placeholder to avoid empty slider state
+      this.sliderImages = [
+        { src: 'assets/images/photo.png', alt: 'Dormitory', title: 'DormRoomaroo', subtitle: 'ค้นหาหอที่ใช่สำหรับคุณ' },
+      ];
+      this.startSlideshow();
+    }
+  }
+
 
   private async loadDormitories() {
     this.isLoadingRecommended = true;
@@ -256,6 +366,12 @@ export class MainComponent implements OnInit, OnDestroy {
     this.router.navigate(['/dorm-detail', dorm.id]);
   }
 
+  viewSlideDetail(slide: BannerSlide) {
+    if (slide.dormId) {
+      this.router.navigate(['/dorm-detail', slide.dormId]);
+    }
+  }
+
   onLogin() {
     this.router.navigate(['/login']);
   }
@@ -267,6 +383,13 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private mapDormToUi(d: Dorm): UIDorm {
+    console.log('[MainComponent] Raw dorm data from API:', d);
+    console.log('[MainComponent] Rating fields:', {
+      rating: d.rating,
+      avg_rating: (d as any).avg_rating,
+      review_count: (d as any).review_count
+    });
+
     let priceDisplay = '';
 
     // จัดการราคารายเดือน
@@ -296,6 +419,12 @@ export class MainComponent implements OnInit, OnDestroy {
       locationDisplay = locationDisplay ? `${locationDisplay} (${d.zone_name})` : d.zone_name;
     }
 
+    // ใช้ avg_rating จาก API ใหม่ หรือ fallback ไป rating เก่า
+    // แปลง string เป็น number ก่อน
+    const avgRating = (d as any).avg_rating;
+    const finalRating = avgRating ? Number(avgRating) : (d.rating || 0.0);
+    console.log('[MainComponent] Final rating used:', finalRating);
+
     return {
       id: d.dorm_id,
       image: d.thumbnail_url || d.main_image_url || 'assets/images/photo.png',
@@ -304,7 +433,7 @@ export class MainComponent implements OnInit, OnDestroy {
       location: locationDisplay,
       zone: d.zone_name || 'ไม่ระบุโซน',
       date: d.updated_date ? this.formatThaiDate(d.updated_date) : '',
-      rating: d.rating || 0.0
+      rating: finalRating
     };
   }
 
@@ -332,6 +461,6 @@ export class MainComponent implements OnInit, OnDestroy {
     const month = thaiMonths[date.getMonth()];
     const year = date.getFullYear() + 543; // Convert to Buddhist Era
     
-    return `อัพเดทล่าสุด: ${day} ${month} ${year}`;
+    return `${day} ${month} ${year}`;
   }
 }

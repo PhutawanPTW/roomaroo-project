@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService, UserProfile as BaseUserProfile } from '../../services/auth.service';
+import { DormitoryService, Dorm } from '../../services/dormitory.service';
 import { GoogleAuthService } from '../../services/google-auth.service';
 import { Subscription } from 'rxjs';
 
@@ -29,6 +30,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   googleTimeout: any = null;
   private slideInterval: any;
   private authSub: Subscription | undefined;
+  isSliderLoading = true;
 
   // Forgot Password Modal
   showForgotPassword = false;
@@ -38,19 +40,15 @@ export class LoginComponent implements OnInit, OnDestroy {
   isForgotPasswordLoading = false;
 
 
-  sliderImages = [
-    { src: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Modern Dormitory Building' },
-    { src: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Dormitory Room Interior' },
-    { src: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Student Common Area' },
-    { src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', alt: 'Campus Dormitory View' },
-  ];
+  sliderImages: Array<{ id?: number; src: string; alt: string; title?: string; subtitle?: string } > = [];
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
-    private googleAuthService: GoogleAuthService
+    private googleAuthService: GoogleAuthService,
+    private dormSvc: DormitoryService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -59,7 +57,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.startSlideshow();
+    this.loadSliderImagesFromDorms();
 
     // Read user type from path parameter
     this.route.paramMap.subscribe(paramMap => {
@@ -264,6 +262,65 @@ export class LoginComponent implements OnInit, OnDestroy {
   private startSlideshow(): void {
     const intervalId = window.setInterval(() => this.nextSlide(), 5000);
     this.slideInterval = intervalId;
+  }
+
+  private async loadSliderImagesFromDorms(): Promise<void> {
+    try {
+      this.isSliderLoading = true;
+      const [recommended, latest] = await Promise.all([
+        this.dormSvc.getRecommended().toPromise(),
+        this.dormSvc.getLatest().toPromise(),
+      ]);
+
+      let pool: Dorm[] = [];
+      if (Array.isArray(recommended)) pool = pool.concat(recommended);
+      if (Array.isArray(latest)) pool = pool.concat(latest);
+
+      if (pool.length === 0) {
+        const all = await this.dormSvc.getAllDormitories({ limit: 50 }).toPromise();
+        if (Array.isArray(all)) pool = all;
+      }
+
+      const slides = pool
+        .map(d => {
+          const src = d.main_image_url || d.thumbnail_url || '';
+          if (!src) return null;
+          const title = d.dorm_name || 'หอพัก';
+          const zoneText = d.zone_name ? `โซน${d.zone_name}` : '';
+          return { id: d.dorm_id!, src, alt: title, title, subtitle: zoneText };
+        })
+        .filter((x): x is { id: number; src: string; alt: string; title: string; subtitle: string } => !!x && x.id !== undefined && x.title !== undefined && x.subtitle !== undefined);
+
+      if (slides.length === 0) {
+        this.sliderImages = [{ src: 'assets/images/photo.png', alt: 'Dormitory' }];
+      } else {
+        const uniqueMap = new Map<string, { id?: number; src: string; alt: string; title?: string; subtitle?: string }>();
+        for (const s of slides) {
+          if (!uniqueMap.has(s.src)) uniqueMap.set(s.src, s);
+        }
+        const unique = Array.from(uniqueMap.values());
+        for (let i = unique.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [unique[i], unique[j]] = [unique[j], unique[i]];
+        }
+        this.sliderImages = unique.slice(0, Math.min(6, unique.length));
+      }
+
+      this.isSliderLoading = false;
+      this.startSlideshow();
+    } catch (err) {
+      console.error('[LoginComponent] Failed to load slider images from dorms:', err);
+      this.sliderImages = [{ src: 'assets/images/photo.png', alt: 'Dormitory' }];
+      this.isSliderLoading = false;
+      this.startSlideshow();
+    }
+  }
+
+  onClickSlide(i: number): void {
+    const s = this.sliderImages[i];
+    if (s?.id != null) {
+      this.router.navigate(['/dorm-detail', s.id]);
+    }
   }
 
   // ===== FORGOT PASSWORD METHODS =====

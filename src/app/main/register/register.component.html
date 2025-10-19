@@ -17,14 +17,22 @@
     <div class="w-[60%] relative p-6 flex items-center justify-center border-r border-gray-200">
       <!-- Image Slider จะถูกจัดกลางแล้วใน CSS -->
       <div class="slider-container">
-        <div class="slider-wrapper" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
-          <div *ngFor="let image of sliderImages" class="slider-slide">
+        <!-- Skeleton while loading (fill container) -->
+        <div *ngIf="isSliderLoading" class="absolute inset-0 rounded-lg bg-gray-200 animate-pulse"></div>
+        
+        <div *ngIf="!isSliderLoading" class="slider-wrapper" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
+          <div *ngFor="let image of sliderImages; let i = index" class="slider-slide relative" (click)="onClickSlide(i)" style="cursor:pointer;">
             <img [src]="image.src" [alt]="image.alt" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+            <div class="absolute top-3 right-3 text-white text-right">
+              <div class="text-base sm:text-lg font-bold font-thai truncate">{{ image.title || 'หอพัก' }}</div>
+              <div class="text-xs sm:text-sm opacity-90 font-thai truncate">{{ image.subtitle || '' }}</div>
+            </div>
           </div>
         </div>
 
         <!-- Slider Dots -->
-        <div class="slider-dots">
+        <div *ngIf="!isSliderLoading" class="slider-dots">
           <button *ngFor="let image of sliderImages; let i = index" class="slider-dot"
             [class.active]="i === currentSlide" (click)="goToSlide(i)">
           </button>

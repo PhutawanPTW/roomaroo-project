@@ -156,6 +156,39 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
   private amenityIndexMap = new Map(this.AMENITIES.map((a, i) => [a.id, i]));
 
+  // Mapping จาก index ไป amenity_id จริงในฐานข้อมูล
+  private getAmenityIdFromIndex(index: number): number | undefined {
+    const mapping = [
+      1,  // index 0: แอร์
+      2,  // index 1: พัดลม
+      3,  // index 2: TV
+      4,  // index 3: ตู้เย็น
+      5,  // index 4: เตียงนอน
+      6,  // index 5: WIFI
+      7,  // index 6: ตู้เสื้อผ้า
+      8,  // index 7: โต๊ะทำงาน
+      9,  // index 8: ไมโครเวฟ
+      10, // index 9: เครื่องทำน้ำอุ่น
+      11, // index 10: ซิงค์ล้างจาน
+      12, // index 11: โต๊ะเครื่องแป้ง
+      13, // index 12: กล้องวงจรปิด
+      14, // index 13: รปภ.
+      15, // index 14: ลิฟต์
+      16, // index 15: ที่จอดรถ
+      17, // index 16: ฟิตเนส
+      18, // index 17: Lobby
+      19, // index 18: ตู้น้ำหยอดเหรียญ
+      20, // index 19: สระว่ายน้ำ
+      21, // index 20: ที่วางพัสดุ
+      22, // index 21: อนุญาตให้เลี้ยงสัตว์
+      23, // index 22: คีย์การ์ด
+      24, // index 23: เครื่องซักผ้า
+      // index 24: อื่นๆ (ไม่ต้องส่ง amenity_id)
+    ];
+    
+    return mapping[index] || undefined;
+  }
+
   zones: ZoneOption[] = [];
   zonesLoading = false;
   zonesError: string | null = null;
@@ -1661,7 +1694,7 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       const isChecked = this.dormForm.get('amenities')?.value[index];
       if (isChecked) {
         amenities.push({
-          amenity_id: index + 1, // สมมติว่า amenity_id ใน DB เริ่มจาก 1
+          amenity_id: this.getAmenityIdFromIndex(index), // ใช้ mapping ที่ถูกต้อง
           amenity_name: amenity.name, // ส่งชื่อที่ผู้ใช้เห็น (แอร์, WIFI, ลิฟต์, etc.)
           location_type: amenity.location_type,
           is_available: true,
