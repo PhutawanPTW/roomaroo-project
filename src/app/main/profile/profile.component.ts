@@ -323,7 +323,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
     try {
       this.isSaving = true;
       const res = await this.authService.requestChangeDormitory(target);
-      console.log('Change dorm response:', res);
       // ไม่อัปเดต residence_dorm_id ทันที ตามเงื่อนไขของระบบ
     } catch (err) {
       console.error('Failed to request change dormitory', err);
@@ -333,7 +332,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   saveProfile() {
-    console.log('Saving profile:', this.editForm);
+    
     this.isSaving = true;
     this.passwordError = '';
 
@@ -393,7 +392,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
         if (!isNaN(targetId)) {
           try {
             const res: any = await this.authService.requestChangeDormitory(targetId);
-            console.log('Requested change dormitory:', res);
             this.pendingChangeDormName = res?.new_dorm_name || this.getDormName(targetId);
           } catch (e) {
             console.error('Request change dormitory failed', e);

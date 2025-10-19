@@ -85,7 +85,6 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
   // tailwind heights
   mapHeightClass = 'h-80';
-  defaultLocation = { lat: 16.2467, lng: 103.2521 };
 
   // images
   selectedImages: File[] = [];
@@ -265,8 +264,8 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
         this.water.get('water_rate')?.setValue(detail.water_rate || '');
 
         // Location
-        const lat = Number(detail.latitude) || this.defaultLocation.lat;
-        const lng = Number(detail.longitude) || this.defaultLocation.lng;
+        const lat = Number(detail.latitude);
+        const lng = Number(detail.longitude);
         this.dormForm.get('location.latitude')?.setValue(lat);
         this.dormForm.get('location.longitude')?.setValue(lng);
       }
@@ -419,8 +418,8 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
         }),
       }),
       location: this.fb.group({
-        latitude: [this.defaultLocation.lat, Validators.required],
-        longitude: [this.defaultLocation.lng, Validators.required],
+        latitude: [null, Validators.required],
+        longitude: [null, Validators.required],
       }),
       images: this.fb.array([]),
 
@@ -1138,6 +1137,28 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       // ส่วนสิ่งอำนวยความสะดวก
       amenities: this.buildAmenitiesPayload(),
     };
+    
+    // Log ข้อมูลพิกัดที่ส่งไปยัง API
+    console.log('[DormAdd] ข้อมูลพิกัดที่ส่งไปยัง API:', {
+      payload: payloadBasic,
+      location_data: {
+        latitude_raw: v.location.latitude,
+        longitude_raw: v.location.longitude,
+        latitude_processed: payloadBasic.latitude,
+        longitude_processed: payloadBasic.longitude,
+        latitude_type: typeof payloadBasic.latitude,
+        longitude_type: typeof payloadBasic.longitude,
+        is_latitude_number: typeof payloadBasic.latitude === 'number',
+        is_longitude_number: typeof payloadBasic.longitude === 'number',
+        latitude_is_nan: Number.isNaN(payloadBasic.latitude),
+        longitude_is_nan: Number.isNaN(payloadBasic.longitude)
+      },
+      form_location_value: {
+        latitude: this.dormForm.get('location.latitude')?.value,
+        longitude: this.dormForm.get('location.longitude')?.value
+      }
+    });
+    
     console.log('[DormAdd] payload basic ->', payloadBasic);
 
     // *** Set both guards ***
@@ -1367,8 +1388,18 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       }
 
     const loc = this.dormForm.get('location')!;
-    const lat = loc.get('latitude')?.value || this.defaultLocation.lat;
-    const lng = loc.get('longitude')?.value || this.defaultLocation.lng;
+    const lat = loc.get('latitude')?.value;
+    const lng = loc.get('longitude')?.value;
+    
+    // ตรวจสอบว่ามีข้อมูลพิกัดหรือไม่
+    if (!lat || !lng || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+      console.error('[DormAdd] ไม่สามารถสร้างแผนที่ได้: ข้อมูลพิกัดไม่ถูกต้อง', {
+        latitude: lat,
+        longitude: lng
+      });
+      this.showCustomPopup('กรุณาปักหมุดตำแหน่งหอพักบนแผนที่', 'error');
+      return;
+    }
 
       console.log('[DormAdd] Map coordinates:', { lat, lng });
 
@@ -1378,14 +1409,45 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
 
         console.log('[DormAdd] Calling mapService.enablePickLocation...');
     this.mapService.enablePickLocation(({ lat, lng }) => {
-          console.log('[DormAdd] Location picked:', { lat, lng });
+          console.log('[DormAdd] ผู้ใช้เลือกตำแหน่งใหม่บนแผนที่:', {
+            old_coordinates: {
+              latitude: loc.get('latitude')?.value,
+              longitude: loc.get('longitude')?.value
+            },
+            new_coordinates: { latitude: lat, longitude: lng },
+            coordinates_type: {
+              lat_type: typeof lat,
+              lng_type: typeof lng,
+              lat_is_number: typeof lat === 'number',
+              lng_is_number: typeof lng === 'number',
+              lat_is_nan: Number.isNaN(lat),
+              lng_is_nan: Number.isNaN(lng)
+            }
+          });
+      
+      // อัปเดต Form values อย่างชัดเจน
       loc.get('latitude')?.setValue(lat);
       loc.get('longitude')?.setValue(lng);
+      
+      // อัปเดต Form state
+      loc.get('latitude')?.markAsDirty();
+      loc.get('longitude')?.markAsDirty();
+      loc.get('latitude')?.markAsTouched();
+      loc.get('longitude')?.markAsTouched();
       
       // คำนวณระยะทางทันทีเมื่อปักหมุด
       this.calculateAndUpdateDistance(lat, lng);
       
+      // บังคับให้ Angular ตรวจสอบการเปลี่ยนแปลง
+      this.cdr.detectChanges();
       this.cdr.markForCheck();
+      
+      console.log('[DormAdd] อัปเดตพิกัดเสร็จสิ้น:', {
+        form_latitude: loc.get('latitude')?.value,
+        form_longitude: loc.get('longitude')?.value,
+        new_latitude: lat,
+        new_longitude: lng
+      });
     });
 
         console.log('[DormAdd] Map initialized successfully');
@@ -1416,8 +1478,11 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       const lat = loc.get('latitude')?.value;
       const lng = loc.get('longitude')?.value;
 
-      if (!lat || !lng) {
-        console.log('[DormAdd] No coordinates available for preview map');
+      if (!lat || !lng || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+        console.error('[DormAdd] ไม่สามารถสร้างแผนที่ตัวอย่างได้: ข้อมูลพิกัดไม่ถูกต้อง', {
+          latitude: lat,
+          longitude: lng
+        });
         return;
       }
 

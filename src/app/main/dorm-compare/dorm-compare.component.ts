@@ -122,7 +122,6 @@ export class DormCompareComponent implements OnInit, OnDestroy {
       this.dormitoryService.compareDormitories(ids).subscribe({
         next: (response) => {
           if (response.success && response.dormitories) {
-            console.log('[DormCompare] API Response:', response.dormitories);
             this.compareDorms = response.dormitories.map((dorm: any) => {
               // Map API response to CompareDormData format
               const priceRange = this.formatPriceRange(dorm.price_range);
@@ -159,15 +158,6 @@ export class DormCompareComponent implements OnInit, OnDestroy {
                 ),
                 roomTypes: dorm.room_types || [],
               };
-
-              console.log(
-                '[DormCompare] Mapped dorm:',
-                mappedDorm.name,
-                'Rating:',
-                mappedDorm.rating,
-                'Reviews:',
-                mappedDorm.reviewCount
-              );
               return mappedDorm;
             });
 

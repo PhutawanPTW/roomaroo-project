@@ -76,8 +76,7 @@ export class AdminComponent implements OnInit {
         console.error('Error loading dormitories:', error);
         this.errorMessage = 'เกิดข้อผิดพลาดในการโหลดข้อมูลหอพัก';
         this.isLoading = false;
-        // Fallback to mock data if API fails
-        this.loadMockData();
+        // ไม่มี fallback data
       }
     });
   }
@@ -106,67 +105,7 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  loadMockData(): void {
-    // Fallback mock data
-    this.dorms = [
-      { 
-        dorm_id: '1',
-        dorm_name: 'หอพักร่ำรวย', 
-        owner_username: 'khaitiew002', 
-        owner_name: 'ไม่ใช่ยง ชายดี',
-        address: '123 ถนนสุขุมวิท กรุงเทพฯ',
-        approval_status: 'อนุมัติ',
-        submitted_date: '2024-01-15',
-        zone_name: 'หน้ามอ',
-        main_image_url: 'assets/images/photo.png'
-      },
-      { 
-        dorm_id: '2',
-        dorm_name: 'หอพักสบายใจ', 
-        owner_username: 'khonsarn003', 
-        owner_name: 'คนสาร เพชรสาร',
-        address: '456 ถนนรัชดาภิเษก กรุงเทพฯ',
-        approval_status: 'รออนุมัติ',
-        submitted_date: '2024-01-20',
-        zone_name: 'ท่าขอนยาง',
-        main_image_url: 'assets/images/photo.png'
-      },
-      {
-        dorm_id: '3',
-        dorm_name: 'หอพักใกล้มหาลัย',
-        owner_username: 'arunrak003',
-        owner_name: 'อรุณรักษ์ พัฒนาพันธ์',
-        address: '789 ถนนพหลโยธิน กรุงเทพฯ',
-        approval_status: 'อนุมัติ',
-        submitted_date: '2024-01-10',
-        zone_name: 'ขามเรียง',
-        main_image_url: 'assets/images/photo.png'
-      },
-      { 
-        dorm_id: '4',
-        dorm_name: 'หอพักวิวสวน', 
-        owner_username: 'jiraporn005', 
-        owner_name: 'วิราภรณ์ รักสวน',
-        address: '321 ถนนลาดพร้าว กรุงเทพฯ',
-        approval_status: 'รออนุมัติ',
-        submitted_date: '2024-01-25',
-        zone_name: 'ดอนนา',
-        main_image_url: 'assets/images/photo.png'
-      },
-      {
-        dorm_id: '5',
-        dorm_name: 'หอพักใจกลางเมือง',
-        owner_username: 'narong006',
-        owner_name: 'ณรงค์ พักกึ่งสุข',
-        address: '654 ถนนสุขุมวิท กรุงเทพฯ',
-        approval_status: 'อนุมัติ',
-        submitted_date: '2024-01-12',
-        zone_name: 'กู่แก้ว',
-        main_image_url: 'assets/images/photo.png'
-      }
-    ];
-    this.filteredDorms = this.dorms;
-  }
+  // loadMockData method removed - no more mock data
 
   filterDorms(): void {
     if (this.selectedTab === 'รออนุมัติ') {
@@ -221,8 +160,8 @@ export class AdminComponent implements OnInit {
   }
 
   editDormitory(dormId: string): void {
-    // TODO: Navigate to edit page or show edit modal
-    alert(`แก้ไขหอพัก ID: ${dormId}`);
+    // Navigate to admin dormitory edit page
+    this.router.navigate(['/admin/dorm-edit', dormId]);
   }
 
   reviewDormitory(dormId: string): void {
@@ -285,7 +224,6 @@ export class AdminComponent implements OnInit {
     try {
       // Sign out จาก Firebase Auth
       await signOut(this.firebaseAuth);
-      console.log('Firebase sign out successful');
     } catch (error) {
       console.error('Firebase sign out error:', error);
     }
@@ -293,7 +231,6 @@ export class AdminComponent implements OnInit {
     // ลบข้อมูล admin และ Firebase token จาก localStorage
     localStorage.removeItem('adminProfile');
     localStorage.removeItem('firebaseToken');
-    console.log('Admin logout completed, localStorage cleared');
     
     // Redirect ไปหน้า login
     this.router.navigate(['/admin/login']);

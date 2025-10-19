@@ -80,7 +80,6 @@ export class LoginComponent implements OnInit, OnDestroy {
       if (params['resetSuccess'] === 'true') {
         // Don't show as error, just clear any existing error
         this.errorMessage = null;
-        console.log('[LoginComponent] Password reset successful, email pre-filled');
       }
       
       // Show message if provided
@@ -103,7 +102,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   private redirectBasedOnUserType(user: UserProfile): void {
-    console.log('[LoginComponent] Redirecting user based on memberType:', user.memberType);
+    // Minimal: navigation handled without verbose logs
 
     if (user.memberType === 'owner') {
       this.router.navigate(['/owner']);
@@ -145,7 +144,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.isGoogleLoading = true;
     this.errorMessage = null;
     try {
-      console.log(`[LoginComponent] Starting Google OAuth for userType: ${this.userType}`);
+      // Minimal: no verbose console logs for OAuth start
 
       if (this.userType !== 'member' && this.userType !== 'owner') {
         this.errorMessage = 'ประเภทผู้ใช้ไม่ถูกต้อง';
@@ -154,7 +153,6 @@ export class LoginComponent implements OnInit, OnDestroy {
       }
 
       const userProfile = await this.googleAuthService.signInWithGoogle(this.userType);
-      console.log('[LoginComponent] Google sign-in successful:', userProfile);
 
       // รอให้ auth state update เสร็จก่อน redirect
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -189,7 +187,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         // รอให้ auth state update เสร็จ
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        console.log('[LoginComponent] Login successful, redirecting based on actual memberType:', userProfile.memberType);
+        // Minimal: log removed per request
         this.redirectBasedOnUserType(userProfile);
       }
 
@@ -235,7 +233,6 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   onRegister(): void {
-    console.log('[LoginComponent] Navigating to register page for userType:', this.userType);
     // ตรวจสอบว่าอยู่ในหน้า login/owner หรือ login/member
     const currentPath = this.router.url;
     let type: 'member' | 'owner' | null = null;

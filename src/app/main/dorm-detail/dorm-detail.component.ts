@@ -198,7 +198,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         this.resetMapState();
         
         // ตรวจสอบสิทธิ์/โหลดข้อมูล หลัง token พร้อม แล้วรันพร้อมกัน
-        console.log('[DormDetail] Initializing for dormId:', this.dormId);
+        // removed verbose log
         this.authService.refreshToken(false)
           .catch(err => {
             console.warn('[DormDetail] Token not ready, continue anyway:', err);
@@ -293,33 +293,13 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         throw new Error('ไม่พบข้อมูลหอพัก');
       }
 
-      // Debug: ดูข้อมูลทั้งหมดที่ได้จาก API
-      console.log('[DormDetail] Full API response:', detail);
+      // remove verbose debug logs
       
-      // Debug: ดูข้อมูล owner ที่มีใน response
-      console.log('[DormDetail] Owner fields in response:', {
-        owner_name: detail.owner_name,
-        owner_manager_name: detail.owner_manager_name,
-        owner_phone: detail.owner_phone,
-        owner_secondary_phone: detail.owner_secondary_phone,
-        owner_line_id: detail.owner_line_id,
-        owner_email: detail.owner_email,
-        owner_photo_url: detail.owner_photo_url
-      });
       
-      // Debug: ตรวจสอบ field names อื่นๆ ที่อาจเป็นรูปภาพ owner
-      console.log('[DormDetail] Checking for photo fields:', {
-        owner_photo_url: detail.owner_photo_url,
-        owner_photo: (detail as any).owner_photo,
-        owner_image: (detail as any).owner_image,
-        owner_avatar: (detail as any).owner_avatar,
-        photo_url: (detail as any).photo_url,
-        image_url: (detail as any).image_url
-      });
       
-      // Debug: ดู keys ทั้งหมดใน response เพื่อหาชื่อ field ที่อาจเป็นรูปภาพ
-      console.log('[DormDetail] All keys in response:', Object.keys(detail));
-      console.log('[DormDetail] All values in response:', detail);
+      
+      
+      
 
       // ตรวจสอบสถานะการอนุมัติ
       if (detail.approval_status === 'รออนุมัติ') {
@@ -357,23 +337,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       // โหลด room types
       try {
         const rts = await this.dormService.getRoomTypes(this.dormId).toPromise();
-        console.log('Room Types Data:', rts);
-        this.roomTypes = Array.isArray(rts) ? rts : [];
-        console.log('Processed Room Types:', this.roomTypes);
         
-        // Log each room type in detail
-        this.roomTypes.forEach((rt, index) => {
-          console.log(`Room Type ${index + 1}:`, {
-            room_type_id: rt.room_type_id,
-            dorm_id: rt.dorm_id,
-            name: rt.name,
-            bed_type: rt.bed_type,
-            monthly_price: rt.monthly_price,
-            daily_price: rt.daily_price,
-            term_price: rt.term_price,
-            summer_price: rt.summer_price
-          });
-        });
+        this.roomTypes = Array.isArray(rts) ? rts : [];
+        
       } catch (e) {
         console.error('Error loading room types:', e);
         this.roomTypes = [];
@@ -394,7 +360,6 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         image: detail.owner_photo_url || '../../../assets/images/image-removebg-preview.png'
       };
       
-      console.log('[DormDetail] Processed owner contact:', this.ownerContact);
 
       // ตั้งค่าแผนที่
       this.setupMapData(detail);
@@ -457,12 +422,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private mapDormToSimilarProperty(dorm: Dorm): SimilarProperty {
-    console.log('[DormDetail] Similar property raw data:', dorm);
-    console.log('[DormDetail] Similar property rating fields:', {
-      rating: dorm.rating,
-      avg_rating: (dorm as any).avg_rating,
-      review_count: (dorm as any).review_count
-    });
+    
 
     let priceDisplay = '';
     let dailyPrice: string | undefined;
@@ -502,7 +462,6 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     // แปลง string เป็น number ก่อน
     const avgRating = (dorm as any).avg_rating;
     const finalRating = avgRating ? Number(avgRating) : (dorm.rating || 0.0);
-    console.log('[DormDetail] Similar property final rating used:', finalRating);
 
     return {
       id: dorm.dorm_id,
@@ -533,7 +492,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         let lng = typeof detail.longitude === 'string' ? parseFloat(detail.longitude) : detail.longitude;
 
         if (!isNaN(lat) && !isNaN(lng)) {
-          console.log('Setting up map with valid coordinates:', { lat, lng });
+          
           this.mapLatitude = lat;
           this.mapLongitude = lng;
           this.showMap = true;
@@ -571,11 +530,11 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     try {
     const mapContainer = document.getElementById('map');
     if (mapContainer && this.dormDetail) {
-      console.log('Map container found, initializing with MapService...');
+      
         
         // ตรวจสอบว่า map container มีขนาดที่เหมาะสม
         if (mapContainer.offsetWidth === 0 || mapContainer.offsetHeight === 0) {
-          console.log('Map container has no dimensions, waiting for layout...');
+          
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         
@@ -595,9 +554,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         );
         
         this.mapState.initialized = true;
-        console.log('Map initialized successfully');
+        
     } else {
-      console.log('Map container not ready, retrying...');
+      
       // ลองอีกครั้งหลังจาก 200ms
         await new Promise(resolve => setTimeout(resolve, 200));
         if (!this.mapState.initialized) {
@@ -688,7 +647,6 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Add to favorites method
   addToFavorites(): void {
-    console.log('Added to favorites:', this.dormName);
     this.triggerPopup('เพิ่มในรายการโปรดแล้ว!', 'success');
   }
 
@@ -770,14 +728,14 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   private checkLoginStatus(): void {
     this.authService.currentUser$.subscribe(user => {
       this.isLoggedIn = !!user;
-      console.log('[DormDetail] Login status:', this.isLoggedIn);
+      
       if (user) {
         this.userAvatar = user.photoURL || '../../../assets/images/image-removebg-preview.png';
         this.currentUserId = user.id;
-        console.log('[DormDetail] Current user ID:', this.currentUserId);
+        
       } else {
         this.currentUserId = null;
-        console.log('[DormDetail] No user logged in');
+        
       }
     });
   }
@@ -802,24 +760,22 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.dormitoryService.checkReviewEligibility(this.dormId, uid).subscribe({
       next: (response) => {
         // Debug: แสดง raw response ที่ได้รับ
-        console.log('[DormDetail] Raw eligibility response:', response);
-        console.log('[DormDetail] Response type:', typeof response);
-        console.log('[DormDetail] Response keys:', Object.keys(response));
+        
         
         // ใช้ field names ที่ตรงกับ API response จาก backend
         // ตรวจสอบ field can_review ก่อน (ตาม API spec ที่ Backend ส่งมา)
         if ((response as any).can_review !== undefined) {
           this.canReview = (response as any).can_review;
-          console.log('[DormDetail] Using can_review field:', this.canReview);
+          
         } else if (response.canReview !== undefined) {
           this.canReview = response.canReview;
-          console.log('[DormDetail] Using canReview field:', this.canReview);
+          
         } else if ((response as any).isEligible !== undefined) {
           this.canReview = (response as any).isEligible;
-          console.log('[DormDetail] Using isEligible field:', this.canReview);
+          
         } else {
           this.canReview = false;
-          console.log('[DormDetail] No valid field found, defaulting to false');
+          
         }
         
         // จัดการเหตุผลจาก backend และเคสพิเศษ (เคยรีวิวแล้ว / ไม่ใช่ผู้พักอาศัย)
@@ -841,27 +797,13 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         }
         
         // Debug: แสดง field values ที่ตรวจสอบ
-        console.log('[DormDetail] Field check:', {
-          'can_review': (response as any).can_review,
-          'canReview': response.canReview,
-          'isEligible': (response as any).isEligible,
-          'final_canReview': this.canReview,
-          'status': (response as any).status,
-          'isPendingApproval': this.isPendingApproval
-        });
+        
         
         // Debug: แสดง reason/message
-        console.log('[DormDetail] Message check:', {
-          'reason': (response as any).reason,
-          'message': response.message,
-          'final_message': this.reviewEligibilityMessage
-        });
+        
         
         // Debug: แสดง has_reviewed field
-        console.log('[DormDetail] Has reviewed check:', {
-          'has_reviewed': (response as any).has_reviewed,
-          'hasReviewed': (response as any).hasReviewed
-        });
+        
       },
       error: (error) => {
         console.error('[DormDetail] Error checking review eligibility:', error);
@@ -900,12 +842,10 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       comment: trimmedComment
     }).subscribe({
       next: (response) => {
-        console.log('[DormDetail] Review created successfully:', response);
-        console.log('[DormDetail] Response keys:', Object.keys(response));
+        
         
         // ใช้ predicted_rating จาก AI แทน manual rating
         const predictedRating = response.predicted_rating || 5;
-        console.log('[DormDetail] Using predicted_rating:', predictedRating);
         
         // เพิ่มความคิดเห็นใหม่ในรายการ
         const newReview: Review = {
@@ -925,6 +865,9 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         
         // โหลดรีวิวใหม่จาก API เพื่อให้ได้ข้อมูลล่าสุด
         this.loadReviews();
+        
+        // ตรวจสอบสิทธิ์การรีวิวใหม่หลังจากส่งรีวิวเสร็จ
+        this.checkReviewEligibility();
       },
       error: (error) => {
         console.error('[DormDetail] Error creating review:', error);
@@ -959,13 +902,12 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     // โหลดรีวิวจาก API จริงเท่านั้น
     this.dormitoryService.getDormitoryReviews(this.dormId).subscribe({
       next: (response) => {
-        console.log('[DormDetail] Raw API response:', response);
+        
         
         // จัดการ API response ที่มี structure {reviews: Array} หรือ array โดยตรง
         let reviews = response;
         if (response && typeof response === 'object' && (response as any).reviews) {
           reviews = (response as any).reviews;
-          console.log('[DormDetail] Extracted reviews from response:', reviews);
         }
         
         // ตรวจสอบว่า reviews เป็น array หรือไม่
@@ -996,15 +938,14 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
           this.overallRating = 0;
         }
         
-        console.log('[DormDetail] Reviews loaded from API:', this.reviews);
-        console.log('[DormDetail] Overall rating:', this.overallRating);
+        
       },
       error: (error) => {
         console.error('[DormDetail] Error loading reviews:', error);
         // ถ้าโหลดไม่สำเร็จ ให้แสดงข้อความว่างแทนการใช้ mockup
         this.reviews = [];
         this.overallRating = 0;
-        console.log('[DormDetail] No reviews available');
+        
       }
     });
   }
@@ -1041,7 +982,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   viewAllComments(): void {
     // 实现查看所有评论的逻辑
-    console.log('View all comments clicked');
+    
   }
 
   // ฟังก์ชันการแก้ไขรีวิว
@@ -1070,7 +1011,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       comment: review.editComment.trim()
     }).subscribe({
       next: (response) => {
-        console.log('[DormDetail] Review updated successfully:', response);
+        
         
         // อัปเดตข้อมูลรีวิวในรายการ
         review.comment = review.editComment!.trim();
@@ -1114,7 +1055,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     // ส่งคำขอลบไปยัง API
     this.dormitoryService.deleteReview(review.id || index).subscribe({
       next: (response) => {
-        console.log('[DormDetail] Review deleted successfully:', response);
+        
         
         // ลบรีวิวออกจากรายการ
         this.reviews.splice(index, 1);
@@ -1123,7 +1064,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         this.loadReviews();
       },
       error: (error) => {
-        console.error('[DormDetail] Error deleting review:', error);
+      console.error('[DormDetail] Error deleting review:', error);
         this.triggerPopup('ไม่สามารถลบรีวิวได้: ' + (error.error?.message || 'เกิดข้อผิดพลาด'), 'error');
       }
     });
@@ -1176,16 +1117,13 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       // ถ้าอยู่แล้ว ให้ลบออก
       this.dormCompareService.removeFromCompare(this.dormId);
       this.isInCompareList = false;
-      console.log('[DormDetail] ลบหอพักออกจากรายการเปรียบเทียบ');
     } else {
       // ถ้ายังไม่อยู่ ให้เพิ่มเข้า
       const success = this.dormCompareService.addToCompare(compareItem);
       
       if (success) {
         this.isInCompareList = true;
-        console.log('[DormDetail] เพิ่มหอพักเข้าสู่รายการเปรียบเทียบ');
       } else {
-        console.log('[DormDetail] ไม่สามารถเพิ่มหอพักได้ (เกินจำนวนสูงสุด)');
       }
     }
   }

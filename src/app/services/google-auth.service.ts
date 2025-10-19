@@ -141,8 +141,15 @@ export class GoogleAuthService {
         this.appAuthService.updateCurrentUser(userProfile);
       } catch {}
 
-      // Handle routing based on profile completeness (only when type matches or setup required)
-      if (!userProfile.needsProfileSetup) {
+      // Handle routing based on profile completeness
+      // เปลี่ยนพฤติกรรม: ถ้า needsProfileSetup = true แต่มีข้อมูลขั้นต่ำ (เช่น เบอร์โทรสำหรับสมาชิก หรือ managerName สำหรับเจ้าของ)
+      // ให้เข้าแอปได้ โดยไม่ต้องบังคับไป register ทันที
+      const hasMinimalProfile = (
+        (userProfile.memberType === 'member' && !!userProfile.phoneNumber) ||
+        (userProfile.memberType === 'owner' && !!userProfile.managerName)
+      );
+
+      if (!userProfile.needsProfileSetup || hasMinimalProfile) {
         console.log('[GoogleAuthService] User has complete profile, redirecting to dashboard');
         this.googleAuthState.isGoogleRegistrationFlow = false;
 

@@ -57,6 +57,7 @@ export class DormListComponent implements OnInit {
   filterMaxPrice: number | null = null;
   selectedZone: string = '';
   sortOrder: string = '';
+  searchQuery: string = '';
 
   // Filter properties
   filters = {
@@ -69,32 +70,37 @@ export class DormListComponent implements OnInit {
     rating1: false
   };
 
-  // Amenities array สำหรับแสดงสิ่งอำนวยความสะดวกในตัวกรอง
+  // API filtering state
+  currentFilters: any = {};
+  isFiltering = false;
+  searchResults: {id: number, name: string}[] = [];
+  showSearchResults = false;
+
+  // Amenities array สำหรับแสดงสิ่งอำนวยความสะดวกในตัวกรอง (อัปเดตตาม API specification)
   amenities = [
-    { name: 'แอร์', available: true, checked: false },
-    { name: 'พัดลม', available: true, checked: false },
-    { name: 'TV', available: false, checked: false },
-    { name: 'เครื่องทำน้ำอุ่น', available: true, checked: false },
-    { name: 'ตู้เย็น', available: true, checked: false },
-    { name: 'ตู้เสื้อผ้า', available: true, checked: false },
-    { name: 'เตียงนอน', available: true, checked: false },
-    { name: 'โต๊ะทำงาน', available: true, checked: false },
-    { name: 'โต๊ะเครื่องแป้ง', available: false, checked: false },
-    { name: 'โซฟา', available: false, checked: false },
-    { name: 'อนุญาตให้เลี้ยงสัตว์', available: false, checked: false },
-    { name: 'ซิงค์ล้างจาน', available: true, checked: false },
-    { name: 'ไมโครเวฟ', available: true, checked: false },
-    { name: 'เครื่องซักผ้า', available: true, checked: false },
-    { name: 'คีย์การ์ด', available: true, checked: false },
-    { name: 'กล้องวงจรปิด', available: false, checked: false },
-    { name: 'ลิฟต์', available: false, checked: false },
-    { name: 'WIFI', available: true, checked: false },
-    { name: 'รปภ.', available: false, checked: false },
-    { name: 'ฟิตเนส', available: false, checked: false },
-    { name: 'ตู้กดน้ำหยอดเหรียญ', available: false, checked: false },
-    { name: 'สระว่ายน้ำ', available: false, checked: false },
-    { name: 'ที่จอดรถ', available: false, checked: false },
-    { name: 'Lobby', available: false, checked: false }
+    { id: 1, name: 'แอร์', available: true, checked: false },
+    { id: 2, name: 'พัดลม', available: true, checked: false },
+    { id: 3, name: 'TV', available: false, checked: false },
+    { id: 10, name: 'เครื่องทำน้ำอุ่น', available: true, checked: false },
+    { id: 4, name: 'ตู้เย็น', available: true, checked: false },
+    { id: 7, name: 'ตู้เสื้อผ้า', available: true, checked: false },
+    { id: 5, name: 'เตียงนอน', available: true, checked: false },
+    { id: 8, name: 'โต๊ะทำงาน', available: true, checked: false },
+    { id: 12, name: 'โต๊ะเครื่องแป้ง', available: false, checked: false },
+    { id: 11, name: 'ซิงค์ล้างจาน', available: true, checked: false },
+    { id: 9, name: 'ไมโครเวฟ', available: true, checked: false },
+    { id: 24, name: 'เครื่องซักผ้า', available: true, checked: false },
+    { id: 23, name: 'คีย์การ์ด', available: true, checked: false },
+    { id: 13, name: 'กล้องวงจรปิด', available: false, checked: false },
+    { id: 15, name: 'ลิฟต์', available: false, checked: false },
+    { id: 6, name: 'WIFI', available: true, checked: false },
+    { id: 14, name: 'รปภ.', available: false, checked: false },
+    { id: 17, name: 'ฟิตเนส', available: false, checked: false },
+    { id: 19, name: 'ตู้กดน้ำหยอดเหรียญ', available: false, checked: false },
+    { id: 20, name: 'สระว่ายน้ำ', available: false, checked: false },
+    { id: 16, name: 'ที่จอดรถ', available: false, checked: false },
+    { id: 18, name: 'Lobby', available: false, checked: false },
+    { id: 22, name: 'อนุญาตให้เลี้ยงสัตว์', available: false, checked: false }
   ];
 
   // Zone options
@@ -341,7 +347,7 @@ export class DormListComponent implements OnInit {
     this.showPriceFilter = !this.showPriceFilter;
   }
 
-  applyPriceFilter() {
+  applyPriceFilterOld() {
     this.applyFilters();
     this.showPriceFilter = false;
   }
@@ -379,39 +385,39 @@ export class DormListComponent implements OnInit {
   }
 
   applyFilters() {
-    let filtered = [...this.dorms];
-
-    // ถ้าเป็นการค้นหาหอพักที่คล้ายกัน ให้กรองเพิ่มเติม
+    this.isFiltering = true;
+    
+    // ถ้าเป็นการค้นหาหอพักที่คล้ายกัน ให้ใช้ similar search
     if (this.similarSearchParams) {
-      filtered = this.applySimilarFilters(filtered);
+      this.applySimilarFilters();
+      return;
     }
 
-    // Filter by zone
-    if (this.selectedZone && this.selectedZone !== '') {
-      filtered = filtered.filter(dorm => dorm.zone === this.selectedZone);
-    }
+    // ใช้ API filtering แทน client-side filtering
+    this.applyAPIFilters();
+  }
 
-    // Filter by price range
-    filtered = filtered.filter(dorm => this.isInPriceRange(dorm));
-
-    // Sort by price
-    if (this.sortOrder) {
-      filtered.sort((a, b) => {
-        const priceA = this.getDormPrice(a);
-        const priceB = this.getDormPrice(b);
-        return this.sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
-      });
-    }
-
-    this.filteredDorms = filtered;
-    this.updateDisplayedDorms();
+  private applyAPIFilters() {
+    // เริ่มต้นด้วย recommended dorms
+    this.dormitoryService.getRecommended(20).subscribe({
+      next: (dorms: APIDorm[]) => {
+        this.dorms = dorms.map(d => this.mapDormToUi(d));
+        this.filteredDorms = [...this.dorms];
+        this.updateDisplayedDorms();
+        this.isFiltering = false;
+      },
+      error: (error) => {
+        console.error('Error fetching recommended dorms:', error);
+        this.isFiltering = false;
+      }
+    });
   }
 
   // Method สำหรับกรองหอพักที่คล้ายกัน
-  applySimilarFilters(dorms: UIDorm[]): UIDorm[] {
-    if (!this.similarSearchParams) return dorms;
+  applySimilarFilters(): void {
+    if (!this.similarSearchParams) return;
 
-    let filtered = dorms;
+    let filtered = [...this.dorms];
 
     // 1. กรองออกหอพักปัจจุบัน
     filtered = filtered.filter(dorm => dorm.id !== this.similarSearchParams.currentDormId);
@@ -426,9 +432,11 @@ export class DormListComponent implements OnInit {
     scoredDorms.sort((a, b) => b.similarityScore - a.similarityScore);
 
     // ส่งกลับเฉพาะหอพักที่มีคะแนนความคล้าย > 0
-    return scoredDorms
+    this.filteredDorms = scoredDorms
       .filter(dorm => dorm.similarityScore > 0)
       .map(({ similarityScore, ...dorm }) => dorm); // เอา similarityScore ออก
+    
+    this.updateDisplayedDorms();
   }
 
   // คำนวณคะแนนความคล้าย
@@ -562,6 +570,165 @@ export class DormListComponent implements OnInit {
 
   toggleAmenity(amenity: any) {
     amenity.checked = !amenity.checked;
+  }
+
+  // ===== NEW API FILTERING METHODS =====
+
+  /** Search dormitories by name (autocomplete) */
+  onSearchInput(event: any) {
+    const query = event.target.value.trim();
+    this.searchQuery = query;
+    
+    if (query.length >= 2) {
+      this.dormitoryService.searchDormitories(query, 10).subscribe({
+        next: (results) => {
+          this.searchResults = results;
+          this.showSearchResults = true;
+        },
+        error: (error) => {
+          console.error('Error searching dormitories:', error);
+          this.searchResults = [];
+        }
+      });
+    } else {
+      this.searchResults = [];
+      this.showSearchResults = false;
+    }
+  }
+
+  /** Select a search result */
+  selectSearchResult(result: {id: number, name: string}) {
+    this.searchQuery = result.name;
+    this.showSearchResults = false;
+    // Navigate to dorm detail or apply search filter
+    this.applySearchFilter(result.id);
+  }
+
+  /** Apply search filter */
+  private applySearchFilter(dormId: number) {
+    // For now, just navigate to dorm detail
+    // In the future, could implement search-based filtering
+    console.log('Selected dorm:', dormId);
+  }
+
+  /** Apply rent type filter */
+  applyRentTypeFilter() {
+    const hasDaily = this.filters.daily;
+    const hasMonthly = this.filters.monthly;
+    
+    if (!hasDaily && !hasMonthly) {
+      this.applyAPIFilters();
+      return;
+    }
+
+    this.isFiltering = true;
+    this.dormitoryService.filterByRentType({
+      daily: hasDaily,
+      monthly: hasMonthly,
+      limit: 20
+    }).subscribe({
+      next: (dorms: APIDorm[]) => {
+        this.dorms = dorms.map(d => this.mapDormToUi(d));
+        this.filteredDorms = [...this.dorms];
+        this.updateDisplayedDorms();
+        this.isFiltering = false;
+      },
+      error: (error) => {
+        console.error('Error filtering by rent type:', error);
+        this.isFiltering = false;
+      }
+    });
+  }
+
+  /** Apply rating filter */
+  applyRatingFilter() {
+    const selectedStars: number[] = [];
+    if (this.filters.rating5) selectedStars.push(5);
+    if (this.filters.rating4) selectedStars.push(4);
+    if (this.filters.rating3) selectedStars.push(3);
+    if (this.filters.rating2) selectedStars.push(2);
+    if (this.filters.rating1) selectedStars.push(1);
+    
+    if (selectedStars.length === 0) {
+      this.applyAPIFilters();
+      return;
+    }
+
+    this.isFiltering = true;
+    this.dormitoryService.filterByRating({
+      stars: selectedStars,
+      limit: 20
+    }).subscribe({
+      next: (dorms: APIDorm[]) => {
+        this.dorms = dorms.map(d => this.mapDormToUi(d));
+        this.filteredDorms = [...this.dorms];
+        this.updateDisplayedDorms();
+        this.isFiltering = false;
+      },
+      error: (error) => {
+        console.error('Error filtering by rating:', error);
+        this.isFiltering = false;
+      }
+    });
+  }
+
+  /** Apply price filter */
+  applyPriceFilter() {
+    const minPrice = this.filterMinPrice;
+    const maxPrice = this.filterMaxPrice;
+    
+    if (!minPrice && !maxPrice) {
+      this.applyAPIFilters();
+      return;
+    }
+
+    this.isFiltering = true;
+    this.dormitoryService.filterByPrice({
+      min: minPrice || undefined,
+      max: maxPrice || undefined,
+      limit: 20
+    }).subscribe({
+      next: (dorms: APIDorm[]) => {
+        this.dorms = dorms.map(d => this.mapDormToUi(d));
+        this.filteredDorms = [...this.dorms];
+        this.updateDisplayedDorms();
+        this.isFiltering = false;
+      },
+      error: (error) => {
+        console.error('Error filtering by price:', error);
+        this.isFiltering = false;
+      }
+    });
+  }
+
+  /** Apply amenities filter */
+  applyAmenitiesFilter() {
+    const selectedAmenities = this.amenities
+      .filter(amenity => amenity.checked)
+      .map(amenity => amenity.id);
+    
+    if (selectedAmenities.length === 0) {
+      this.applyAPIFilters();
+      return;
+    }
+
+    this.isFiltering = true;
+    this.dormitoryService.filterByAmenities({
+      ids: selectedAmenities,
+      match: 'any', // หรือ 'all' ตามต้องการ
+      limit: 20
+    }).subscribe({
+      next: (dorms: APIDorm[]) => {
+        this.dorms = dorms.map(d => this.mapDormToUi(d));
+        this.filteredDorms = [...this.dorms];
+        this.updateDisplayedDorms();
+        this.isFiltering = false;
+      },
+      error: (error) => {
+        console.error('Error filtering by amenities:', error);
+        this.isFiltering = false;
+      }
+    });
   }
 
   // ล้างการค้นหาหอพักที่คล้ายกัน

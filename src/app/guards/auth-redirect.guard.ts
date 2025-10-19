@@ -9,11 +9,13 @@ export class AuthRedirectGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(route: ActivatedRouteSnapshot): Observable<boolean | UrlTree> {
-    console.log('[AuthRedirectGuard] Checking route access');
-    
+    // Minimal audit log only
     return this.authService.currentUser$.pipe(
       filter(user => user !== undefined),
-      tap(user => console.log('[AuthRedirectGuard] Auth state determined:', user ? 'User found' : 'No user')),
+      tap(user => {
+        const type = user?.memberType || 'none';
+        console.log(`[AuthGuard] userType=${type}`);
+      }),
       // เพิ่ม timeout เพื่อป้องกันการรอนานเกินไป
       timeout(15000),
       first(),
@@ -171,18 +173,20 @@ export class AuthRedirectGuard implements CanActivate {
             return true;
           }
 
-          // ถ้าผู้ใช้ยังไม่มีข้อมูลครบ (ไม่ใช่ Google)
+          // ผู้ใช้ยังไม่มีข้อมูลครบ (กรณีทั่วไปที่ไม่ใช่ Google)
+          // เปลี่ยนพฤติกรรม: อย่าบังคับไปหน้า register อีกต่อไป
+          // ให้ผู้ใช้เข้าแอปได้ตามปกติ เพื่อไปเลือกหอใหม่ในหน้าโปรไฟล์เอง
           if (user.needsProfileSetup) {
+            // อนุญาตให้เข้า register ได้ ถ้าเขาตั้งใจจะไปเอง
             if (isRegisterPage) {
               console.log('[AuthRedirectGuard] User needs profile setup, allowing register access');
               return true;
             }
-            console.log('[AuthRedirectGuard] User needs profile setup, redirecting to register');
-            // ตรวจสอบว่า user.memberType เป็น 'member' หรือ 'owner' เท่านั้น
-            const validUserType = (user.memberType === 'member' || user.memberType === 'owner') 
-              ? user.memberType 
-              : 'member'; // fallback เป็น member
-            return this.router.createUrlTree(['/register', validUserType]);
+
+            // อนุญาตหน้าอื่นทั้งหมด โดยไม่ redirect ไป register
+            // (เช่น จะนำผู้ใช้ไปหน้า main หรือ owner ตาม flow ปกติ แล้วไปแก้โปรไฟล์เอง)
+            console.log('[AuthRedirectGuard] User needs profile setup, allowing access (no forced register)');
+            return true;
           }
         }
         

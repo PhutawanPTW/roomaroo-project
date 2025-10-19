@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes'; // ตรวจสอบว่า path ถูกต้อง
 import { environment } from '../environments/environment'; // import environment
-import { provideClientHydration } from '@angular/platform-browser';
+// Removed client hydration since SSR is not used
 import { provideAnimations } from '@angular/platform-browser/animations';
 
 // Import the interceptor function
@@ -21,16 +21,9 @@ import { AuthService } from './services/auth.service';
 // Factory function to initialize auth state
 export function initializeAuthFactory(authService: AuthService) {
   return () => new Promise<void>((resolve) => {
-    if (!environment.production) {
-      console.log('[APP_INITIALIZER] Waiting for auth state to be determined...');
-    }
-    
     // ใช้ waitForAuthState แทน checkAuthState เพื่อรอให้ auth state พร้อม
     authService.waitForAuthState()
       .then(() => {
-        if (!environment.production) {
-          console.log('[APP_INITIALIZER] Auth state initialized');
-        }
         resolve();
       })
       .catch(error => {
@@ -40,7 +33,6 @@ export function initializeAuthFactory(authService: AuthService) {
     
     // เพิ่ม timeout เป็น 10 วินาทีเพื่อให้ auth state มีเวลาพร้อม
     setTimeout(() => {
-      console.log('[APP_INITIALIZER] Auth state timeout, proceeding anyway');
       resolve();
     }, 10000);
   });
@@ -49,7 +41,6 @@ export function initializeAuthFactory(authService: AuthService) {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes), // สำหรับจัดการ Routing
-    provideClientHydration(),
     provideAnimations(),
     provideHttpClient(
       withInterceptors([authInterceptor])

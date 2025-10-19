@@ -23,6 +23,8 @@
       <div class="w-full sm:w-80 relative">
         <input 
           type="text" 
+          [(ngModel)]="searchQuery"
+          (input)="onSearchInput($event)"
           class="w-full h-10 px-4 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai"
           placeholder="ค้นหาหอพัก...">
         <button class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -30,6 +32,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </button>
+        
+        <!-- Search results dropdown -->
+        <div 
+          *ngIf="showSearchResults && searchResults.length > 0" 
+          class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 mt-1 max-h-60 overflow-y-auto">
+          <div 
+            *ngFor="let result of searchResults" 
+            (click)="selectSearchResult(result)"
+            class="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+            <div class="font-thai text-sm text-gray-900">{{ result.name }}</div>
+          </div>
+        </div>
       </div>
 
       <!-- Filter button -->
@@ -55,11 +69,11 @@
                 <h4 class="font-medium text-gray-900 mb-3 font-thai">ประเภทการเช่า</h4>
                 <div class="flex gap-6">
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.daily" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.daily" (change)="applyRentTypeFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai">รายวัน</span>
                   </label>
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.monthly" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.monthly" (change)="applyRentTypeFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai">รายเดือน</span>
                   </label>
                 </div>
@@ -70,23 +84,23 @@
                 <h4 class="font-medium text-gray-900 mb-3 font-thai">คะแนน</h4>
                 <div class="flex gap-3">
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.rating5" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.rating5" (change)="applyRatingFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai text-sm">5 ดาว</span>
                   </label>
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.rating4" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.rating4" (change)="applyRatingFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai text-sm">4 ดาว</span>
                   </label>
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.rating3" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.rating3" (change)="applyRatingFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai text-sm">3 ดาว</span>
                   </label>
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.rating2" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.rating2" (change)="applyRatingFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai text-sm">2 ดาว</span>
                   </label>
                   <label class="flex items-center">
-                    <input type="checkbox" [(ngModel)]="filters.rating1" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
+                    <input type="checkbox" [(ngModel)]="filters.rating1" (change)="applyRatingFilter()" class="mr-2 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
                     <span class="font-thai text-sm">1 ดาว</span>
                   </label>
                 </div>
@@ -99,11 +113,13 @@
                   <input 
                     type="number" 
                     [(ngModel)]="filterMinPrice" 
+                    (change)="applyPriceFilter()"
                     placeholder="ราคาต่ำสุด" 
                     class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai text-sm">
                   <input 
                     type="number" 
                     [(ngModel)]="filterMaxPrice" 
+                    (change)="applyPriceFilter()"
                     placeholder="ราคาสูงสุด" 
                     class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai text-sm">
                 </div>
@@ -116,7 +132,7 @@
                   <label 
                     *ngFor="let amenity of amenities" 
                     class="flex items-center cursor-pointer"
-                    (click)="toggleAmenity(amenity)">
+                    (click)="toggleAmenity(amenity); applyAmenitiesFilter()">
                     <div 
                       class="w-5 h-5 rounded mr-2 flex items-center justify-center"
                       [ngClass]="amenity.checked ? 'bg-red-500' : 'border border-gray-300'">
@@ -199,7 +215,7 @@
 </div>
 
   <!-- Skeleton while loading -->
-  <div *ngIf="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div *ngIf="isLoading || isFiltering" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div *ngFor="let s of [1,2,3,4,5,6,7,8]" class="bg-white border border-black/10 rounded-lg p-4 animate-pulse">
       <div class="w-full h-48 mb-3 bg-gray-200 rounded-lg"></div>
       <div class="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
@@ -216,7 +232,7 @@
   </div>
 
   <!-- Dorm grid (match main page card layout) -->
-  <div *ngIf="!isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div *ngIf="!isLoading && !isFiltering" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <ng-container *ngFor="let dorm of displayedDorms">
       <div
         class="bg-white shadow hover:shadow-lg transition p-4 flex flex-col border border-black/10 h-full card-hover-effect rounded-lg">
@@ -256,7 +272,7 @@
   </div>
 
   <!-- Load more button -->
-  <div *ngIf="!isLoading && showLoadMoreButton" class="text-center mt-8">
+  <div *ngIf="!isLoading && !isFiltering && showLoadMoreButton" class="text-center mt-8">
     <button 
       (click)="loadMoreDorms()"
       class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-thai text-lg font-medium shadow-lg hover:shadow-xl">
@@ -265,7 +281,7 @@
   </div>
 
   <!-- No results message -->
-  <div *ngIf="!isLoading && displayedDorms.length === 0" class="text-center py-12">
+  <div *ngIf="!isLoading && !isFiltering && displayedDorms.length === 0" class="text-center py-12">
     <div class="bg-white rounded-lg shadow-lg p-8">
       <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>

@@ -197,7 +197,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
           // ถ้าเป็น Google flow และมี userType ใน queryParams ให้ใช้ค่านั้น
           if (this.isFromGoogle && (userTypeFromQuery === 'owner' || userTypeFromQuery === 'member')) {
             this.userType = userTypeFromQuery;
-            console.log('[RegisterComponent] UserType from queryParams:', this.userType);
           }
         })
     );
@@ -217,13 +216,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
       }
           
           // อัปเดต userType จาก queryParams ถ้าเป็น Google flow
-          if (this.isFromGoogle && (userTypeFromQuery === 'owner' || userTypeFromQuery === 'member')) {
-            if (this.userType !== userTypeFromQuery) {
-              this.userType = userTypeFromQuery;
-              console.log('[RegisterComponent] UserType updated from queryParams:', this.userType);
-              this.updateFormValidation();
+            if (this.isFromGoogle && (userTypeFromQuery === 'owner' || userTypeFromQuery === 'member')) {
+              if (this.userType !== userTypeFromQuery) {
+                this.userType = userTypeFromQuery;
+                this.updateFormValidation();
+              }
             }
-          }
         })
     );
   }

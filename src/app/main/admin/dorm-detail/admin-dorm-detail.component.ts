@@ -197,32 +197,6 @@ export class AdminDormDetailComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = null;
 
-    // ใช้ mock data สำหรับการทดสอบ (ในระบบจริงจะเรียก API)
-    setTimeout(() => {
-      // Set form values
-      this.dormForm.patchValue({
-        generalInfo: {
-          name: 'หอพักร่ำรวย',
-          address: 'ขามเรียง',
-          description: 'หอพักใกล้มหาวิทยาลัย ปลอดภัย สะดวกสบาย มีสิ่งอำนวยความสะดวกครบครัน บรรยากาศดี เหมาะสำหรับนักศึกษา',
-          zone_id: 1
-        },
-        utilities: {
-          electricity: {
-            electricity_type: 'คิดตามหน่วย',
-            electricity_rate: '8'
-          },
-          water: {
-            water_type: 'เหมาจ่าย',
-            water_rate: '20'
-          }
-        },
-        location: {
-          latitude: 16.1847,
-          longitude: 103.3030
-        }
-      });
-
       // Add room types
       const roomTypesArray = this.dormForm.get('roomTypes') as FormArray;
       roomTypesArray.clear();
@@ -278,7 +252,6 @@ export class AdminDormDetailComponent implements OnInit {
       // เรียก API เพื่ออนุมัติหอพัก
       this.updateDormitoryStatus('อนุมัติ').subscribe({
         next: (response) => {
-          console.log('Dormitory approved:', response);
           alert('อนุมัติหอพักเรียบร้อยแล้ว');
           this.router.navigate(['/admin']);
         },
@@ -302,7 +275,6 @@ export class AdminDormDetailComponent implements OnInit {
       // เรียก API เพื่อไม่อนุมัติหอพัก
       this.updateDormitoryStatus('ไม่อนุมัติ', reason).subscribe({
         next: (response) => {
-          console.log('Dormitory rejected:', response);
           alert('ไม่อนุมัติหอพักเรียบร้อยแล้ว');
           this.router.navigate(['/admin']);
         },
@@ -449,6 +421,40 @@ export class AdminDormDetailComponent implements OnInit {
   nextModalImage() {
     if (this.imagePreviewUrls.length > 0) {
       this.imageModalIndex = (this.imageModalIndex + 1) % this.imagePreviewUrls.length;
+    }
+  }
+
+  editDormitory(): void {
+    if (!this.dormId) return;
+    this.router.navigate(['/admin/dorm-edit', this.dormId]);
+  }
+
+  deleteDormitory(): void {
+    if (!this.dormId) return;
+    if (confirm('คุณแน่ใจหรือไม่ว่าจะลบหอพักนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) {
+      this.isProcessing = true;
+      const firebaseToken = localStorage.getItem('firebaseToken');
+      if (!firebaseToken) {
+        alert('ไม่พบโทเค็นสำหรับยืนยันตัวตน');
+        this.isProcessing = false;
+        return;
+      }
+
+      const headers = new HttpHeaders()
+        .set('Authorization', `Bearer ${firebaseToken}`)
+        .set('Content-Type', 'application/json');
+
+      this.http.delete(`${environment.backendApiUrl}/admin/dormitories/${this.dormId}`, { headers }).subscribe({
+        next: () => {
+          alert('ลบหอพักเรียบร้อยแล้ว');
+          this.router.navigate(['/admin']);
+        },
+        error: (error) => {
+          console.error('Error deleting dormitory:', error);
+          alert('เกิดข้อผิดพลาดในการลบหอพัก');
+          this.isProcessing = false;
+        }
+      });
     }
   }
 

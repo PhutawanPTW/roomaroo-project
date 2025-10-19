@@ -132,7 +132,6 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
   // tailwind heights
   mapHeightClass = 'h-80';
-  defaultLocation = { lat: 16.2467, lng: 103.2521 };
 
   // images
   selectedImages: File[] = [];
@@ -330,6 +329,12 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     const raw = idParam || idFromQuery;
     const id = raw ? parseInt(raw, 10) : NaN;
     if (!isNaN(id) && id > 0) {
+      console.log('[DormEdit] เริ่มต้นโหมดแก้ไข:', {
+        dorm_id: id,
+        id_param: idParam,
+        id_query: idFromQuery,
+        is_edit_mode: true
+      });
       this.isEditMode = true;
       this.editingDormId = id;
       this.loadDormitoryForEdit(id);
@@ -340,23 +345,40 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     try {
       this.isInitialLoading = true;
       this.cdr.markForCheck();
-      // โหลดข้อมูลหลัก + room types + images พร้อมกัน (ใช้เส้น edit สำหรับ room-types/images)
-      const detail$ = this.dormitoryService
-        .getDormitoryById(dormId)
+      // โหลดข้อมูลหลักจากเส้นเดียว (มีข้อมูลครบทุกอย่างแล้ว)
+      const detail$ = this.ownerDormitoryService
+        .getDormitoryForEdit(dormId)
         .toPromise();
-      const roomTypes$ = this.dormitoryService.getRoomTypes(dormId).toPromise();
-      const images$ = this.dormitoryService.getImages(dormId).toPromise();
-      const amenities$ = this.ownerDormitoryService
-        .getDormAmenitiesForEdit(dormId)
-        .toPromise();
-      const [detail, roomTypes, images, amenitiesResp] = await Promise.all([
+      const images$ = this.dormitoryService.getImagesForEdit(dormId).toPromise();
+      const [detail, images] = await Promise.all([
         detail$,
-        roomTypes$,
         images$,
-        amenities$,
       ]);
+      
+      // ใช้ข้อมูลจาก detail ที่มีครบทุกอย่างแล้ว
+      const roomTypes = detail.roomTypes || [];
+      const amenitiesResp = detail.amenities || [];
 
       if (detail) {
+        // Log ข้อมูลหอพักที่โหลดมา
+        console.log('[DormEdit] ข้อมูลหอพักที่โหลดมา:', {
+          dorm_id: detail.dorm_id || (detail as any).id,
+          dorm_name: detail.dorm_name || (detail as any).name,
+          address: detail.address,
+          zone_id: (detail as any).zone_id,
+          description: detail.dorm_description || detail.description,
+          latitude: detail.latitude,
+          longitude: detail.longitude,
+          electricity_type: detail.electricity_type,
+          electricity_rate: detail.electricity_rate,
+          water_type: detail.water_type,
+          water_rate: detail.water_rate,
+          created_at: (detail as any).created_at,
+          updated_at: (detail as any).updated_at || (detail as any).updated_date,
+          owner_id: (detail as any).owner_id,
+          full_detail: detail
+        });
+
         // General
         this.dormForm.get('generalInfo.name')?.setValue(detail.dorm_name || '');
         this.dormForm
@@ -394,11 +416,50 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
               : ''
           );
 
-        // Location
-        const lat = Number(detail.latitude) || this.defaultLocation.lat;
-        const lng = Number(detail.longitude) || this.defaultLocation.lng;
+        // Location - ตรวจสอบข้อมูลพิกัดอย่างเข้มงวด
+        const latRaw = detail.latitude;
+        const lngRaw = detail.longitude;
+        const lat = Number(latRaw);
+        const lng = Number(lngRaw);
+        
+        // ตรวจสอบว่าข้อมูลพิกัดถูกต้องหรือไม่
+        if (!latRaw || !lngRaw || Number.isNaN(lat) || Number.isNaN(lng)) {
+          console.error('[DormEdit] ข้อมูลพิกัดไม่ถูกต้อง:', {
+            dorm_id: detail.dorm_id,
+            latitude_raw: latRaw,
+            longitude_raw: lngRaw,
+            latitude_parsed: lat,
+            longitude_parsed: lng,
+            error: 'Missing or invalid coordinates'
+          });
+          this.showCustomPopup('ข้อมูลพิกัดของหอพักไม่ถูกต้อง กรุณาติดต่อผู้ดูแลระบบ', 'error');
+          return;
+        }
+        
+        // Log ข้อมูลแผนที่ของหอพัก
+        console.log('[DormEdit] ข้อมูลแผนที่ของหอพัก:', {
+          dorm_id: detail.dorm_id || (detail as any).id,
+          dorm_name: detail.dorm_name || (detail as any).name,
+          coordinates: {
+            latitude: lat,
+            longitude: lng,
+            latitude_raw: detail.latitude,
+            longitude_raw: detail.longitude
+          },
+          default_location: null,
+          is_using_default: !detail.latitude || !detail.longitude,
+          map_ready: true
+        });
+        
         this.dormForm.get('location.latitude')?.setValue(lat);
         this.dormForm.get('location.longitude')?.setValue(lng);
+        
+        // สร้างแผนที่หลังจากโหลดข้อมูลเสร็จ
+        setTimeout(() => {
+          this.initLocationMap();
+          this.adjustMapHeight();
+          this.cdr.markForCheck();
+        }, 200);
       }
 
       // Room types (normalize common response shapes/fields)
@@ -415,6 +476,22 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       }
 
       if (roomTypeList.length) {
+        // Log ข้อมูลประเภทห้องที่โหลดมา
+        console.log('[DormEdit] ข้อมูลประเภทห้องที่โหลดมา:', {
+          total_room_types: roomTypeList.length,
+          room_types: roomTypeList.map((rt, index) => ({
+            index: index + 1,
+            room_type_id: rt.room_type_id || rt.id || (rt as any).roomTypeId || null,
+            name: rt.name || rt.room_name || rt.type || '',
+            bed_type: rt.bed_type || rt.bedType || '',
+            monthly_price: rt.monthly_price ?? rt.monthlyPrice ?? null,
+            daily_price: rt.daily_price ?? rt.dailyPrice ?? null,
+            term_price: (rt as any).term_price ?? (rt as any).termPrice ?? null,
+            summer_price: (rt as any).summer_price ?? (rt as any).summerPrice ?? null,
+            full_room_type: rt
+          }))
+        });
+
         // เก็บข้อมูลเดิมไว้สำหรับเปรียบเทียบ
         this.originalRoomTypes = roomTypeList.map((rt) => ({
           room_type_id:
@@ -428,10 +505,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
             (rt as any).summer_price ?? (rt as any).summerPrice ?? null,
         }));
 
-        console.log(
-          '[DormEdit] Stored original room types:',
-          this.originalRoomTypes
-        );
+        
 
         // clear existing
         while (this.roomTypes.length) this.roomTypes.removeAt(0);
@@ -447,20 +521,17 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
           // ตรวจสอบว่าเป็นประเภทมาตรฐานหรือไม่
           const standardTypes = ['ห้องแอร์', 'ห้องพัดลม', 'ห้องพัดลม + แอร์'];
-          console.log('[DormEdit] Loading room type:', {
-            name,
-            isStandard: standardTypes.includes(name),
-          });
+          
 
           if (standardTypes.includes(name)) {
             g.get('type')?.setValue(name);
             g.get('customType')?.setValue('');
-            console.log('[DormEdit] Set as standard type:', name);
+            
           } else {
             // ถ้าไม่ใช่ประเภทมาตรฐาน ให้เป็น "อื่นๆ"
             g.get('type')?.setValue('other');
             g.get('customType')?.setValue(name);
-            console.log('[DormEdit] Set as custom type:', name);
+            
           }
           g.get('bed_type')?.setValue(String(bedType));
           g.get('room_type_id')?.setValue(
@@ -480,6 +551,19 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
       // Images (store ids + primary flags)
       if (Array.isArray(images) && images.length) {
+        // Log ข้อมูลรูปภาพที่โหลดมา
+        console.log('[DormEdit] ข้อมูลรูปภาพที่โหลดมา:', {
+          total_images: images.length,
+          images: (images as any[]).map((img, index) => ({
+            index: index + 1,
+            image_id: img.image_id,
+            image_url: img.image_url,
+            is_primary: img.is_primary,
+            created_at: img.created_at,
+            full_image: img
+          }))
+        });
+
         this.existingImages = images as any[];
         this.imagePreviewUrls = [];
         this.previewMeta = [];
@@ -529,7 +613,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
           rows = amenitiesResp;
         }
 
-        console.log('[DormEdit] Parsed amenities rows:', rows);
+        
 
         rows.forEach((r: any) => {
           if (typeof r === 'number') {
@@ -548,10 +632,19 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
           }
         });
 
-        console.log(
-          '[DormEdit] Enabled amenities set:',
-          Array.from(enabledSet)
-        );
+        // Log ข้อมูลสิ่งอำนวยความสะดวกที่โหลดมา
+        console.log('[DormEdit] ข้อมูลสิ่งอำนวยความสะดวกที่โหลดมา:', {
+          total_amenities: rows.length,
+          amenities_data: rows,
+          enabled_amenities: Array.from(enabledSet),
+          amenities_by_type: {
+            indoor: rows.filter((r: any) => r?.location_type === 'ภายใน'),
+            outdoor: rows.filter((r: any) => r?.location_type === 'ภายนอก')
+          },
+          source: 'from_detail_endpoint'
+        });
+
+        
 
         const arr = this.dormForm.get('amenities') as FormArray;
         this.AMENITIES.forEach((a, idx) => {
@@ -561,11 +654,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
           const byName = enabledSet.has(a.name);
           const isChecked = byId || byName;
           arr.at(idx).setValue(isChecked);
-          console.log(
-            `[DormEdit] Amenity ${idx + 1} (${a.name}) -> ID ${mappedId}: ${
-              isChecked ? 'checked' : 'unchecked'
-            }`
-          );
+          
         });
         this.cdr.markForCheck();
       } catch (e) {
@@ -589,6 +678,31 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         this.cdr.markForCheck();
       }
 
+      // Log ข้อมูลฟอร์มที่ถูกตั้งค่าแล้ว
+      console.log('[DormEdit] ข้อมูลฟอร์มที่ถูกตั้งค่าแล้ว:', {
+        general_info: {
+          name: this.dormForm.get('generalInfo.name')?.value,
+          zone_id: this.dormForm.get('generalInfo.zone_id')?.value,
+          address: this.dormForm.get('generalInfo.address')?.value,
+          description: this.dormForm.get('generalInfo.description')?.value
+        },
+        utilities: {
+          electricity_type: this.electricity.get('electricity_type')?.value,
+          electricity_rate: this.electricity.get('electricity_rate')?.value,
+          water_type: this.water.get('water_type')?.value,
+          water_rate: this.water.get('water_rate')?.value
+        },
+        location: {
+          latitude: this.dormForm.get('location.latitude')?.value,
+          longitude: this.dormForm.get('location.longitude')?.value
+        },
+        room_types_count: this.roomTypes.length,
+        images_count: this.imagePreviewUrls.length,
+        amenities_selected: (this.dormForm.get('amenities') as FormArray).value.filter((v: boolean) => v).length,
+        form_valid: this.dormForm.valid,
+        full_form_value: this.dormForm.value
+      });
+
       // stepper: jump to step 2 for quick verify
       this.maxReachedStep = 2;
       this.currentStep = 1;
@@ -606,10 +720,11 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    // โหลดข้อมูลก่อน แล้วค่อยสร้างแผนที่
     setTimeout(() => {
-      this.initLocationMap();
-      this.adjustMapHeight();
-      this.cdr.markForCheck();
+      if (this.editingDormId) {
+        this.loadDormitoryForEdit(this.editingDormId);
+      }
     }, 100);
 
     this.electricity
@@ -701,8 +816,8 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         }),
       }),
       location: this.fb.group({
-        latitude: [this.defaultLocation.lat, Validators.required],
-        longitude: [this.defaultLocation.lng, Validators.required],
+        latitude: [null, Validators.required],
+        longitude: [null, Validators.required],
       }),
       images: this.fb.array([]),
 
@@ -1345,11 +1460,20 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
   // submit
   onSubmit() {
-    console.log('[DormEdit] onSubmit called, currentStep:', this.currentStep);
+    // Log ข้อมูลที่กำลังจะส่ง
+    console.log('[DormEdit] กำลังส่งข้อมูลหอพัก:', {
+      is_edit_mode: this.isEditMode,
+      editing_dorm_id: this.editingDormId,
+      form_value: this.dormForm.value,
+      form_valid: this.dormForm.valid,
+      room_types_payload: this.buildRoomTypePayloads(),
+      amenities_payload: this.buildEnabledAmenitiesForPost(),
+      images_count: this.selectedImages.length,
+      existing_images_count: this.existingImages.length
+    });
 
     // *** Guard against multiple simultaneous submissions ***
     if (this.isSubmittingGuard) {
-      console.log('[DormEdit] Submission already in progress, ignoring');
       return;
     }
 
@@ -1359,10 +1483,6 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     // ตรวจสอบข้อมูลทั่วไป (Step 1)
     const generalInfoGroup = this.dormForm.get('generalInfo') as FormGroup;
     if (!generalInfoGroup || !generalInfoGroup.valid) {
-      console.log(
-        '[DormEdit] General info validation failed:',
-        generalInfoGroup?.errors
-      );
       this.markFormGroupTouched(generalInfoGroup || this.dormForm);
       this.showCustomPopup('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วน', 'error');
       this.isSubmittingGuard = false; // รีเซ็ต guard
@@ -1371,13 +1491,10 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
     // ตรวจสอบข้อมูลประเภทห้อง (Step 2)
     const roomTypesArray = this.roomTypes;
-    console.log(
-      '[DormEdit] Room types validation - count:',
-      roomTypesArray.length
-    );
+    
 
     if (roomTypesArray.length === 0) {
-      console.log('[DormEdit] About to call showCustomPopup for room types');
+      
       this.showCustomPopup(
         'กรุณาเพิ่มประเภทห้องอย่างน้อย 1 ประเภท',
         'error',
@@ -1400,37 +1517,17 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       const monthlyPrice = roomType.get('pricePerMonth')?.value;
       const dailyPrice = roomType.get('pricePerDay')?.value;
 
-      console.log(`[DormEdit] Room type ${i + 1} detailed validation:`);
-      console.log('  - valid:', roomType.valid);
-      console.log(
-        '  - type:',
-        typeField?.value,
-        'valid:',
-        typeField?.valid,
-        'errors:',
-        typeField?.errors
-      );
-      console.log(
-        '  - bed_type:',
-        bedTypeField?.value,
-        'valid:',
-        bedTypeField?.valid,
-        'errors:',
-        bedTypeField?.errors
-      );
-      console.log('  - pricePerMonth:', monthlyPrice);
-      console.log('  - pricePerDay:', dailyPrice);
-      console.log('  - groupErrors:', roomType.errors);
+      
 
       // ไม่พึ่ง roomType.valid แล้ว ให้ตรวจสอบเองทุกอย่าง
       let roomHasErrors = false;
 
-      console.log(`  -> Checking Room type ${i + 1} manually...`);
+      
 
       // ตรวจสอบ type แบบง่ายๆ
       const typeValue = typeField?.value?.toString().trim() || '';
       if (typeValue === '') {
-        console.log(`    - Missing type field (value: "${typeValue}")`);
+        
         validationErrors.push(`ประเภทห้องที่ ${i + 1}: กรุณาเลือกประเภทห้อง`);
         roomHasErrors = true;
       }
@@ -1438,7 +1535,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       // ตรวจสอบ bed_type แบบง่ายๆ
       const bedTypeValue = bedTypeField?.value?.toString().trim() || '';
       if (bedTypeValue === '') {
-        console.log(`    - Missing bed_type field (value: "${bedTypeValue}")`);
+        
         validationErrors.push(`ประเภทห้องที่ ${i + 1}: กรุณาเลือกประเภทเตียง`);
         roomHasErrors = true;
       }
@@ -1448,9 +1545,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         monthlyPrice && monthlyPrice.toString().trim() !== '';
       const hasDailyPrice = dailyPrice && dailyPrice.toString().trim() !== '';
       if (!hasMonthlyPrice && !hasDailyPrice) {
-        console.log(
-          `    - Missing price (month: "${monthlyPrice}", day: "${dailyPrice}")`
-        );
+        
         validationErrors.push(
           `ประเภทห้องที่ ${i + 1}: กรุณากรอกราคารายเดือนหรือรายวัน`
         );
@@ -1459,26 +1554,22 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
       if (!roomHasErrors) {
         hasValidRoomType = true;
-        console.log(`  -> Room type ${i + 1} is VALID (manual check)`);
+        
       } else {
-        console.log(`  -> Room type ${i + 1} has errors (manual check)`);
+        
       }
 
-      console.log(`    - Total errors so far:`, validationErrors.length);
+      
     }
 
-    console.log('[DormEdit] Validation summary:', {
-      hasValidRoomType,
-      validationErrors,
-      totalRoomTypes: roomTypesArray.length,
-    });
+    
 
     if (!hasValidRoomType) {
       const errorMessage =
         validationErrors.length > 0
           ? 'กรุณาแก้ไขข้อผิดพลาด:\n' + validationErrors.join('\n')
           : 'กรุณากรอกข้อมูลประเภทห้องให้ครบถ้วน';
-      console.log('[DormEdit] About to show alert:', errorMessage);
+      
       this.showCustomPopup(errorMessage, 'error');
       this.isSubmittingGuard = false; // รีเซ็ต guard
       return;
@@ -1486,7 +1577,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
     // ตรวจสอบว่ามี room payload ที่พร้อมส่งหรือไม่
     const roomPayloads = this.buildRoomTypePayloads();
-    console.log('[DormEdit] Room payloads generated:', roomPayloads);
+    
 
     if (roomPayloads.length === 0) {
       this.showCustomPopup(
@@ -1499,19 +1590,13 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     const v = this.dormForm.value;
     try {
       const u = this.authService.currentUser$.value;
-      console.log('[DormEdit] submit by user:', {
-        email: u?.email ?? null,
-        role: u?.memberType ?? 'unknown',
-      });
     } catch {}
 
     const payloadBasic: any = {
       dormName: v.generalInfo.name,
+      zoneId: Number(v.generalInfo.zone_id),
       address: v.generalInfo.address,
       description: v.generalInfo.description,
-      zoneId: Number(v.generalInfo.zone_id),
-      electricityType: v.utilities.electricity.electricity_type,
-      waterType: v.utilities.water.water_type,
       latitude:
         typeof v.location.latitude === 'string'
           ? Number(v.location.latitude)
@@ -1520,7 +1605,31 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         typeof v.location.longitude === 'string'
           ? Number(v.location.longitude)
           : v.location.longitude,
+      electricityType: v.utilities.electricity.electricity_type,
+      waterType: v.utilities.water.water_type,
     };
+
+    // Log ข้อมูลที่ส่งไปยัง API
+    console.log('[DormEdit] ข้อมูลที่ส่งไปยัง API:', {
+      dorm_id: this.editingDormId,
+      payload: payloadBasic,
+      location_data: {
+        latitude_raw: v.location.latitude,
+        longitude_raw: v.location.longitude,
+        latitude_processed: payloadBasic.latitude,
+        longitude_processed: payloadBasic.longitude,
+        latitude_type: typeof payloadBasic.latitude,
+        longitude_type: typeof payloadBasic.longitude,
+        is_latitude_number: typeof payloadBasic.latitude === 'number',
+        is_longitude_number: typeof payloadBasic.longitude === 'number',
+        latitude_is_nan: Number.isNaN(payloadBasic.latitude),
+        longitude_is_nan: Number.isNaN(payloadBasic.longitude)
+      },
+      form_location_value: {
+        latitude: this.dormForm.get('location.latitude')?.value,
+        longitude: this.dormForm.get('location.longitude')?.value
+      }
+    });
     // Optional numeric rates: only include when present
     const eraw = v.utilities.electricity.electricity_rate;
     if (
@@ -1538,7 +1647,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     ) {
       payloadBasic.waterRate = Number(String(wraw).replace(/[,\s]/g, ''));
     }
-    console.log('[DormEdit] payload basic ->', payloadBasic);
+    
 
     // *** Set both guards ***
     this.isSubmittingGuard = true;
@@ -1548,13 +1657,22 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     // ใช้เส้นทางแก้ไขเมื่ออยู่ในโหมดแก้ไข
     if (this.isEditMode && this.editingDormId) {
       const dormId = this.editingDormId;
-      console.log('[DormEdit] Updating basic dormitory via service');
       this.ownerDormitoryService
         .updateDormitoryBasic(dormId, payloadBasic)
         .subscribe({
           next: (resp) => {
-            console.log('[DormEdit] Basic dormitory updated:', resp);
-            console.log('[DormEdit] Diff room types for dorm ID:', dormId);
+            console.log('[DormEdit] อัปเดตข้อมูลพื้นฐานสำเร็จ:', {
+              dorm_id: dormId,
+              response: resp,
+              payload_sent: payloadBasic,
+              location_updated: {
+                sent_latitude: payloadBasic.latitude,
+                sent_longitude: payloadBasic.longitude,
+                response_latitude: resp?.latitude || resp?.data?.latitude,
+                response_longitude: resp?.longitude || resp?.data?.longitude
+              }
+            });
+            
             const existingIds = new Set<number>();
             const toAdd: Array<Partial<RoomType>> = [];
             const toUpdate: Array<{ id: number; data: Partial<RoomType> }> = [];
@@ -1601,12 +1719,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
               )
               .map((rt) => rt.room_type_id!);
 
-            console.log('[DormEdit] Room types to delete:', toDelete);
-            console.log(
-              '[DormEdit] Room types to update:',
-              toUpdate.map((u) => u.id)
-            );
-            console.log('[DormEdit] Room types to add:', toAdd.length);
+            
 
             // Fire requests: deletes, updates, then adds
             const calls = [
@@ -1620,16 +1733,26 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
             ];
             forkJoin(calls.length ? calls : [of(null)]).subscribe({
               next: (individualResp) => {
-                console.log(
-                  '[DormEdit] Room types saved (edit) successfully:',
-                  individualResp
-                );
-                // Submit amenities as full enabled list after basic + rooms succeed
+                console.log('[DormEdit] อัปเดตประเภทห้องสำเร็จ:', {
+                  dorm_id: dormId,
+                  to_delete: toDelete,
+                  to_update: toUpdate,
+                  to_add: toAdd,
+                  response: individualResp
+                });
+                
+                // Submit amenities as full enabled list after basic + rooms succeed - ตามสเปคใหม่
                 const amenitiesPayload = this.buildEnabledAmenitiesForPost();
                 this.ownerDormitoryService
                   .saveDormAmenitiesForEdit(dormId, amenitiesPayload)
                   .subscribe({
-                    next: () => this.uploadImagesIfAny(dormId),
+                    next: () => {
+                      console.log('[DormEdit] บันทึกสิ่งอำนวยความสะดวกสำเร็จ:', {
+                        dorm_id: dormId,
+                        amenities_payload: amenitiesPayload
+                      });
+                      this.uploadImagesIfAny(dormId);
+                    },
                     error: (amenErr) => {
                       console.error(
                         '[DormEdit] Save amenities (edit) error:',
@@ -1672,7 +1795,6 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     // โหมดเพิ่มใหม่ (fallback เดิม)
     this.ownerDormitoryService.addDormitoryBasic(payloadBasic).subscribe({
       next: (resp) => {
-        console.log('[DormEdit] Basic dormitory added (create mode):', resp);
         const dormId =
           resp?.dorm_id ??
           resp?.id ??
@@ -1692,11 +1814,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
           return;
         }
 
-        console.log(
-          '[DormEdit] Sending room types for dorm ID (create mode):',
-          dormId,
-          roomPayloads
-        );
+        
 
         // ใช้ individual calls แทน bulk
         const calls = roomPayloads.map((p) =>
@@ -1705,10 +1823,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
 
         forkJoin(calls.length ? calls : [of(null)]).subscribe({
           next: (individualResp) => {
-            console.log(
-              '[DormEdit] Individual room types added successfully (create mode):',
-              individualResp
-            );
+            
             // อัปโหลดรูปภาพ (ถ้ามี)
             this.uploadImagesIfAny(dormId);
           },
@@ -1876,7 +1991,16 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       distance
     );
 
-    console.log('[DormEdit] Distance calculated:', { distance, distanceText });
+    console.log('[DormEdit] คำนวณระยะทาง:', {
+      dorm_name: dormName,
+      zone_name: zoneName,
+      coordinates: { latitude: lat, longitude: lng },
+      distance_km: distance,
+      distance_text: distanceText,
+      dorm_id: this.editingDormId
+    });
+
+    
 
     // อัปเดต description ด้วย distance text
     const currentDescription =
@@ -1888,13 +2012,21 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       cleanDescription
     );
 
+    console.log('[DormEdit] อัปเดต description ด้วยข้อมูลระยะทาง:', {
+      old_description: currentDescription,
+      clean_description: cleanDescription,
+      distance_text: distanceText,
+      new_description: newDescription,
+      dorm_id: this.editingDormId
+    });
+
     this.dormForm.get('generalInfo.description')?.setValue(newDescription);
     this.cdr.markForCheck();
   }
 
   // ฟังก์ชัน initLocationMap แบบเดียวกับหน้า DormAdd (เช็ค DOM และขนาดก่อน สร้างเฉพาะเมื่อพร้อม)
   initLocationMap() {
-    console.log('[DormEdit] initLocationMap called');
+    
 
     setTimeout(() => {
       const mapElement = this.document.getElementById('location-map');
@@ -1910,36 +2042,76 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       }
 
       if (this.mapService.isMapInitialized('location-map')) {
-        console.log('[DormEdit] Location map already initialized, skipping');
         return;
       }
 
       const loc = this.dormForm.get('location')!;
-      const lat = loc.get('latitude')?.value || this.defaultLocation.lat;
-      const lng = loc.get('longitude')?.value || this.defaultLocation.lng;
+      const lat = loc.get('latitude')?.value;
+      const lng = loc.get('longitude')?.value;
+      
+      // ตรวจสอบว่ามีข้อมูลพิกัดหรือไม่
+      if (!lat || !lng || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+        console.error('[DormEdit] ไม่สามารถสร้างแผนที่ได้: ข้อมูลพิกัดไม่ถูกต้อง', {
+          latitude: lat,
+          longitude: lng,
+          dorm_id: this.editingDormId
+        });
+        return;
+      }
 
-      console.log('[DormEdit] Map coordinates:', { lat, lng });
+      
 
-      try {
-        console.log('[DormEdit] Calling mapService.initializeMap...');
-        this.mapService.initializeMap('location-map', lat, lng);
-
-        console.log('[DormEdit] Calling mapService.enablePickLocation...');
-        this.mapService.enablePickLocation(({ lat, lng }) => {
-          console.log('[DormEdit] Location picked:', { lat, lng });
-          loc.get('latitude')?.setValue(lat);
-          loc.get('longitude')?.setValue(lng);
-
-          // อัปเดตแผนที่ให้แสดงตำแหน่งใหม่ (ใช้ initializeMap แทน updateMapCenter/addMarker)
+        try {
+          console.log('[DormEdit] สร้างแผนที่ตำแหน่ง:', {
+            container: 'location-map',
+            coordinates: { latitude: lat, longitude: lng },
+            dorm_id: this.editingDormId,
+            is_edit_mode: this.isEditMode
+          });
+          
           this.mapService.initializeMap('location-map', lat, lng);
 
-          // คำนวณระยะทางใหม่เมื่อแก้ไขพิกัด
-          this.calculateAndUpdateDistance(lat, lng);
+          console.log('[DormEdit] แผนที่ตำแหน่งสร้างสำเร็จ');
+          
+          this.mapService.enablePickLocation(({ lat, lng }) => {
+            console.log('[DormEdit] ผู้ใช้เลือกตำแหน่งใหม่บนแผนที่:', {
+              old_coordinates: {
+                latitude: loc.get('latitude')?.value,
+                longitude: loc.get('longitude')?.value
+              },
+              new_coordinates: { latitude: lat, longitude: lng },
+              dorm_id: this.editingDormId
+            });
+            
+            // อัปเดต Form values อย่างชัดเจน
+            loc.get('latitude')?.setValue(lat);
+            loc.get('longitude')?.setValue(lng);
+            
+            // อัปเดต Form state
+            loc.get('latitude')?.markAsDirty();
+            loc.get('longitude')?.markAsDirty();
+            loc.get('latitude')?.markAsTouched();
+            loc.get('longitude')?.markAsTouched();
 
-          this.cdr.markForCheck();
-        });
+            // อัปเดตแผนที่ให้แสดงตำแหน่งใหม่
+            this.mapService.initializeMap('location-map', lat, lng);
 
-        console.log('[DormEdit] Map initialized successfully');
+            // คำนวณระยะทางใหม่เมื่อแก้ไขพิกัด
+            this.calculateAndUpdateDistance(lat, lng);
+
+            // บังคับให้ Angular ตรวจสอบการเปลี่ยนแปลง
+            this.cdr.detectChanges();
+            this.cdr.markForCheck();
+            
+            console.log('[DormEdit] อัปเดตพิกัดเสร็จสิ้น:', {
+              form_latitude: loc.get('latitude')?.value,
+              form_longitude: loc.get('longitude')?.value,
+              new_latitude: lat,
+              new_longitude: lng
+            });
+          });
+
+        
       } catch (error) {
         console.error('[DormEdit] Map initialization error:', error);
       }
@@ -1958,7 +2130,6 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       }
 
       if (this.mapService.isMapInitialized('preview-map')) {
-        console.log('[DormEdit] Preview map already initialized, skipping');
         return;
       }
 
@@ -1966,19 +2137,32 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       const lat = loc.get('latitude')?.value;
       const lng = loc.get('longitude')?.value;
 
-      if (!lat || !lng) {
-        console.log('[DormEdit] No coordinates available for preview map');
+      if (!lat || !lng || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+        console.error('[DormEdit] ไม่สามารถสร้างแผนที่ตัวอย่างได้: ข้อมูลพิกัดไม่ถูกต้อง', {
+          latitude: lat,
+          longitude: lng,
+          dorm_id: this.editingDormId
+        });
         return;
       }
 
-      console.log('[DormEdit] Preview map coordinates:', { lat, lng });
+      
 
-      try {
-        this.mapService.initializeMap('preview-map', lat, lng, 'ตำแหน่งหอพัก');
-        console.log('[DormEdit] Preview map initialized successfully');
-      } catch (error) {
-        console.error('[DormEdit] Preview map initialization error:', error);
-      }
+        try {
+          console.log('[DormEdit] สร้างแผนที่ตัวอย่าง:', {
+            container: 'preview-map',
+            coordinates: { latitude: lat, longitude: lng },
+            title: 'ตำแหน่งหอพัก',
+            dorm_id: this.editingDormId,
+            is_edit_mode: this.isEditMode
+          });
+          
+          this.mapService.initializeMap('preview-map', lat, lng, 'ตำแหน่งหอพัก');
+          
+          console.log('[DormEdit] แผนที่ตัวอย่างสร้างสำเร็จ');
+        } catch (error) {
+          console.error('[DormEdit] Preview map initialization error:', error);
+        }
     }, 300);
   }
 
@@ -2035,11 +2219,7 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     // Update slider images
     this.updateSliderImages();
 
-    console.log('[DormEdit] Image reordered:', {
-      from: event.previousIndex,
-      to: event.currentIndex,
-      mainImage: this.imagePreviewUrls[0],
-    });
+    
   }
 
   private updateFormArray(): void {
@@ -2341,6 +2521,12 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
       .uploadDormImagesForEdit(dormId, formData)
       .subscribe({
         next: (response) => {
+          console.log('[DormEdit] อัปโหลดรูปภาพสำเร็จ:', {
+            dorm_id: dormId,
+            images_uploaded: this.selectedImages.length,
+            response: response
+          });
+          
           // After upload, refresh image list from backend to get image_id and primary flags
           this.dormitoryService.getImages(dormId).subscribe((imgs) => {
             this.existingImages = imgs as any[];
@@ -2379,16 +2565,29 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
   }
 
   private finishSubmission(): void {
-    console.log('[DormAdd] finishSubmission called');
-    console.log('[DormAdd] Current step before:', this.currentStep);
+    console.log('[DormEdit] การแก้ไขหอพักเสร็จสมบูรณ์:', {
+      is_edit_mode: this.isEditMode,
+      editing_dorm_id: this.editingDormId,
+      final_form_value: this.dormForm.value,
+      final_location: {
+        latitude: this.dormForm.get('location.latitude')?.value,
+        longitude: this.dormForm.get('location.longitude')?.value
+      },
+      final_room_types_count: this.roomTypes.length,
+      final_images_count: this.imagePreviewUrls.length,
+      final_amenities_count: (this.dormForm.get('amenities') as FormArray).value.filter((v: boolean) => v).length
+    });
+    
+    console.log('[DormEdit] finishSubmission called');
+    console.log('[DormEdit] Current step before:', this.currentStep);
     this.currentStep = 3;
     this.maxReachedStep = 3;
     this.isSubmittingGuard = false;
     this.isSubmitting = false;
-    console.log('[DormAdd] Current step after:', this.currentStep);
-    console.log('[DormAdd] Calling cdr.markForCheck()');
+    console.log('[DormEdit] Current step after:', this.currentStep);
+    console.log('[DormEdit] Calling cdr.markForCheck()');
     this.cdr.markForCheck();
-    console.log('[DormAdd] finishSubmission completed');
+    console.log('[DormEdit] finishSubmission completed');
 
     // Force change detection
     setTimeout(() => {
@@ -2441,12 +2640,19 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     return amenities;
   }
 
-  // Build payload for POST /edit-dormitory/:id/amenities as "full enabled list"
+  // Build payload for PATCH /edit-dormitory/:id/amenities as "full enabled list" - ตามสเปคใหม่
   private buildEnabledAmenitiesForPost(): Array<{
     amenity_id?: number;
-    name?: string;
+    is_available: boolean;
+    location_type: string;
+    amenity_name: string;
   }> {
-    const enabled: Array<{ amenity_id?: number; name?: string }> = [];
+    const enabled: Array<{
+      amenity_id?: number;
+      is_available: boolean;
+      location_type: string;
+      amenity_name: string;
+    }> = [];
     const arr = this.dormForm.get('amenities') as FormArray;
     this.AMENITIES.forEach((amenity, index) => {
       const isChecked = !!arr.at(index)?.value;
@@ -2454,7 +2660,9 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
         // ใช้ mapping ที่ถูกต้องแทน index + 1
         enabled.push({
           amenity_id: this.getAmenityIdFromIndex(index),
-          name: amenity.name,
+          is_available: true,
+          location_type: amenity.location_type,
+          amenity_name: amenity.name,
         });
       }
     });
@@ -2463,18 +2671,42 @@ export class DormEditComponent implements AfterViewInit, OnDestroy {
     this.amenitiesOther.controls.forEach((ctrl) => {
       const group = ctrl as FormGroup;
       const name = (group.get('name')?.value || '').trim();
-      if (name) enabled.push({ name });
+      const locationType = group.get('location_type')?.value || '';
+      if (name) {
+        enabled.push({
+          is_available: true,
+          location_type: locationType,
+          amenity_name: name,
+        });
+      }
     });
     return enabled;
   }
 
   ngOnDestroy(): void {
+    console.log('[DormEdit] ทำลายแผนที่และทำความสะอาด:', {
+      dorm_id: this.editingDormId,
+      is_edit_mode: this.isEditMode,
+      maps_to_destroy: ['location-map', 'preview-map'],
+      current_coordinates: {
+        latitude: this.dormForm.get('location.latitude')?.value,
+        longitude: this.dormForm.get('location.longitude')?.value
+      }
+    });
+    
     // ทำลาย map instance เมื่อออกจาก component
     try {
       this.mapService.destroyMapByContainer('location-map');
-      this.mapService.destroyMapByContainer('preview-map');
+      console.log('[DormEdit] ทำลายแผนที่ location-map สำเร็จ');
     } catch (error) {
-      console.log('[DormAdd] Map cleanup error (ignored):', error);
+      console.log('[DormEdit] Map cleanup error (location-map):', error);
+    }
+    
+    try {
+      this.mapService.destroyMapByContainer('preview-map');
+      console.log('[DormEdit] ทำลายแผนที่ preview-map สำเร็จ');
+    } catch (error) {
+      console.log('[DormEdit] Map cleanup error (preview-map):', error);
     }
 
     // disconnect observers

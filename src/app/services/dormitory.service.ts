@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -166,6 +166,42 @@ export class DormitoryService {
       })
     );
   }
+
+  /** Get images for edit (Edit flow) - ตามสเปคใหม่ */
+  getImagesForEdit(dormId: number): Observable<DormImage[]> {
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.get<DormImage[]>(`${this.backendUrl}/edit-dormitory/${dormId}/images`, { headers })
+            .pipe(
+              catchError(err => {
+                console.error(`[DormitoryService] Error fetching images for edit dorm ${dormId}:`, err);
+                return of([]);
+              })
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
+  }
   
   /** Get room types for a specific dormitory */
   getRoomTypes(dormId: number): Observable<RoomType[]> {
@@ -197,9 +233,34 @@ export class DormitoryService {
     return this.http.post<RoomType>(`${this.backendUrl}/add-dormitory/${dormId}/room-types`, roomType);
   }
 
-  /** Add a new room type (edit flow) */
+  /** Add a new room type (edit flow) - ตามสเปคใหม่ */
   addRoomTypeForEdit(dormId: number, roomType: Partial<RoomType>): Observable<RoomType> {
-    return this.http.post<RoomType>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`, roomType);
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.post<RoomType>(`${this.backendUrl}/edit-dormitory/${dormId}/room-types`, roomType, { headers })
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
   
   /** Add multiple room types in one request (bulk) */
@@ -207,14 +268,64 @@ export class DormitoryService {
     return this.http.post(`${this.backendUrl}/add-dormitory/${dormId}/room-types/bulk`, { room_types: roomTypes });
   }
   
-  /** Update a room type */
+  /** Update a room type - ตามสเปคใหม่ */
   updateRoomType(roomTypeId: number, roomType: Partial<RoomType>): Observable<RoomType> {
-    return this.http.put<RoomType>(`${this.backendUrl}/edit-dormitory/room-types/${roomTypeId}`, roomType);
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.put<RoomType>(`${this.backendUrl}/edit-dormitory/room-types/${roomTypeId}`, roomType, { headers })
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
   
-  /** Delete a room type */
+  /** Delete a room type - ตามสเปคใหม่ */
   deleteRoomType(roomTypeId: number): Observable<any> {
-    return this.http.delete(`${this.backendUrl}/edit-dormitory/room-types/${roomTypeId}`);
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.delete(`${this.backendUrl}/edit-dormitory/room-types/${roomTypeId}`, { headers })
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
   /** Get all amenities from the database */
@@ -428,5 +539,163 @@ export class DormitoryService {
         throw err;
       })
     );
+  }
+
+  // ===== NEW FILTER API METHODS =====
+
+  /** Search dormitories by name (autocomplete) */
+  searchDormitories(query: string, limit: number = 10): Observable<{id: number, name: string}[]> {
+    let params = new HttpParams()
+      .set('q', query)
+      .set('limit', limit.toString());
+    
+    return this.http.get<any[]>(`${this.backendUrl}/dormitories/search`, { params }).pipe(
+      catchError(err => {
+        console.error('[DormitoryService] Error searching dormitories:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Filter by rent type (daily/monthly) */
+  filterByRentType(params: {
+    daily?: boolean;
+    monthly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Observable<Dorm[]> {
+    let httpParams = new HttpParams();
+    
+    if (params.daily !== undefined) {
+      httpParams = httpParams.set('daily', params.daily.toString());
+    }
+    if (params.monthly !== undefined) {
+      httpParams = httpParams.set('monthly', params.monthly.toString());
+    }
+    if (params.limit) {
+      httpParams = httpParams.set('limit', params.limit.toString());
+    }
+    if (params.offset) {
+      httpParams = httpParams.set('offset', params.offset.toString());
+    }
+    
+    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/rent-type`, { params: httpParams }).pipe(
+      catchError(err => {
+        console.error('[DormitoryService] Error filtering by rent type:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Filter by rating (stars) */
+  filterByRating(params: {
+    stars: number[];
+    limit?: number;
+    offset?: number;
+  }): Observable<Dorm[]> {
+    let httpParams = new HttpParams()
+      .set('stars', params.stars.join(','));
+    
+    if (params.limit) {
+      httpParams = httpParams.set('limit', params.limit.toString());
+    }
+    if (params.offset) {
+      httpParams = httpParams.set('offset', params.offset.toString());
+    }
+    
+    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/rating`, { params: httpParams }).pipe(
+      catchError(err => {
+        console.error('[DormitoryService] Error filtering by rating:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Filter by price range */
+  filterByPrice(params: {
+    min?: number;
+    max?: number;
+    limit?: number;
+    offset?: number;
+  }): Observable<Dorm[]> {
+    let httpParams = new HttpParams();
+    
+    if (params.min !== undefined) {
+      httpParams = httpParams.set('min', params.min.toString());
+    }
+    if (params.max !== undefined) {
+      httpParams = httpParams.set('max', params.max.toString());
+    }
+    if (params.limit) {
+      httpParams = httpParams.set('limit', params.limit.toString());
+    }
+    if (params.offset) {
+      httpParams = httpParams.set('offset', params.offset.toString());
+    }
+    
+    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/price`, { params: httpParams }).pipe(
+      catchError(err => {
+        console.error('[DormitoryService] Error filtering by price:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Filter by amenities */
+  filterByAmenities(params: {
+    ids: number[];
+    match?: 'any' | 'all';
+    limit?: number;
+    offset?: number;
+  }): Observable<Dorm[]> {
+    let httpParams = new HttpParams()
+      .set('ids', params.ids.join(','));
+    
+    if (params.match) {
+      httpParams = httpParams.set('match', params.match);
+    }
+    if (params.limit) {
+      httpParams = httpParams.set('limit', params.limit.toString());
+    }
+    if (params.offset) {
+      httpParams = httpParams.set('offset', params.offset.toString());
+    }
+    
+    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/amenities`, { params: httpParams }).pipe(
+      catchError(err => {
+        console.error('[DormitoryService] Error filtering by amenities:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Get amenity mapping for frontend */
+  getAmenityMapping(): {[key: string]: number} {
+    return {
+      'aircon': 1,      // แอร์
+      'fan': 2,         // พัดลม
+      'tv': 3,          // TV
+      'fridge': 4,      // ตู้เย็น
+      'bed': 5,         // เตียงนอน
+      'wifi': 6,        // WIFI
+      'wardrobe': 7,    // ตู้เสื้อผ้า
+      'desk': 8,        // โต๊ะทำงาน
+      'microwave': 9,   // ไมโครเวฟ
+      'waterHeater': 10, // เครื่องทำน้ำอุ่น
+      'sink': 11,       // ซิงค์ล้างจาน
+      'dressingTable': 12, // โต๊ะเครื่องแป้ง
+      'cctv': 13,       // กล้องวงจรปิด
+      'security': 14,   // รปภ.
+      'elevator': 15,   // ลิฟต์
+      'parking': 16,    // ที่จอดรถ
+      'fitness': 17,    // ฟิตเนส
+      'lobby': 18,      // Lobby
+      'waterDispenser': 19, // ตู้น้ำหยอดเหรียญ
+      'swimmingPool': 20,   // สระว่ายน้ำ
+      'parcelShelf': 21,    // ที่วางพัสดุ
+      'petsAllowed': 22,    // อนุญาตให้เลี้ยงสัตว์
+      'keyCard': 23,        // คีย์การ์ด
+      'washingMachine': 24  // เครื่องซักผ้า
+    };
   }
 } 

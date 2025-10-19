@@ -48,7 +48,6 @@ export class AdminLoginComponent implements OnInit {
       // ตรวจสอบว่ามี admin profile อยู่แล้วหรือไม่
       const adminProfile = localStorage.getItem('adminProfile');
       if (adminProfile) {
-        console.log('[AdminLogin] Admin already logged in, redirecting to admin dashboard');
         await this.router.navigate(['/admin']);
         return;
       }
@@ -56,7 +55,6 @@ export class AdminLoginComponent implements OnInit {
       // ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่แล้วหรือไม่
       const currentUser = this.firebaseAuth.currentUser;
       if (currentUser) {
-        console.log('[AdminLogin] SECURITY: User already logged in, forcing logout before admin access');
         
         // บังคับ logout จาก Firebase
         await signOut(this.firebaseAuth);
@@ -66,7 +64,7 @@ export class AdminLoginComponent implements OnInit {
         localStorage.removeItem('adminProfile');
         localStorage.removeItem('firebaseToken');
         
-        console.log('[AdminLogin] User logged out successfully, admin login page is now accessible');
+        // Minimal: no verbose log
       }
     } catch (error) {
       console.error('[AdminLogin] Error during auth check:', error);
@@ -96,12 +94,10 @@ export class AdminLoginComponent implements OnInit {
       // ดึง Firebase ID Token โดยตรง
       const firebaseToken = await user.getIdToken();
       
-      console.log('Firebase token obtained:', firebaseToken.substring(0, 50) + '...');
+      // Avoid logging tokens
       
       // เรียก API admin login เพื่อยืนยันสิทธิ์แอดมิน
       const adminProfile = await this.adminService.adminLogin(firebaseToken).toPromise();
-      
-      console.log('Admin profile received:', adminProfile);
       
       // บันทึกข้อมูลแอดมินและ Firebase token ใน localStorage
       localStorage.setItem('adminProfile', JSON.stringify(adminProfile));

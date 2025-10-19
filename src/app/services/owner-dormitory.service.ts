@@ -58,62 +58,178 @@ export class OwnerDormitoryService {
       );
   }
 
-  // แก้ไขข้อมูลพื้นฐานหอพัก (Edit)
+  // ดึงข้อมูลหอพักสำหรับแก้ไข (Edit) - ตามสเปคใหม่
+  getDormitoryForEdit(dormId: number): Observable<any> {
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.get(`${this.apiUrl}/edit-dormitory/${dormId}`, { headers })
+            .pipe(
+              tap((resp) => {
+                try {
+                  console.log('[OwnerDormitoryService] GET /api/edit-dormitory/:id -> ok', resp);
+                } catch {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
+  }
+
+  // แก้ไขข้อมูลพื้นฐานหอพัก (Edit) - ตามสเปคใหม่
   updateDormitoryBasic(dormId: number, payload: {
-    dorm_name: string;
+    dormName: string;
+    zoneId: number | string;
     address: string;
-    dorm_description?: string;
-    zone_id: number | string;
-    electricity_type?: string | null;
-    electricity_rate?: number | string | null;
-    water_type?: string | null;
-    water_rate?: number | string | null;
-    latitude?: number;
-    longitude?: number;
-    amenities?: Array<{ amenity_id?: number; amenity_name: string; location_type: string; is_available: boolean }>
+    description: string;
+    latitude: number;
+    longitude: number;
+    electricityType: string;
+    electricityRate?: number | string | null;
+    waterType: string;
+    waterRate?: number | string | null;
   }): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/edit-dormitory/${dormId}`, payload)
-      .pipe(
-        tap((resp) => {
-          try {
-            console.log('[OwnerDormitoryService] PUT /api/edit-dormitory/:id -> ok', resp);
-          } catch {}
-        }),
-        catchError(this.handleError)
-      );
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.patch(`${this.apiUrl}/edit-dormitory/${dormId}`, payload, { headers })
+            .pipe(
+              tap((resp) => {
+                try {
+                  console.log('[OwnerDormitoryService] PATCH /api/edit-dormitory/:id -> ok', resp);
+                } catch {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
   // ===== Amenities (Edit flow) =====
-  // GET /api/edit-dormitory/:dormId/amenities
+  // GET /api/edit-dormitory/:dormId/amenities - ตามสเปคใหม่
   getDormAmenitiesForEdit(dormId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/edit-dormitory/${dormId}/amenities`)
-      .pipe(
-        tap((resp: any) => {
-          try {
-            const items = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.amenities) ? resp.amenities : []);
-            console.log('[OwnerDormitoryService] GET /api/edit-dormitory/:id/amenities -> items:', items.length);
-          } catch (e) {}
-        }),
-        catchError(this.handleError)
-      );
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.get(`${this.apiUrl}/edit-dormitory/${dormId}/amenities`, { headers })
+            .pipe(
+              tap((resp: any) => {
+                try {
+                  const items = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.amenities) ? resp.amenities : []);
+                  console.log('[OwnerDormitoryService] GET /api/edit-dormitory/:id/amenities -> items:', items.length);
+                } catch (e) {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
-  // POST /api/edit-dormitory/:dormId/amenities
-  // ส่ง "รายการที่ต้องเปิดใช้งานทั้งหมด"
+  // PATCH /api/edit-dormitory/:dormId/amenities - ตามสเปคใหม่
   saveDormAmenitiesForEdit(
     dormId: number,
-    enabledAmenities: Array<{ amenity_id?: number; name?: string }>
+    amenities: Array<{ 
+      amenity_id?: number; 
+      is_available: boolean; 
+      location_type: string; 
+      amenity_name: string 
+    }>
   ): Observable<any> {
-    const payload = { amenities: enabledAmenities };
-    return this.http.post(`${this.apiUrl}/edit-dormitory/${dormId}/amenities`, payload)
-      .pipe(
-        tap((resp) => {
-          try {
-            console.log('[OwnerDormitoryService] POST /api/edit-dormitory/:id/amenities -> ok', resp);
-          } catch {}
-        }),
-        catchError(this.handleError)
-      );
+    const payload = { amenities };
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.patch(`${this.apiUrl}/edit-dormitory/${dormId}/amenities`, payload, { headers })
+            .pipe(
+              tap((resp) => {
+                try {
+                  console.log('[OwnerDormitoryService] PATCH /api/edit-dormitory/:id/amenities -> ok', resp);
+                } catch {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
   // อัปโหลดรูปหอพัก (Add flow)
@@ -129,44 +245,119 @@ export class OwnerDormitoryService {
       );
   }
 
-  // อัปโหลดรูปหอพัก (Edit flow)
+  // อัปโหลดรูปหอพัก (Edit flow) - ตามสเปคใหม่
   uploadDormImagesForEdit(dormId: number, formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/edit-dormitory/${dormId}/images`, formData)
-      .pipe(
-        tap((resp) => {
-          try {
-            console.log('[OwnerDormitoryService] POST /api/edit-dormitory/:id/images -> ok', resp);
-          } catch {}
-        }),
-        catchError(this.handleError)
-      );
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.post(`${this.apiUrl}/edit-dormitory/${dormId}/images`, formData, { headers })
+            .pipe(
+              tap((resp) => {
+                try {
+                  console.log('[OwnerDormitoryService] POST /api/edit-dormitory/:id/images -> ok', resp);
+                } catch {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
   // ===== Images (Edit flow) =====
-  // DELETE /api/edit-dormitory/:dormId/images/:imageId
+  // DELETE /api/edit-dormitory/:dormId/images/:imageId - ตามสเปคใหม่
   deleteDormImageForEdit(dormId: number, imageId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/edit-dormitory/${dormId}/images/${imageId}`)
-      .pipe(
-        tap((resp) => {
-          try {
-            console.log('[OwnerDormitoryService] DELETE /api/edit-dormitory/:id/images/:imageId -> ok');
-          } catch {}
-        }),
-        catchError(this.handleError)
-      );
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.delete(`${this.apiUrl}/edit-dormitory/${dormId}/images/${imageId}`, { headers })
+            .pipe(
+              tap((resp) => {
+                try {
+                  console.log('[OwnerDormitoryService] DELETE /api/edit-dormitory/:id/images/:imageId -> ok');
+                } catch {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
-  // PUT /api/edit-dormitory/:dormId/images/:imageId/primary
+  // PUT /api/edit-dormitory/:dormId/images/:imageId/primary - ตามสเปคใหม่
   setPrimaryDormImageForEdit(dormId: number, imageId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/edit-dormitory/${dormId}/images/${imageId}/primary`, {})
-      .pipe(
-        tap((resp) => {
-          try {
-            console.log('[OwnerDormitoryService] PUT /api/edit-dormitory/:id/images/:imageId/primary -> ok');
-          } catch {}
-        }),
-        catchError(this.handleError)
-      );
+    return new Observable((subscriber) => {
+      (async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            subscriber.error(new Error('กรุณาเข้าสู่ระบบ'));
+            return;
+          }
+          const token = await currentUser.getIdToken();
+          const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+          this.http.put(`${this.apiUrl}/edit-dormitory/${dormId}/images/${imageId}/primary`, {}, { headers })
+            .pipe(
+              tap((resp) => {
+                try {
+                  console.log('[OwnerDormitoryService] PUT /api/edit-dormitory/:id/images/:imageId/primary -> ok');
+                } catch {}
+              }),
+              catchError(this.handleError)
+            )
+            .subscribe({
+              next: (data) => subscriber.next(data),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete()
+            });
+        } catch (err) {
+          subscriber.error(err);
+        }
+      })();
+
+      // teardown
+      return () => {};
+    });
   }
 
   // ดึงหอพักที่ userId เป็นเจ้าของ (API ใหม่)

@@ -153,29 +153,12 @@ export class MainComponent implements OnInit, OnDestroy {
             priceText,
             dormId: d.dorm_id,
           };
-          
-          console.log('[MainComponent] Slider dorm data:', {
-            dorm_name: d.dorm_name,
-            rating: d.rating,
-            avg_rating: (d as any).avg_rating,
-            review_count: (d as any).review_count
-          });
           return slide;
         })
         .filter((x): x is BannerSlide => x !== null);
 
       // Debug logs: แสดงผลข้อมูลสไลด์ที่คำนวณได้
-      try {
-        console.group('[MainComponent] Slider candidates');
-        console.log('pool count:', pool.length, 'candidate count:', candidates.length);
-        const debugRows = (candidates.filter((x): x is BannerSlide => x !== null))
-          .map((c) => ({
-            title: c.title,
-            zone: c.subtitle,
-          }));
-        console.table(debugRows);
-        console.groupEnd();
-      } catch {}
+      // removed debug logs
 
       // If still empty, keep existing behavior by showing nothing (UI handles empty),
       // or use a local placeholder as a single slide
@@ -219,7 +202,6 @@ export class MainComponent implements OnInit, OnDestroy {
 
     try {
       const recommended = await this.dormSvc.getRecommended().toPromise();
-      console.log('Recommended dorms from API:', recommended);
       if (recommended) {
         this.recommendedDorms = recommended.map(d => this.mapDormToUi(d));
         this.displayedRecommended = this.recommendedDorms.slice(0, 4);
@@ -233,7 +215,6 @@ export class MainComponent implements OnInit, OnDestroy {
 
     try {
       const latest = await this.dormSvc.getLatest().toPromise();
-      console.log('Latest dorms from API:', latest);
       if (latest) {
         this.latestDorms = latest.map(d => this.mapDormToUi(d));
         this.displayedLatest = this.latestDorms.slice(0, 4);
@@ -383,12 +364,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private mapDormToUi(d: Dorm): UIDorm {
-    console.log('[MainComponent] Raw dorm data from API:', d);
-    console.log('[MainComponent] Rating fields:', {
-      rating: d.rating,
-      avg_rating: (d as any).avg_rating,
-      review_count: (d as any).review_count
-    });
+    
 
     let priceDisplay = '';
 
@@ -423,7 +399,6 @@ export class MainComponent implements OnInit, OnDestroy {
     // แปลง string เป็น number ก่อน
     const avgRating = (d as any).avg_rating;
     const finalRating = avgRating ? Number(avgRating) : (d.rating || 0.0);
-    console.log('[MainComponent] Final rating used:', finalRating);
 
     return {
       id: d.dorm_id,
