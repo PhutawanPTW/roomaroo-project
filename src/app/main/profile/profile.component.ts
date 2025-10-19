@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { filter } from 'rxjs/operators';
@@ -6,6 +6,14 @@ import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
 import { DormitoryService, Dorm } from '../../services/dormitory.service';
+import { RegisterService, DormitoryOption } from '../../services/register.service';
+
+// Add interface for grouped dormitories
+interface ZoneDormitories {
+  id: string;
+  name: string;
+  dormitories: { id: string; name: string }[];
+}
 
 @Component({
   selector: 'app-profile',
@@ -49,12 +57,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
   // ข้อมูลหอพักที่เลือกได้ (สำหรับ Member)
   availableDorms: Dorm[] = [];
 
+  // Properties สำหรับ searchable dropdown
+  dormSearchText: string = '';
+  showDormList: boolean = false;
+  isLoadingDorms: boolean = false;
+  groupedDorms: ZoneDormitories[] = [];
+  filteredDorms: ZoneDormitories[] = [];
+
   private subscription: any;
 
   constructor(
     private authService: AuthService,
     private route: ActivatedRoute,
-    private dormitoryService: DormitoryService
+    private dormitoryService: DormitoryService,
+    private registerService: RegisterService
   ) {}
 
   ngOnInit() {
@@ -137,6 +153,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
         confirmPassword: '',
         dormId: selectedDormId,
       };
+
+      // Set dorm search text to show current dorm name
+      if (selectedDormId) {
+        this.dormSearchText = this.getDormName(selectedDormId);
+      } else {
+        this.dormSearchText = '';
+      }
     }
   }
 
@@ -158,19 +181,93 @@ export class ProfileComponent implements OnInit, OnDestroy {
       confirmPassword: '',
       dormId: selectedDormId,
     };
+
+    // Reset dorm search text
+    if (selectedDormId) {
+      this.dormSearchText = this.getDormName(selectedDormId);
+    } else {
+      this.dormSearchText = '';
+    }
+    
+    // Close dropdown
+    this.showDormList = false;
   }
 
   // โหลดข้อมูลหอพักที่มีอยู่
   loadAvailableDorms() {
-    this.dormitoryService.getAllDormitories().subscribe({
-      next: (dorms) => {
-        this.availableDorms = dorms;
-      },
-      error: (error) => {
-        console.error('Error loading dorms:', error);
-        this.availableDorms = [];
-      },
+    this.isLoadingDorms = true;
+    this.registerService.getDormitoryOptions().then((dormitories) => {
+      // Group dormitories by zone
+      this.updateGroupedDorms(dormitories);
+      
+      // Initialize filteredDorms with all loaded dormitories
+      this.filteredDorms = [...this.groupedDorms];
+      
+      // Also load to availableDorms for backward compatibility
+      this.availableDorms = dormitories.map(d => ({
+        dorm_id: d.dorm_id,
+        dorm_name: d.dorm_name,
+        zone_id: d.zone_id,
+        zone_name: d.zone_name,
+        main_image_url: '',
+        thumbnail_url: '',
+        price_range: '',
+        rating: 0,
+        review_count: 0,
+        distance: 0,
+        latitude: 0,
+        longitude: 0,
+        address: '',
+        description: '',
+        facilities: [],
+        contact_phone: '',
+        contact_line: '',
+        is_active: true,
+        created_at: '',
+        updated_at: ''
+      }));
+      
+      this.isLoadingDorms = false;
+    }).catch((error) => {
+      console.error('Error loading dorms:', error);
+      this.availableDorms = [];
+      this.groupedDorms = [];
+      this.filteredDorms = [];
+      this.isLoadingDorms = false;
     });
+  }
+
+  // Add method to group dormitories by zone
+  private updateGroupedDorms(dormitories: DormitoryOption[]): void {
+    // Group dormitories by zone_name
+    const zoneMap = new Map<
+      string,
+      { id: string; dormitories: { id: string; name: string }[] }
+    >();
+
+    // First, create a map of zones
+    dormitories.forEach((dorm) => {
+      const zoneName = dorm.zone_name || 'อื่นๆ';
+      if (!zoneMap.has(zoneName)) {
+        zoneMap.set(zoneName, {
+          id: dorm.zone_id?.toString() || '',
+          dormitories: [],
+        });
+      }
+
+      // Add this dorm to its zone group
+      zoneMap.get(zoneName)?.dormitories.push({
+        id: dorm.dorm_id.toString(),
+        name: dorm.dorm_name,
+      });
+    });
+
+    // Convert map to array
+    this.groupedDorms = Array.from(zoneMap.entries()).map(([name, data]) => ({
+      id: data.id,
+      name: name,
+      dormitories: data.dormitories,
+    }));
   }
 
   // ดึงชื่อหอพักจาก ID (รองรับทั้ง number และ string)
@@ -446,5 +543,70 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
     this.selectedImage = null;
     this.imagePreviewUrl = null;
+  }
+
+  // Add method to handle real-time search input
+  onDormSearchInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.dormSearchText = target.value;
+    this.filterDorms();
+  }
+
+  // Add method to filter dormitories based on search text
+  filterDorms(): void {
+    const searchText = this.dormSearchText?.toLowerCase() || '';
+
+    if (!searchText) {
+      this.filteredDorms = [...this.groupedDorms];
+      return;
+    }
+
+    // Filter zones and dormitories that match the search text
+    this.filteredDorms = this.groupedDorms
+      .map((zone) => {
+        // First check if zone name matches
+        const zoneMatches = zone.name.toLowerCase().includes(searchText);
+
+        // Then filter dormitories
+        const matchingDorms = zone.dormitories.filter((dorm) =>
+          dorm.name.toLowerCase().includes(searchText)
+        );
+
+        // Return zone with matching dorms if either zone matches or has matching dorms
+        if (zoneMatches || matchingDorms.length > 0) {
+          return {
+            ...zone,
+            dormitories: zoneMatches ? zone.dormitories : matchingDorms,
+          };
+        }
+
+        return null;
+      })
+      .filter((zone) => zone !== null) as ZoneDormitories[];
+  }
+
+  // Add method to select a dormitory
+  selectDorm(dormId: string, dormName: string): void {
+    if (this.shouldDisableDorm(dormId)) {
+      return; // Don't allow selection of disabled dorms
+    }
+    
+    this.editForm.dormId = dormId;
+    this.dormSearchText = dormName;
+    this.showDormList = false;
+  }
+
+  // Add document click listener to close dropdown when clicking outside
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    // Check if click is outside the dropdown
+    const clickedElement = event.target as HTMLElement;
+    const isClickInsideDropdown = clickedElement.closest(
+      '.dorm-dropdown-container'
+    );
+
+    if (!isClickInsideDropdown && this.showDormList) {
+      this.showDormList = false;
+    }
   }
 }

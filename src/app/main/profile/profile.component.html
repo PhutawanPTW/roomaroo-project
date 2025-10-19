@@ -518,50 +518,74 @@
                 <label class="block text-gray-700 font-thai mb-2 font-medium"
                   >เลือกหอพัก</label
                 >
-                <div class="relative">
-                <select 
-                    [(ngModel)]="editForm.dormId"
-                  name="dormId"
-                    class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent appearance-none"
-                   >
-                    <!-- Placeholder option -->
-                    <option value="" disabled selected class="text-gray-500">
-                      เลือกหอพัก
-                    </option>
-                    
-                    <!-- Dormitory options -->
-                    <option 
-                      *ngFor="let dorm of availableDorms"
-                      [value]="dorm.dorm_id"
-                      [disabled]="shouldDisableDorm(dorm.dorm_id.toString())"
-                    >
-                      {{ dorm.dorm_name }}
-                      <span *ngIf="getDormStatusText(dorm.dorm_id.toString())">
-                        ({{ getDormStatusText(dorm.dorm_id.toString()) }})
-                      </span>
-                    </option>
-                </select>
-
-                  <!-- caret custom -->
-                  <svg
-                    class="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-600"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
+                <div class="relative dorm-dropdown-container">
+                  <!-- Search Input -->
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      [value]="dormSearchText" 
+                      (input)="onDormSearchInput($event)" 
+                      (focus)="showDormList = true"
+                      placeholder="ค้นหาหอพัก หรือเลือกจากรายการ"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     />
-                  </svg>
-                </div>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
 
-                <p class="text-sm text-gray-500 mt-2 font-thai">
-                  * หอพักที่คุณพักอยู่ปัจจุบันและหอพักที่รออนุมัติจะไม่สามารถเลือกได้
-                </p>
+                  <!-- Dropdown List -->
+                  <div *ngIf="showDormList"
+                    class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    (click)="$event.stopPropagation()">
+
+                    <!-- Loading State -->
+                    <div *ngIf="isLoadingDorms" class="px-4 py-3 text-gray-500 text-sm flex items-center">
+                      <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                      </svg>
+                      กำลังโหลดข้อมูลหอพัก...
+                    </div>
+
+                    <!-- No Results -->
+                    <div *ngIf="!isLoadingDorms && filteredDorms.length === 0" class="px-4 py-3 text-gray-500 text-sm">
+                      ไม่พบหอพักที่ค้นหา
+                    </div>
+
+                    <!-- Grouped Results -->
+                    <ng-container *ngFor="let zone of filteredDorms">
+                      <!-- Zone Header -->
+                      <div class="px-4 py-2 bg-gray-100 font-medium text-gray-700 sticky top-0">
+                        {{ zone.name }}
+                      </div>
+
+                      <!-- Dormitories in Zone -->
+                      <div *ngFor="let dorm of zone.dormitories"
+                        class="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors border-l-2 border-transparent hover:border-blue-400"
+                        [class.opacity-50]="shouldDisableDorm(dorm.id)"
+                        [class.cursor-not-allowed]="shouldDisableDorm(dorm.id)"
+                        (click)="selectDorm(dorm.id, dorm.name)"
+                        [title]="shouldDisableDorm(dorm.id) ? getDormStatusText(dorm.id) : ''">
+                        {{ dorm.name }}
+                        <span *ngIf="getDormStatusText(dorm.id)" class="text-xs text-gray-500 ml-2">
+                          ({{ getDormStatusText(dorm.id) }})
+                        </span>
+                      </div>
+                    </ng-container>
+                  </div>
+
+                  <!-- Hidden Form Control -->
+                  <input type="hidden" [(ngModel)]="editForm.dormId" name="dormId">
+
+                  <p class="text-sm text-gray-500 mt-2 font-thai">
+                    * หอพักที่คุณพักอยู่ปัจจุบันและหอพักที่รออนุมัติจะไม่สามารถเลือกได้
+                  </p>
+                </div>
               </div>
             </div>
 
