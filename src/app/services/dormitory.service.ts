@@ -541,7 +541,7 @@ export class DormitoryService {
     );
   }
 
-  // ===== NEW FILTER API METHODS =====
+  // ===== NEW UNIFIED FILTER API METHOD =====
 
   /** Search dormitories by name (autocomplete) */
   searchDormitories(query: string, limit: number = 10): Observable<{id: number, name: string}[]> {
@@ -557,21 +557,78 @@ export class DormitoryService {
     );
   }
 
-  /** Filter by rent type (daily/monthly) */
-  filterByRentType(params: {
+  /** Unified filter method - รองรับการกรองทั้งเดี่ยวและรวม */
+  filterDormitories(params: {
+    zoneIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
     daily?: boolean;
     monthly?: boolean;
+    stars?: number[];
+    amenityIds?: number[];
+    amenityMatch?: 'any' | 'all';
+    location?: string;
+    onlyAvailable?: boolean;
+    bedType?: string;
+    roomName?: string;
+    status?: string;
     limit?: number;
     offset?: number;
-  }): Observable<Dorm[]> {
+  }): Observable<{dormitories: Dorm[], total: number, limit: number, offset: number}> {
     let httpParams = new HttpParams();
     
+    // Zone IDs
+    if (params.zoneIds && params.zoneIds.length > 0) {
+      httpParams = httpParams.set('zoneIds', params.zoneIds.join(','));
+    }
+    
+    // Price range
+    if (params.minPrice !== undefined) {
+      httpParams = httpParams.set('minPrice', params.minPrice.toString());
+    }
+    if (params.maxPrice !== undefined) {
+      httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
+    }
+    
+    // Rent type
     if (params.daily !== undefined) {
       httpParams = httpParams.set('daily', params.daily.toString());
     }
     if (params.monthly !== undefined) {
       httpParams = httpParams.set('monthly', params.monthly.toString());
     }
+    
+    // Rating stars
+    if (params.stars && params.stars.length > 0) {
+      httpParams = httpParams.set('stars', params.stars.join(','));
+    }
+    
+    // Amenities
+    if (params.amenityIds && params.amenityIds.length > 0) {
+      httpParams = httpParams.set('amenityIds', params.amenityIds.join(','));
+      if (params.amenityMatch) {
+        httpParams = httpParams.set('amenityMatch', params.amenityMatch);
+      }
+    }
+    
+    // Additional filters
+    if (params.location) {
+      httpParams = httpParams.set('location', params.location);
+    }
+    if (params.onlyAvailable !== undefined) {
+      httpParams = httpParams.set('onlyAvailable', params.onlyAvailable.toString());
+    }
+    if (params.bedType) {
+      httpParams = httpParams.set('bedType', params.bedType);
+    }
+    if (params.roomName) {
+      httpParams = httpParams.set('roomName', params.roomName);
+    }
+    if (params.status) {
+      httpParams = httpParams.set('status', params.status);
+    }
+    
+    // Pagination
     if (params.limit) {
       httpParams = httpParams.set('limit', params.limit.toString());
     }
@@ -579,92 +636,10 @@ export class DormitoryService {
       httpParams = httpParams.set('offset', params.offset.toString());
     }
     
-    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/rent-type`, { params: httpParams }).pipe(
+    return this.http.get<any>(`${this.backendUrl}/dormitories/filter`, { params: httpParams }).pipe(
       catchError(err => {
-        console.error('[DormitoryService] Error filtering by rent type:', err);
-        return of([]);
-      })
-    );
-  }
-
-  /** Filter by rating (stars) */
-  filterByRating(params: {
-    stars: number[];
-    limit?: number;
-    offset?: number;
-  }): Observable<Dorm[]> {
-    let httpParams = new HttpParams()
-      .set('stars', params.stars.join(','));
-    
-    if (params.limit) {
-      httpParams = httpParams.set('limit', params.limit.toString());
-    }
-    if (params.offset) {
-      httpParams = httpParams.set('offset', params.offset.toString());
-    }
-    
-    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/rating`, { params: httpParams }).pipe(
-      catchError(err => {
-        console.error('[DormitoryService] Error filtering by rating:', err);
-        return of([]);
-      })
-    );
-  }
-
-  /** Filter by price range */
-  filterByPrice(params: {
-    min?: number;
-    max?: number;
-    limit?: number;
-    offset?: number;
-  }): Observable<Dorm[]> {
-    let httpParams = new HttpParams();
-    
-    if (params.min !== undefined) {
-      httpParams = httpParams.set('min', params.min.toString());
-    }
-    if (params.max !== undefined) {
-      httpParams = httpParams.set('max', params.max.toString());
-    }
-    if (params.limit) {
-      httpParams = httpParams.set('limit', params.limit.toString());
-    }
-    if (params.offset) {
-      httpParams = httpParams.set('offset', params.offset.toString());
-    }
-    
-    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/price`, { params: httpParams }).pipe(
-      catchError(err => {
-        console.error('[DormitoryService] Error filtering by price:', err);
-        return of([]);
-      })
-    );
-  }
-
-  /** Filter by amenities */
-  filterByAmenities(params: {
-    ids: number[];
-    match?: 'any' | 'all';
-    limit?: number;
-    offset?: number;
-  }): Observable<Dorm[]> {
-    let httpParams = new HttpParams()
-      .set('ids', params.ids.join(','));
-    
-    if (params.match) {
-      httpParams = httpParams.set('match', params.match);
-    }
-    if (params.limit) {
-      httpParams = httpParams.set('limit', params.limit.toString());
-    }
-    if (params.offset) {
-      httpParams = httpParams.set('offset', params.offset.toString());
-    }
-    
-    return this.http.get<Dorm[]>(`${this.backendUrl}/dormitories/filter/amenities`, { params: httpParams }).pipe(
-      catchError(err => {
-        console.error('[DormitoryService] Error filtering by amenities:', err);
-        return of([]);
+        console.error('[DormitoryService] Error filtering dormitories:', err);
+        return of({ dormitories: [], total: 0, limit: 0, offset: 0 });
       })
     );
   }

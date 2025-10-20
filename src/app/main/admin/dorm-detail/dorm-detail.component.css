@@ -1,0 +1,80 @@
+/* Carousel Styles */
+.center-carousel {
+  @apply relative w-full max-w-4xl mx-auto;
+}
+
+.carousel-viewport {
+  @apply relative h-[400px] flex items-center justify-center overflow-hidden;
+}
+
+.carousel-current {
+  @apply absolute w-full max-w-2xl h-full object-cover rounded-xl shadow-2xl z-10 cursor-pointer transition-transform hover:scale-[1.02];
+}
+
+.carousel-side {
+  @apply absolute w-full max-w-xl h-full object-cover rounded-xl opacity-30 blur-sm pointer-events-none;
+}
+
+.carousel-left {
+  @apply -left-32;
+}
+
+.carousel-right {
+  @apply -right-32;
+}
+
+.carousel-btn {
+  @apply absolute z-20 bg-white/90 hover:bg-white text-gray-800 rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-110;
+}
+
+.carousel-btn.left {
+  @apply left-4;
+}
+
+.carousel-btn.right {
+  @apply right-4;
+}
+
+/* Animation for connector */
+@keyframes connector {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-connector {
+  animation: connector 1.5s ease-in-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .carousel-viewport {
+    @apply h-[300px];
+  }
+  
+  .carousel-side {
+    @apply hidden;
+  }
+  
+  .carousel-current {
+    @apply max-w-full;
+  }
+}
+
+/* Table styles */
+table {
+  @apply border-collapse;
+}
+
+table th,
+table td {
+  @apply border border-gray-200;
+}
+
+/* Prevent horizontal scroll */
+:host ::ng-deep main {
+  overflow-x: hidden;
+}

@@ -101,27 +101,6 @@
             >
               <span class="font-english">{{ priceRange || dormPrice }}</span>
             </div>
-            <!-- สถานะห้อง (ว่าง/เต็ม) ใต้ราคา -->
-            <div *ngIf="statusDorm" class="mt-2">
-              <span
-                class="inline-block px-3 py-1 rounded-md border text-sm font-medium select-none"
-                [ngClass]="{
-                  'text-[#1E9E57] border-[#1E9E57] bg-[#E7F6EE]':
-                    statusDorm === 'ว่าง' ||
-                    statusDorm?.toLowerCase() === 'available',
-                  'text-[#B91C1C] border-[#B91C1C] bg-[#FDECEC]':
-                    statusDorm === 'เต็ม' ||
-                    statusDorm?.toLowerCase() === 'full'
-                }"
-              >
-                {{
-                  statusDorm === "ว่าง" ||
-                  statusDorm?.toLowerCase() === "available"
-                    ? "ว่าง"
-                    : "เต็ม"
-                }}
-              </span>
-            </div>
           </div>
         </div>
       </div>

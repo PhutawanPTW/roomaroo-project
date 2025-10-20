@@ -90,7 +90,6 @@ export class AuthService {
   // *** Method สำหรับ update currentUser$ แบบ queue เพื่อป้องกัน race condition ***
   private async updateCurrentUserSafely(userProfile: UserProfile | null | undefined): Promise<void> {
     this.currentUserUpdateQueue = this.currentUserUpdateQueue.then(async () => {
-      console.log('[AuthService] Updating currentUser$ safely:', userProfile?.email || 'null');
       this.currentUser$.next(userProfile);
       // เพิ่ม delay เล็กน้อยเพื่อให้ UI มีเวลา update
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -106,17 +105,14 @@ export class AuthService {
 
     this.authStatePromise = new Promise<void>((resolve) => {
       onAuthStateChanged(this.auth, async (user) => {
-        console.log('[AuthService] Auth state changed:', user ? 'User found' : 'No user');
 
         // *** Centralized Auth State Check ***
         if (this.authState.skipAuthStateChange) {
-          console.log('[AuthService] Skipping auth state change - Skip flag set');
           this.authState.skipAuthStateChange = false;
           return;
         }
 
         if (this.authState.isInitializing) {
-          console.log('[AuthService] Skipping auth state change - Already initializing');
           return;
         }
 
@@ -125,7 +121,6 @@ export class AuthService {
             const profile = await this.fetchUserProfile(user);
             await this.updateCurrentUserSafely(profile);
           } else {
-            console.log('[AuthService] No user, setting currentUser$ to null');
             await this.updateCurrentUserSafely(null);
           }
         } catch (error) {
@@ -159,7 +154,6 @@ export class AuthService {
 
     // *** ป้องกัน multiple simultaneous token refresh calls ***
     if (this.authState.isRefreshingToken && this.tokenRefreshPromise) {
-      console.log('[AuthService] Token refresh already in progress, waiting...');
       return this.tokenRefreshPromise;
     }
 
@@ -178,7 +172,6 @@ export class AuthService {
           .finally(() => {
             this.authState.isRefreshingToken = false;
             this.tokenRefreshPromise = null;
-            console.log('[AuthService] Token refresh completed');
           });
       } catch (error) {
         this.authState.isRefreshingToken = false;
@@ -339,7 +332,6 @@ export class AuthService {
    */
   async checkAuthState(): Promise<UserProfile | null> {
     if (!environment.production) {
-      console.log('[AuthService] Checking auth state...');
     }
 
     // รอให้ auth state initialize เสร็จก่อน
@@ -348,23 +340,19 @@ export class AuthService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      console.log('[AuthService] No current user found');
       this.currentUser$.next(null);
       return null;
     }
 
     try {
-      console.log('[AuthService] Current user found:', currentUser.email);
 
       // ลอง refresh token ก่อน
       try {
         await this.refreshToken(true);
       } catch (tokenError) {
-        console.warn('[AuthService] Token refresh failed, but continuing:', tokenError);
       }
 
       const userProfile = await this.fetchUserProfile(currentUser);
-      console.log('[AuthService] User profile loaded:', userProfile);
       this.currentUser$.next(userProfile);
       return userProfile;
     } catch (error) {
@@ -627,7 +615,6 @@ async signInAdmin(email: string, password: string) {
  */
 async sendForgotPasswordEmail(email: string, userType: 'member' | 'owner'): Promise<void> {
   try {
-    console.log('[AuthService] Sending password reset email to:', email, 'for userType:', userType);
     
     // ตั้งค่าภาษาเป็นไทย
     this.auth.languageCode = 'th';
@@ -639,7 +626,6 @@ async sendForgotPasswordEmail(email: string, userType: 'member' | 'owner'): Prom
     };
     
     await sendPasswordResetEmail(this.auth, email, actionCodeSettings);
-    console.log('[AuthService] Password reset email sent successfully');
     
   } catch (error: any) {
     console.error('[AuthService] Error sending password reset email:', error);
@@ -665,10 +651,8 @@ async sendForgotPasswordEmail(email: string, userType: 'member' | 'owner'): Prom
  */
 async verifyResetCode(oobCode: string): Promise<string> {
   try {
-    console.log('[AuthService] Verifying reset code');
     
     const email = await verifyPasswordResetCode(this.auth, oobCode);
-    console.log('[AuthService] Reset code verified for email:', email);
     
     return email;
   } catch (error: any) {
@@ -685,10 +669,8 @@ async verifyResetCode(oobCode: string): Promise<string> {
  */
 async confirmResetPassword(oobCode: string, newPassword: string): Promise<void> {
   try {
-    console.log('[AuthService] Confirming password reset');
     
     await confirmPasswordReset(this.auth, oobCode, newPassword);
-    console.log('[AuthService] Password reset confirmed successfully');
     
   } catch (error: any) {
     console.error('[AuthService] Error confirming password reset:', error);
@@ -703,7 +685,6 @@ async confirmResetPassword(oobCode: string, newPassword: string): Promise<void> 
  */
 async getUserTypeByEmail(email: string): Promise<'member' | 'owner' | null> {
   try {
-    console.log('[AuthService] Getting user type for email:', email);
     
     const response = await this.http.get<any>(
       `${this.backendUrl}/auth/user-type/${encodeURIComponent(email)}`

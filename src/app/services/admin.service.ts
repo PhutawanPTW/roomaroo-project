@@ -29,6 +29,62 @@ export interface Dormitory {
   facilities?: string[];
 }
 
+export interface DormitoryDetail {
+  dormitory: {
+    dorm_id: number;
+    dorm_name: string;
+    address: string;
+    dorm_description: string;
+    latitude: number;
+    longitude: number;
+    electricity_type: string;
+    electricity_rate: number | null;
+    water_type: string;
+    water_rate: number | null;
+    approval_status: string;
+    status_dorm: string;
+    min_price: number;
+    max_price: number;
+    zone_name: string;
+    owner_username: string;
+    owner_name: string;
+    owner_email: string;
+    owner_phone: string;
+  };
+  images: Array<{
+    image_id: number;
+    image_url: string;
+    is_primary: boolean;
+    description: string;
+  }>;
+  room_types: Array<{
+    room_type_id: number;
+    room_name: string;
+    bed_type: string;
+    monthly_price: number | null;
+    daily_price: number | null;
+    summer_price: number | null;
+    term_price: number | null;
+  }>;
+  amenities: {
+    ภายใน: Array<{
+      amenity_id: number;
+      amenity_name: string;
+      is_available: boolean;
+    }>;
+    ภายนอก: Array<{
+      amenity_id: number;
+      amenity_name: string;
+      is_available: boolean;
+    }>;
+    common: Array<{
+      amenity_id: number;
+      amenity_name: string;
+      is_available: boolean;
+    }>;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -62,6 +118,56 @@ export class AdminService {
   getPendingDormitories(): Observable<Dormitory[]> {
     const headers = this.getAuthHeaders();
     return this.http.get<Dormitory[]>(`${this.backendUrl}/admin/dormitories/pending`, { headers });
+  }
+
+  /**
+   * อนุมัติหอพัก
+   */
+  approveDormitory(dormId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post(`${this.backendUrl}/admin/dormitories/${dormId}/approve`, {}, { headers });
+  }
+
+  /**
+   * ปฏิเสธหอพัก
+   */
+  rejectDormitory(dormId: string, reason: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post(`${this.backendUrl}/admin/dormitories/${dormId}/reject`, 
+      { reason: reason }, 
+      { headers });
+  }
+
+  /**
+   * ดึงรายละเอียดหอพักสำหรับตรวจสอบ
+   */
+  getDormitoryDetail(dormId: string): Observable<DormitoryDetail> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<DormitoryDetail>(`${this.backendUrl}/admin/dormitories/${dormId}`, { headers });
+  }
+
+  /**
+   * อนุมัติ/ไม่อนุมัติหอพัก
+   */
+  updateDormitoryApproval(dormId: string, status: 'อนุมัติ' | 'ไม่อนุมัติ', rejectionReason?: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const body: any = { status };
+    if (rejectionReason) {
+      body.rejectionReason = rejectionReason;
+    }
+    return this.http.put(`${this.backendUrl}/admin/dormitories/${dormId}/approval`, body, { headers });
+  }
+
+  /**
+   * ลบหอพัก
+   */
+  deleteDormitory(dormId: string, confirm: boolean = false): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const params = confirm ? { confirm: 'true' } : {};
+    return this.http.delete(`${this.backendUrl}/admin/dormitories/${dormId}`, { 
+      headers, 
+      params 
+    });
   }
 
   /**

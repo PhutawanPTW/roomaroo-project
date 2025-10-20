@@ -179,6 +179,11 @@
         </div>
       </div>
 
+      <!-- Review Dormitory Section -->
+      <ng-container *ngIf="selectedTab === 'review' && reviewDormDetail">
+        <ng-container *ngTemplateOutlet="reviewSection"></ng-container>
+      </ng-container>
+
       <!-- Approved Dormitories Section -->
       <div *ngIf="selectedTab === 'all'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
@@ -239,10 +244,6 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div class="flex space-x-2">
-                    <button (click)="editDormitory(dorm.dorm_id)"
-                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                      แก้ไข
-                    </button>
                     <button (click)="deleteDormitory(dorm.dorm_id)"
                             class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
                       ลบ
@@ -266,7 +267,6 @@
               </div>
             </div>
             <div class="flex gap-2 mt-3">
-              <button (click)="editDormitory(dorm.dorm_id)" class="flex-1 bg-blue-600 text-white py-2 rounded-lg">แก้ไข</button>
               <button (click)="deleteDormitory(dorm.dorm_id)" class="flex-1 bg-red-600 text-white py-2 rounded-lg">ลบ</button>
             </div>
           </div>
@@ -336,7 +336,7 @@
                           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
                     ตรวจสอบ
                   </button>
-              </td>
+                </td>
             </tr>
           </tbody>
         </table>
@@ -361,6 +361,44 @@
     </div>
     </div>
   </main>
+</div>
+
+<!-- Toast Notification -->
+<div *ngIf="showToast" 
+     class="fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 p-4 transform transition-all duration-300 ease-in-out"
+     [ngClass]="{
+       'border-green-500': toastType === 'success',
+       'border-red-500': toastType === 'error',
+       'border-blue-500': toastType === 'info'
+     }"
+     (click)="hideToast()">
+  <div class="flex items-start">
+    <div class="flex-shrink-0">
+      <!-- Success Icon -->
+      <svg *ngIf="toastType === 'success'" class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      <!-- Error Icon -->
+      <svg *ngIf="toastType === 'error'" class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+      <!-- Info Icon -->
+      <svg *ngIf="toastType === 'info'" class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+      </svg>
+    </div>
+    <div class="ml-3 w-0 flex-1">
+      <p class="text-sm font-medium text-gray-900">{{ toastMessage }}</p>
+    </div>
+    <div class="ml-4 flex-shrink-0 flex">
+      <button (click)="hideToast()" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <span class="sr-only">ปิด</span>
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Profile Modal -->
@@ -411,3 +449,746 @@
          class="max-w-full max-h-[80vh] rounded-lg object-contain">
   </div>
 </div>
+
+
+<!-- Review Section Template -->
+<ng-template #reviewSection>
+  <!-- Step Indicator -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div class="flex items-center justify-center w-full max-w-md mx-auto">
+      <!-- Step 1: View -->
+        <div class="flex justify-center items-center relative">
+          <div
+            class="w-10 h-10 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
+            [ngClass]="{
+              'bg-red-500': currentReviewStep >= 1,
+              'bg-gray-300': currentReviewStep < 1
+            }"
+            (click)="goToReviewStep(1)"
+            title="ดูข้อมูล"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="w-5 h-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 12c0 0 3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div
+          class="relative flex-1 h-px mx-2 rounded overflow-hidden"
+          [ngClass]="{
+            'bg-red-500': currentReviewStep >= 2,
+            'bg-gray-300': currentReviewStep < 2
+          }"
+        >
+          <div *ngIf="currentReviewStep === 1" class="absolute inset-0">
+            <div
+              class="h-full w-1/2 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-90 animate-connector"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Step 2: Complete -->
+        <div class="flex justify-center items-center relative">
+          <div
+            class="w-10 h-10 rounded-full flex justify-center items-center text-white cursor-pointer transition-colors"
+            [ngClass]="{
+              'bg-red-500': currentReviewStep >= 2,
+              'bg-gray-300': currentReviewStep < 2
+            }"
+            (click)="goToReviewStep(2)"
+            title="สรุป"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="w-5 h-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12.75l2.25 2.25L15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-8">
+      <!-- Step 1: View Details -->
+      <div *ngIf="currentReviewStep === 1" class="space-y-8">
+        <!-- Image Carousel -->
+        <div class="mb-6" *ngIf="hasImages">
+          <div class="center-carousel">
+            <div class="carousel-viewport select-none">
+              <!-- Prev faded -->
+              <img
+                *ngIf="hasImages"
+                [src]="reviewDormDetail.images[prevImageIndex]?.image_url || 'assets/images/photo.png'"
+                alt="prev"
+                class="carousel-side carousel-left"
+                (error)="onImageError($event)"
+              />
+              <!-- Current -->
+              <img
+                *ngIf="hasImages"
+                [src]="reviewDormDetail.images[currentImageIndex]?.image_url || 'assets/images/photo.png'"
+                alt="current"
+                class="carousel-current"
+                [@slideCenter]="currentImageIndex"
+                (click)="openImageModalReview(currentImageIndex)"
+                (error)="onImageError($event)"
+              />
+              <!-- Next faded -->
+              <img
+                *ngIf="hasImages"
+                [src]="reviewDormDetail.images[nextImageIndex]?.image_url || 'assets/images/photo.png'"
+                alt="next"
+                class="carousel-side carousel-right"
+                (error)="onImageError($event)"
+              />
+              <!-- Controls -->
+              <button
+                type="button"
+                class="carousel-btn left"
+                (click)="onPrevImage()"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="carousel-btn right"
+                (click)="onNextImage()"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ข้อมูลพื้นฐาน (ดีไซน์เรียบ ไม่มีกระกรอบ/เงา) -->
+        <div class="mb-8">
+          <div class="p-0">
+            <div class="flex items-start justify-between gap-6">
+              <div class="min-w-0">
+                <h2 class="text-2xl font-bold text-gray-900 leading-tight truncate">
+                  {{ reviewDormDetail.dormitory.dorm_name || "—" }}
+                </h2>
+                <div class="flex items-start text-gray-600 mt-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5 mr-2 text-blue-500 -mt-[0.5px]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span class="leading-snug break-words">{{ reviewDormDetail.dormitory.address || "—" }}</span>
+                </div>
+                <div class="mt-2 text-gray-700">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-sm">
+                    โซน: {{ reviewDormDetail.dormitory.zone_name || "—" }}
+                  </span>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-2xl font-extrabold text-gray-900">
+                  {{ getPriceRangeText() }}
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="px-0 py-0">
+                <div class="text-sm font-semibold text-gray-700">ค่าน้ำ</div>
+                <div class="mt-1 text-gray-600 leading-relaxed">
+                  <ng-container [ngSwitch]="reviewDormDetail.dormitory.water_type">
+                    <span *ngSwitchCase="'เหมาจ่าย'">
+                      เหมาจ่าย: {{ reviewDormDetail.dormitory.water_rate || "-" }} บาท/เดือน
+                    </span>
+                    <span *ngSwitchCase="'คิดตามหน่วย'">
+                      {{ reviewDormDetail.dormitory.water_rate || "-" }} บาท/หน่วย
+                    </span>
+                    <span *ngSwitchDefault>ตามอัตราการประปา</span>
+                  </ng-container>
+                </div>
+              </div>
+              <div class="px-0 py-0">
+                <div class="text-sm font-semibold text-gray-700">ค่าไฟ</div>
+                <div class="mt-1 text-gray-600 leading-relaxed">
+                  <ng-container [ngSwitch]="reviewDormDetail.dormitory.electricity_type">
+                    <span *ngSwitchCase="'คิดตามหน่วย'">
+                      {{ reviewDormDetail.dormitory.electricity_rate || "-" }} บาท/หน่วย
+                    </span>
+                    <span *ngSwitchCase="'ตามมิเตอร์'">ตามอัตราการไฟฟ้า</span>
+                    <span *ngSwitchDefault>ตามอัตราการไฟฟ้า</span>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">รายละเอียดหอพัก</h3>
+              <p class="text-gray-600 leading-relaxed">
+                {{ reviewDormDetail.dormitory.dorm_description || "—" }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ข้อมูลเจ้าของหอพัก -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            ข้อมูลเจ้าของหอพัก
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">ชื่อเจ้าของ</div>
+                <div class="text-base font-semibold text-gray-900">{{ reviewDormDetail.dormitory.owner_name }}</div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">เบอร์โทรศัพท์</div>
+                <div class="text-base font-semibold text-gray-900">{{ reviewDormDetail.dormitory.owner_phone }}</div>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">ชื่อผู้ใช้</div>
+                <div class="text-base font-semibold text-gray-900">{{ reviewDormDetail.dormitory.owner_username }}</div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">วันที่ส่งคำขอ</div>
+                <div class="text-base font-semibold text-gray-900">{{ formatDate(reviewDormDetail.dormitory.submitted_date) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Types -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">ประเภทห้อง</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-gray-50">
+                  <th class="py-3 px-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">ประเภท</th>
+                  <th class="py-3 px-4 text-right font-semibold text-gray-700 border-b-2 border-gray-200">รายเดือน</th>
+                  <th class="py-3 px-4 text-right font-semibold text-gray-700 border-b-2 border-gray-200">รายวัน</th>
+                  <th class="py-3 px-4 text-right font-semibold text-gray-700 border-b-2 border-gray-200">รายเทอม</th>
+                  <th class="py-3 px-4 text-right font-semibold text-gray-700 border-b-2 border-gray-200">รายซัมเมอร์</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let rt of reviewDormDetail.room_types" class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 text-gray-700">
+                    {{ rt.room_name }} ({{ rt.bed_type }})
+                  </td>
+                  <td class="py-3 px-4 text-right text-gray-700">
+                    {{ formatNumberOrDash(rt.monthly_price) }}
+                  </td>
+                  <td class="py-3 px-4 text-right text-gray-500">
+                    {{ formatNumberOrDash(rt.daily_price) }}
+                  </td>
+                  <td class="py-3 px-4 text-right text-gray-500">
+                    {{ formatNumberOrDash(rt.term_price) }}
+                  </td>
+                  <td class="py-3 px-4 text-right text-gray-500">
+                    {{ formatNumberOrDash(rt.summer_price) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Amenities -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">สิ่งอำนวยความสะดวก</h3>
+          <!-- แยกเป็น 2 หมวด: ภายในห้อง และ ภายนอก -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- ภายในห้อง -->
+            <div>
+              <h4 class="text-lg font-semibold text-gray-600 mb-4">ภายในห้อง</h4>
+              <div class="space-y-3">
+                <ng-container *ngFor="let amenity of getAmenitiesByLocation('ภายใน')">
+                  <div class="flex items-center">
+                    <span
+                      class="text-sm flex items-center"
+                      [ngClass]="
+                        amenity.is_available
+                          ? 'text-gray-700'
+                          : 'text-gray-400 line-through'
+                      "
+                    >
+                      <!-- FontAwesome Icons -->
+                      <i
+                        *ngIf="amenity.amenity_name === 'โต๊ะแป้ง'"
+                        class="fas fa-magic mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'แอร์'"
+                        class="fas fa-snowflake mr-2"
+                      ></i>
+                      <i *ngIf="amenity.amenity_name === 'พัดลม'" class="fas fa-fan mr-2"></i>
+                      <i *ngIf="amenity.amenity_name === 'ทีวี'" class="fas fa-tv mr-2"></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ตู้เย็น'"
+                        class="fas fa-box mr-2"
+                      ></i>
+                      <i *ngIf="amenity.amenity_name === 'เตียง'" class="fas fa-bed mr-2"></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'Wi-Fi'"
+                        class="fas fa-wifi mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ตู้เสื้อผ้า'"
+                        class="fas fa-door-open mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'โต๊ะทำงาน'"
+                        class="fas fa-desktop mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ไมโครเวฟ'"
+                        class="fas fa-microchip mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'เครื่องทำน้ำอุ่น'"
+                        class="fas fa-hot-tub mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'อ่างล้างหน้า'"
+                        class="fas fa-tint mr-2"
+                      ></i>
+
+                      {{ amenity.amenity_name }}
+                    </span>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+
+            <!-- ภายนอก -->
+            <div>
+              <h4 class="text-lg font-semibold text-gray-600 mb-4">ภายนอกห้อง</h4>
+              <div class="space-y-3">
+                <ng-container *ngFor="let amenity of getAmenitiesByLocation('ภายนอก')">
+                  <div class="flex items-center">
+                    <span
+                      class="text-sm flex items-center"
+                      [ngClass]="
+                        amenity.is_available
+                          ? 'text-gray-700'
+                          : 'text-gray-400 line-through'
+                      "
+                    >
+                      <!-- External amenities -->
+                      <i
+                        *ngIf="amenity.amenity_name === 'กล้องวงจรปิด'"
+                        class="fas fa-video mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'รักษาความปลอดภัย'"
+                        class="fas fa-shield-alt mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ลิฟต์'"
+                        class="fas fa-arrow-up mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ที่จอดรถ'"
+                        class="fas fa-car mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ฟิตเนส'"
+                        class="fas fa-dumbbell mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ห้องรับแขก'"
+                        class="fas fa-building mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ตู้น้ำดื่ม'"
+                        class="fas fa-tint mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'สระว่ายน้ำ'"
+                        class="fas fa-swimming-pool mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'ชั้นวางพัสดุ'"
+                        class="fas fa-box mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'อนุญาตสัตว์เลี้ยง'"
+                        class="fas fa-paw mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'คีย์การ์ด'"
+                        class="fas fa-key mr-2"
+                      ></i>
+                      <i
+                        *ngIf="amenity.amenity_name === 'เครื่องซักผ้า'"
+                        class="fas fa-tshirt mr-2"
+                      ></i>
+
+                      {{ amenity.amenity_name }}
+                    </span>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. ตำแหน่งหอพัก (แผนที่) -->
+        <div class="mb-8 mt-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">ตำแหน่งหอพัก</h3>
+          <div
+            class="w-full h-96 rounded-lg overflow-hidden border border-gray-300 mb-4"
+          >
+            <div id="preview-map" class="w-full h-full"></div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="grid grid-cols-2 gap-6">
+              <div>
+                <div class="text-xs text-gray-500 font-medium mb-1">
+                  ละติจูด
+                </div>
+                <div class="text-sm font-semibold text-gray-800">
+                  {{ reviewDormDetail.dormitory.latitude || "—" }}
+                </div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-500 font-medium mb-1">
+                  ลองจิจูด
+                </div>
+                <div class="text-sm font-semibold text-gray-800">
+                  {{ reviewDormDetail.dormitory.longitude || "—" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Summary & Actions -->
+      <div *ngIf="currentReviewStep === 2" class="text-center py-8">
+        <div class="mb-8">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">สรุปการตรวจสอบ</h2>
+          <p class="text-gray-600 mb-2">หอพัก: <strong>{{ reviewDormDetail.dormitory.dorm_name }}</strong></p>
+          <p class="text-gray-600 mb-2">เจ้าของ: <strong>{{ reviewDormDetail.dormitory.owner_name }}</strong></p>
+          <p class="text-gray-600">กรุณาตัดสินใจอนุมัติหรือไม่อนุมัติหอพักนี้</p>
+        </div>
+
+        <div class="flex justify-center gap-4">
+          <button
+            type="button"
+            (click)="rejectDormFromReview()"
+            class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors min-w-[140px]"
+          >
+            ไม่อนุมัติ
+          </button>
+          <button
+            type="button"
+            (click)="approveDormFromReview()"
+            class="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors min-w-[140px]"
+          >
+            อนุมัติ
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex justify-center gap-4 mt-8 pt-8 border-t border-gray-200">
+        <button
+          type="button"
+          *ngIf="currentReviewStep === 1"
+          (click)="cancelReview()"
+          class="px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors min-w-[120px]"
+        >
+          ยกเลิก
+        </button>
+        <button
+          type="button"
+          *ngIf="currentReviewStep === 2"
+          (click)="goToReviewStep(1)"
+          class="px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors min-w-[120px]"
+        >
+          ย้อนกลับ
+        </button>
+        <button
+          type="button"
+          *ngIf="currentReviewStep === 1"
+          (click)="goToReviewStep(2)"
+          class="px-8 py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white rounded-lg font-medium transition-colors min-w-[120px]"
+        >
+          ถัดไป
+        </button>
+      </div>
+    </div>
+
+    <!-- Image Fullscreen Modal -->
+    <div *ngIf="imageModalOpen && reviewDormDetail" class="fixed inset-0 z-50">
+      <div class="absolute inset-0 bg-black/70" (click)="closeImageModalReview()"></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <button
+          type="button"
+          (click)="closeImageModalReview()"
+          class="absolute top-4 right-4 text-white p-3 hover:bg-white/10 rounded-full"
+        >
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+
+        <!-- Prev -->
+        <button
+          type="button"
+          (click)="prevModalImage()"
+          class="absolute left-6 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-3 shadow rounded-full"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+
+        <!-- Next -->
+        <button
+          type="button"
+          (click)="nextModalImage()"
+          class="absolute right-6 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-3 shadow rounded-full"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+
+        <img
+          [src]="reviewDormDetail.images[imageModalIndex]?.image_url"
+          [alt]="'รูปภาพหอพัก ' + (imageModalIndex + 1)"
+          class="max-h-[85vh] max-w-[92vw] object-contain select-none"
+        />
+      </div>
+    </div>
+  </ng-template>
+
+  <style>
+  /* Carousel Styles */
+  .center-carousel {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.carousel-viewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 400px;
+  overflow: hidden;
+}
+
+.carousel-current {
+  width: 600px;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.carousel-side {
+  width: 200px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.carousel-left {
+  position: absolute;
+  left: 0;
+}
+
+.carousel-right {
+  position: absolute;
+  right: 0;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  z-index: 3;
+}
+
+.carousel-btn:hover {
+  background: #f3f4f6;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-btn.left {
+  left: 20px;
+}
+
+.carousel-btn.right {
+  right: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .carousel-viewport {
+    height: 300px;
+  }
+  
+  .carousel-current {
+    width: 100%;
+    max-width: 500px;
+    height: 300px;
+  }
+  
+  .carousel-side {
+    display: none;
+  }
+  
+  .carousel-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .carousel-btn.left {
+    left: 10px;
+  }
+  
+  .carousel-btn.right {
+    right: 10px;
+  }
+}
+
+/* Smooth transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.max-w-5xl {
+  animation: fadeIn 0.4s ease;
+}
+
+/* Connector animation */
+@keyframes connector {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 50%;
+  }
+}
+
+.animate-connector {
+  animation: connector 0.5s ease-out;
+}
+</style>

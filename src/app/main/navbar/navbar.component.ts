@@ -63,7 +63,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (
           user &&
           !this.googleAuthService.isTemporaryUser() &&
-          !user.needsProfileSetup
+          (!user.needsProfileSetup || !!user.phoneNumber)
         ) {
           this.currentUser = user;
           this.userType = user?.memberType ?? null;

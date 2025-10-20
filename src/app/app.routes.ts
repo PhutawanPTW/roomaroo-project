@@ -12,7 +12,7 @@ import { DormEditComponent } from './main/dorm-edit/dorm-edit.component';
 import { DormCompareComponent } from './main/dorm-compare/dorm-compare.component';
 import { AdminComponent } from './main/admin/admin.component';
 import { AdminLoginComponent } from './main/admin/login/admin-login.component';
-import { AdminDormDetailComponent } from './main/admin/dorm-detail/admin-dorm-detail.component';
+import { DormDetailComponent as AdminDormDetailComponent } from './main/admin/dorm-detail/dorm-detail.component';
 import { TenantListComponent } from './main/tenant-list/tenant-list.component';
 import { ResetPasswordComponent } from './main/reset-password/reset-password.component';
 import { AuthRedirectGuard } from './guards/auth-redirect.guard';
@@ -84,6 +84,7 @@ export const routes: Routes = [
     canActivate: [AuthRedirectGuard],
     data: { userType: 'member' }
   },
+
 
   // Main routes
   {

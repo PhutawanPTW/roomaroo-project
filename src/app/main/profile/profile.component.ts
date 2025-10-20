@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { filter } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -18,7 +19,7 @@ interface ZoneDormitories {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FormsModule],
+  imports: [CommonModule, RouterModule, NavbarComponent, FormsModule],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
 })

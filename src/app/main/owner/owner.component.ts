@@ -163,15 +163,71 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
   private async loadUserDormsAsync(userId: number): Promise<void> {
     try {
       this.loadingState.dorms = true;
+      // Clear existing data to prevent duplicates
+      this.myDorms = [];
       this.cdr.markForCheck();
       // ใช้เส้นใหม่ที่ดึง min_price/max_price จาก DB โดยตรง พร้อม Auth Bearer
+      // ลองใช้ API endpoint ที่ใช้ในหน้า main เพื่อให้ได้ข้อมูล rating
       const data = await this.ownerDormService.getOwnerDormsWithPrice().toPromise();
       
+      // ตรวจสอบว่ามีข้อมูล rating หรือไม่ ถ้าไม่มีให้ลองใช้ API endpoint อื่น
+      if (data && Array.isArray(data) && data.length > 0) {
+        console.log('[Owner] Checking rating data availability...');
+        const hasRatingData = data.some(dorm => dorm.avg_rating || dorm.rating);
+        if (!hasRatingData) {
+          console.log('[Owner] No rating data from /dormitories/owner, trying to get rating from other endpoints');
+          
+          // ลองใช้ API endpoint ที่ใช้ในหน้า main เพื่อให้ได้ข้อมูล rating
+          try {
+            const recommendedData = await this.dormService.getRecommended().toPromise();
+            const latestData = await this.dormService.getLatest().toPromise();
+            
+            // รวมข้อมูลจากทั้งสอง endpoint
+            const allDorms = [...(recommendedData || []), ...(latestData || [])];
+            
+            // หาข้อมูล rating สำหรับหอพักของ owner นี้
+            const ratingMap = new Map();
+            allDorms.forEach((dorm: any) => {
+              if (dorm.avg_rating || dorm.rating) {
+                ratingMap.set(dorm.dorm_id, dorm.avg_rating ? Number(dorm.avg_rating) : (dorm.rating || 0.0));
+              }
+            });
+            
+            // อัปเดตข้อมูล rating ในข้อมูลเดิม
+            data.forEach((dorm: any) => {
+              if (ratingMap.has(dorm.dorm_id)) {
+                dorm.avg_rating = ratingMap.get(dorm.dorm_id);
+              }
+            });
+            
+            console.log('[Owner] Updated rating data from other endpoints');
+          } catch (error) {
+            console.log('[Owner] Could not fetch rating data from other endpoints:', error);
+          }
+        }
+      }
+      
       if (data) {
-        this.myDorms = (Array.isArray(data) ? data : [data]).map((dorm: any) => ({
-          ...dorm
-        }));
-        console.log('[Owner] My dorms loaded:', this.myDorms);
+        // ตรวจสอบว่าเป็น array หรือไม่ และกรองข้อมูลซ้ำ
+        const rawData = Array.isArray(data) ? data : [data];
+        
+        // กรองข้อมูลซ้ำโดยใช้ dorm_id เป็น key
+        const uniqueDorms = rawData.filter((dorm, index, self) => 
+          index === self.findIndex(d => d.dorm_id === dorm.dorm_id)
+        );
+        
+        this.myDorms = uniqueDorms.map((dorm: any) => {
+          // ใช้ avg_rating จาก API ใหม่ หรือ fallback ไป rating เก่า
+          const avgRating = dorm.avg_rating;
+          const finalRating = avgRating ? Number(avgRating) : (dorm.rating || 0.0);
+          
+          return {
+            ...dorm,
+            rating: finalRating
+          };
+        });
+        
+        console.log('[Owner] My dorms loaded (unique):', this.myDorms.length, 'items');
         // ไม่ต้องคำนวณราคาเองอีกต่อไป ราคามาจาก DB แล้ว
       } else {
         console.log('[Owner] No dorms found for user:', userId);
@@ -349,8 +405,15 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  getStars(rating: number): number[] {
-    return Array(Math.round(rating)).fill(0);
+  getStars(rating: number | undefined): { filled: boolean }[] {
+    const stars: { filled: boolean }[] = [];
+    const actualRating = rating || 0;
+    
+    for (let i = 1; i <= 5; i++) {
+      stars.push({ filled: i <= actualRating });
+    }
+    
+    return stars;
   }
 
   viewDormDetail(dorm: any) {
@@ -482,12 +545,24 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.deleteErrorMessage = null;
     this.deleteSuccessMessage = null;
     this.dormToDelete = dorm;
-    const count = typeof dorm.member_count === 'number' ? dorm.member_count : 0;
-    if (count > 0) {
-      this.deleteWarningMessage = `คุณต้องการลบหอพัก "${dorm.dorm_name}" ใช่หรือไม่?<br/>หอพักนี้ยังมีสมาชิกอยู่ในระบบ`;
-    } else {
+    
+    // ตรวจสอบสมาชิกก่อนแสดงป๊อปอัพ
+    try {
+      const checkResponse = await this.http.get<DeleteCheckResponse>(`${environment.backendApiUrl}/delete-dormitory/${dorm.dorm_id}/check-members`).toPromise();
+      
+      if (checkResponse && checkResponse.member_count > 0) {
+        // มีสมาชิก - แสดงข้อความแยกบรรทัด
+        this.deleteWarningMessage = `คุณต้องการลบหอพัก "${dorm.dorm_name}"<br/>และสมาชิกของหอ ใช่หรือไม่ ?`;
+      } else {
+        // ไม่มีสมาชิก - แสดงข้อความปกติ
+        this.deleteWarningMessage = `คุณต้องการลบหอพัก "${dorm.dorm_name}" ใช่หรือไม่?`;
+      }
+    } catch (error) {
+      console.error('Error checking members:', error);
+      // Fallback - แสดงข้อความปกติ
       this.deleteWarningMessage = `คุณต้องการลบหอพัก "${dorm.dorm_name}" ใช่หรือไม่?`;
     }
+    
     this.showDeleteModal = true;
     this.cdr.markForCheck();
   }
@@ -500,8 +575,8 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.deleteErrorMessage = null;
     this.deleteSuccessMessage = null;
 
-    // Use the correct API endpoint from your routes
-    this.http.delete(`${environment.backendApiUrl}/delete-dormitory/${this.dormToDelete.dorm_id}`)
+    // Use the new API endpoint with confirm=true parameter
+    this.http.delete(`${environment.backendApiUrl}/delete-dormitory/${this.dormToDelete.dorm_id}?confirm=true`)
       .pipe(
         catchError(error => {
           console.error('Delete dorm error:', error);
@@ -583,3 +658,4 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 }
+

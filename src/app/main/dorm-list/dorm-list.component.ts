@@ -71,10 +71,19 @@ export class DormListComponent implements OnInit {
   };
 
   // API filtering state
-  currentFilters: any = {};
   isFiltering = false;
-  searchResults: {id: number, name: string}[] = [];
-  showSearchResults = false;
+  
+  // Current filter state
+  currentFilters = {
+    zoneIds: [] as number[],
+    minPrice: null as number | null,
+    maxPrice: null as number | null,
+    daily: false,
+    monthly: false,
+    stars: [] as number[],
+    amenityIds: [] as number[],
+    amenityMatch: 'any' as 'any' | 'all'
+  };
 
   // Amenities array สำหรับแสดงสิ่งอำนวยความสะดวกในตัวกรอง (อัปเดตตาม API specification)
   amenities = [
@@ -160,7 +169,6 @@ export class DormListComponent implements OnInit {
           this.maxPrice = this.similarSearchParams.maxPrice + buffer;
         }
         
-        console.log('Similar search params:', this.similarSearchParams);
       }
       
       this.loadDormitories();
@@ -184,7 +192,6 @@ export class DormListComponent implements OnInit {
     // ดึงข้อมูล recommended และ latest เหมือนใน main
     this.dormitoryService.getRecommended().subscribe({
       next: (recommended: APIDorm[]) => {
-        console.log('Recommended dorms from API:', recommended);
         this.recommendedDorms = recommended.map(d => this.mapDormToUi(d));
         this.dorms = [...this.recommendedDorms]; // ใช้ recommended เป็นฐานข้อมูลเริ่มต้น
         this.applyFilters();
@@ -199,7 +206,6 @@ export class DormListComponent implements OnInit {
 
     this.dormitoryService.getLatest().subscribe({
       next: (latest: APIDorm[]) => {
-        console.log('Latest dorms from API:', latest);
         this.latestDorms = latest.map(d => this.mapDormToUi(d));
         
         // รวม latest เข้ากับ dorms และกำจัดข้อมูลซ้ำโดยใช้ dorm_id
@@ -228,12 +234,6 @@ export class DormListComponent implements OnInit {
   }
 
   private mapDormToUi(d: APIDorm): UIDorm {
-    console.log('[DormListComponent] Raw dorm data from API:', d);
-    console.log('[DormListComponent] Rating fields:', {
-      rating: d.rating,
-      avg_rating: (d as any).avg_rating,
-      review_count: (d as any).review_count
-    });
 
     let priceDisplay = '';
 
@@ -263,7 +263,6 @@ export class DormListComponent implements OnInit {
     // แปลง string เป็น number ก่อน
     const avgRating = (d as any).avg_rating;
     const finalRating = avgRating ? Number(avgRating) : (d.rating || 0.0);
-    console.log('[DormListComponent] Final rating used:', finalRating);
 
     return {
       id: d.dorm_id,
@@ -398,8 +397,8 @@ export class DormListComponent implements OnInit {
   }
 
   private applyAPIFilters() {
-    // เริ่มต้นด้วย recommended dorms
-    this.dormitoryService.getRecommended(20).subscribe({
+    // เริ่มต้นด้วย recommended dorms - ดึงทั้งหมดโดยไม่จำกัดจำนวน
+    this.dormitoryService.getRecommended(1000).subscribe({
       next: (dorms: APIDorm[]) => {
         this.dorms = dorms.map(d => this.mapDormToUi(d));
         this.filteredDorms = [...this.dorms];
@@ -564,6 +563,18 @@ export class DormListComponent implements OnInit {
     this.filterMinPrice = null;
     this.filterMaxPrice = null;
     
+    // Reset current filters
+    this.currentFilters = {
+      zoneIds: [],
+      minPrice: null,
+      maxPrice: null,
+      daily: false,
+      monthly: false,
+      stars: [],
+      amenityIds: [],
+      amenityMatch: 'any'
+    };
+    
     this.applyFilters();
     this.showFilterPopup = false;
   }
@@ -574,70 +585,100 @@ export class DormListComponent implements OnInit {
 
   // ===== NEW API FILTERING METHODS =====
 
-  /** Search dormitories by name (autocomplete) */
+  /** Search dormitories by name (real-time filter) */
   onSearchInput(event: any) {
     const query = event.target.value.trim();
     this.searchQuery = query;
     
-    if (query.length >= 2) {
-      this.dormitoryService.searchDormitories(query, 10).subscribe({
-        next: (results) => {
-          this.searchResults = results;
-          this.showSearchResults = true;
-        },
-        error: (error) => {
-          console.error('Error searching dormitories:', error);
-          this.searchResults = [];
-        }
-      });
-    } else {
-      this.searchResults = [];
-      this.showSearchResults = false;
+    // กรองหอพักแบบ real-time ตามชื่อที่พิมพ์
+    this.applySearchFilter();
+  }
+
+  /** Submit search (Enter key or search button) */
+  onSearchSubmit() {
+    if (!this.searchQuery || this.searchQuery.trim().length === 0) {
+      return;
     }
+
+    // ใช้ API search เพื่อค้นหาหอพักที่ตรงกับคำค้นหา
+    this.isFiltering = true;
+    
+    this.dormitoryService.searchDormitories(this.searchQuery.trim(), 50).subscribe({
+      next: (results) => {
+        if (results.length > 0) {
+          // ถ้าพบผลลัพธ์ ให้โหลดข้อมูลหอพักเหล่านั้น
+          const dormIds = results.map(r => r.id);
+          this.loadDormitoriesByIds(dormIds);
+        } else {
+          // ถ้าไม่พบผลลัพธ์ ให้แสดงข้อความ
+          this.filteredDorms = [];
+          this.updateDisplayedDorms();
+          this.isFiltering = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error searching dormitories:', error);
+        this.isFiltering = false;
+      }
+    });
   }
 
-  /** Select a search result */
-  selectSearchResult(result: {id: number, name: string}) {
-    this.searchQuery = result.name;
-    this.showSearchResults = false;
-    // Navigate to dorm detail or apply search filter
-    this.applySearchFilter(result.id);
+  /** Apply search filter based on search query */
+  private applySearchFilter() {
+    if (!this.searchQuery || this.searchQuery.length === 0) {
+      // ถ้าไม่มีคำค้นหา ให้แสดงหอพักทั้งหมด
+      this.applyAPIFilters();
+      return;
+    }
+
+    // กรองหอพักที่มีชื่อตรงกับคำค้นหา
+    const filteredDorms = this.dorms.filter(dorm => 
+      dorm.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
+
+    this.filteredDorms = filteredDorms;
+    this.updateDisplayedDorms();
   }
 
-  /** Apply search filter */
-  private applySearchFilter(dormId: number) {
-    // For now, just navigate to dorm detail
-    // In the future, could implement search-based filtering
-    console.log('Selected dorm:', dormId);
+
+  /** Clear search and show all dorms */
+  clearSearch() {
+    this.searchQuery = '';
+    this.applyAPIFilters(); // กลับไปแสดงหอพักทั้งหมด
   }
+
+  /** Load dormitories by IDs from search results */
+  private loadDormitoriesByIds(dormIds: number[]) {
+    // โหลดข้อมูลหอพักทีละตัว (หรือใช้ batch API ถ้ามี)
+    const loadPromises = dormIds.map(id => 
+      this.dormitoryService.getDormitoryById(id).toPromise()
+    );
+
+    Promise.all(loadPromises).then((dorms: (APIDorm | undefined)[]) => {
+      // กรองหอพักที่โหลดสำเร็จ
+      const validDorms = dorms.filter((dorm): dorm is APIDorm => dorm !== null && dorm !== undefined);
+      
+      this.dorms = validDorms.map(d => this.mapDormToUi(d));
+      this.filteredDorms = [...this.dorms];
+      this.updateDisplayedDorms();
+      this.isFiltering = false;
+    }).catch((error) => {
+      console.error('Error loading dormitories:', error);
+      this.isFiltering = false;
+    });
+  }
+
 
   /** Apply rent type filter */
   applyRentTypeFilter() {
     const hasDaily = this.filters.daily;
     const hasMonthly = this.filters.monthly;
     
-    if (!hasDaily && !hasMonthly) {
-      this.applyAPIFilters();
-      return;
-    }
-
-    this.isFiltering = true;
-    this.dormitoryService.filterByRentType({
-      daily: hasDaily,
-      monthly: hasMonthly,
-      limit: 20
-    }).subscribe({
-      next: (dorms: APIDorm[]) => {
-        this.dorms = dorms.map(d => this.mapDormToUi(d));
-        this.filteredDorms = [...this.dorms];
-        this.updateDisplayedDorms();
-        this.isFiltering = false;
-      },
-      error: (error) => {
-        console.error('Error filtering by rent type:', error);
-        this.isFiltering = false;
-      }
-    });
+    // อัปเดต current filters
+    this.currentFilters.daily = hasDaily;
+    this.currentFilters.monthly = hasMonthly;
+    
+    this.applyUnifiedFilter();
   }
 
   /** Apply rating filter */
@@ -649,27 +690,10 @@ export class DormListComponent implements OnInit {
     if (this.filters.rating2) selectedStars.push(2);
     if (this.filters.rating1) selectedStars.push(1);
     
-    if (selectedStars.length === 0) {
-      this.applyAPIFilters();
-      return;
-    }
-
-    this.isFiltering = true;
-    this.dormitoryService.filterByRating({
-      stars: selectedStars,
-      limit: 20
-    }).subscribe({
-      next: (dorms: APIDorm[]) => {
-        this.dorms = dorms.map(d => this.mapDormToUi(d));
-        this.filteredDorms = [...this.dorms];
-        this.updateDisplayedDorms();
-        this.isFiltering = false;
-      },
-      error: (error) => {
-        console.error('Error filtering by rating:', error);
-        this.isFiltering = false;
-      }
-    });
+    // อัปเดต current filters
+    this.currentFilters.stars = selectedStars;
+    
+    this.applyUnifiedFilter();
   }
 
   /** Apply price filter */
@@ -677,28 +701,11 @@ export class DormListComponent implements OnInit {
     const minPrice = this.filterMinPrice;
     const maxPrice = this.filterMaxPrice;
     
-    if (!minPrice && !maxPrice) {
-      this.applyAPIFilters();
-      return;
-    }
-
-    this.isFiltering = true;
-    this.dormitoryService.filterByPrice({
-      min: minPrice || undefined,
-      max: maxPrice || undefined,
-      limit: 20
-    }).subscribe({
-      next: (dorms: APIDorm[]) => {
-        this.dorms = dorms.map(d => this.mapDormToUi(d));
-        this.filteredDorms = [...this.dorms];
-        this.updateDisplayedDorms();
-        this.isFiltering = false;
-      },
-      error: (error) => {
-        console.error('Error filtering by price:', error);
-        this.isFiltering = false;
-      }
-    });
+    // อัปเดต current filters
+    this.currentFilters.minPrice = minPrice;
+    this.currentFilters.maxPrice = maxPrice;
+    
+    this.applyUnifiedFilter();
   }
 
   /** Apply amenities filter */
@@ -707,25 +714,54 @@ export class DormListComponent implements OnInit {
       .filter(amenity => amenity.checked)
       .map(amenity => amenity.id);
     
-    if (selectedAmenities.length === 0) {
-      this.applyAPIFilters();
-      return;
+    // อัปเดต current filters
+    this.currentFilters.amenityIds = selectedAmenities;
+    
+    this.applyUnifiedFilter();
+  }
+
+  /** Apply unified filter using the new API */
+  private applyUnifiedFilter() {
+    this.isFiltering = true;
+    
+    // เตรียมพารามิเตอร์สำหรับ unified filter - ดึงทั้งหมดโดยไม่จำกัดจำนวน
+    const filterParams: any = {
+      limit: 1000
+    };
+
+    // เพิ่มพารามิเตอร์ตามเงื่อนไขที่เลือก
+    if (this.currentFilters.zoneIds.length > 0) {
+      filterParams.zoneIds = this.currentFilters.zoneIds;
+    }
+    if (this.currentFilters.minPrice !== null) {
+      filterParams.minPrice = this.currentFilters.minPrice;
+    }
+    if (this.currentFilters.maxPrice !== null) {
+      filterParams.maxPrice = this.currentFilters.maxPrice;
+    }
+    if (this.currentFilters.daily) {
+      filterParams.daily = true;
+    }
+    if (this.currentFilters.monthly) {
+      filterParams.monthly = true;
+    }
+    if (this.currentFilters.stars.length > 0) {
+      filterParams.stars = this.currentFilters.stars;
+    }
+    if (this.currentFilters.amenityIds.length > 0) {
+      filterParams.amenityIds = this.currentFilters.amenityIds;
+      filterParams.amenityMatch = this.currentFilters.amenityMatch;
     }
 
-    this.isFiltering = true;
-    this.dormitoryService.filterByAmenities({
-      ids: selectedAmenities,
-      match: 'any', // หรือ 'all' ตามต้องการ
-      limit: 20
-    }).subscribe({
-      next: (dorms: APIDorm[]) => {
-        this.dorms = dorms.map(d => this.mapDormToUi(d));
+    this.dormitoryService.filterDormitories(filterParams).subscribe({
+      next: (response) => {
+        this.dorms = response.dormitories.map(d => this.mapDormToUi(d));
         this.filteredDorms = [...this.dorms];
         this.updateDisplayedDorms();
         this.isFiltering = false;
       },
       error: (error) => {
-        console.error('Error filtering by amenities:', error);
+        console.error('Error with unified filter:', error);
         this.isFiltering = false;
       }
     });
@@ -748,8 +784,9 @@ export class DormListComponent implements OnInit {
 
   // Update displayed dorms based on pagination
   updateDisplayedDorms() {
-    this.displayedDorms = this.filteredDorms.slice(0, this.ITEMS_PER_PAGE);
-    this.showLoadMoreButton = this.filteredDorms.length > this.ITEMS_PER_PAGE;
+    // แสดงหอพักทั้งหมดทันทีโดยไม่จำกัดจำนวน
+    this.displayedDorms = [...this.filteredDorms];
+    this.showLoadMoreButton = false; // ซ่อนปุ่ม Load More เพราะแสดงทั้งหมดแล้ว
   }
 
   // Load more dorms when "ดูหอพักทั้งหมด" is clicked
