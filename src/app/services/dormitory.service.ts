@@ -97,6 +97,8 @@ export interface DormDetail extends Dorm {
   electricity_type?: string; // Added field from API
   description?: string;
   dorm_description?: string; // Added field from API
+  status_dorm?: string; // สถานะหอพัก: 'ว่าง' หรือ 'เต็ม'
+  statusDorm?: string; // สถานะหอพัก (camelCase)
   
   // Owner contact information
   owner_name?: string;
@@ -121,9 +123,11 @@ export interface DormDetail extends Dorm {
 export interface Amenity {
   amenity_id: number;
   name: string;
+  amenity_type?: 'standard' | 'custom';
+  category?: string;
+  is_active?: boolean;
   description?: string;
   icon?: string;
-  category?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -135,15 +139,81 @@ export class DormitoryService {
 
   constructor(private http: HttpClient) {}
 
-  /** Get random recommended dormitories */
+  /** Get random recommended dormitories with better logic */
   getRecommended(limit?: number): Observable<Dorm[]> {
     let params = new HttpParams();
     if (limit !== undefined) {
       params = params.set('limit', limit.toString());
     }
+    
+    // ใช้ API ที่มีอยู่ แต่เพิ่มการเรียงลำดับตามคะแนนและความนิยม
     return this.http.get<any>(`${this.backendUrl}/dormitories/recommended`, { params }).pipe(
-      map(resp => Array.isArray(resp) ? resp : (resp.dormitories ?? []))
+      map(resp => {
+        const dorms = Array.isArray(resp) ? resp : (resp.dormitories ?? []);
+        
+        // เรียงลำดับตามเกณฑ์ที่สมเหตุสมผล:
+        // 1. คะแนนรีวิวสูง (rating >= 4.0)
+        // 2. มีรูปภาพ (thumbnail_url หรือ main_image_url)
+        // 3. ราคาไม่แพงเกินไป (ราคาเฉลี่ย <= 8000 บาท)
+        return dorms.sort((a: any, b: any) => {
+          // คำนวณคะแนนความน่าสนใจ
+          const scoreA = this.calculateRecommendationScore(a);
+          const scoreB = this.calculateRecommendationScore(b);
+          
+          return scoreB - scoreA; // เรียงจากคะแนนสูงไปต่ำ
+        });
+      })
     );
+  }
+  
+  /** คำนวณคะแนนความน่าสนใจสำหรับการแนะนำ */
+  private calculateRecommendationScore(dorm: any): number {
+    let score = 0;
+    
+    // 1. คะแนนรีวิว (40% ของคะแนนรวม)
+    const rating = dorm.avg_rating || dorm.rating || 0;
+    score += (rating / 5) * 40;
+    
+    // 2. มีรูปภาพ (20% ของคะแนนรวม)
+    if (dorm.thumbnail_url || dorm.main_image_url) {
+      score += 20;
+    }
+    
+    // 3. ราคาเหมาะสม (25% ของคะแนนรวม)
+    const avgPrice = this.calculateAveragePrice(dorm);
+    if (avgPrice > 0) {
+      // ราคา 3000-6000 บาท ได้คะแนนเต็ม
+      // ราคาต่ำกว่า 3000 หรือสูงกว่า 10000 ได้คะแนนน้อย
+      if (avgPrice >= 3000 && avgPrice <= 6000) {
+        score += 25;
+      } else if (avgPrice >= 2000 && avgPrice <= 8000) {
+        score += 15;
+      } else if (avgPrice >= 1000 && avgPrice <= 10000) {
+        score += 10;
+      }
+    }
+    
+    // 4. ข้อมูลครบถ้วน (15% ของคะแนนรวม)
+    let completeness = 0;
+    if (dorm.dorm_name && dorm.dorm_name.trim()) completeness += 5;
+    if (dorm.address && dorm.address.trim()) completeness += 3;
+    if (dorm.zone_name && dorm.zone_name.trim()) completeness += 3;
+    if (dorm.dorm_description && dorm.dorm_description.trim()) completeness += 2;
+    if (dorm.latitude && dorm.longitude) completeness += 2;
+    
+    score += completeness;
+    
+    return score;
+  }
+  
+  /** คำนวณราคาเฉลี่ย */
+  private calculateAveragePrice(dorm: any): number {
+    if (dorm.min_price && dorm.max_price) {
+      return (Number(dorm.min_price) + Number(dorm.max_price)) / 2;
+    } else if (dorm.monthly_price) {
+      return Number(dorm.monthly_price);
+    }
+    return 0;
   }
 
   /** Get latest updated dormitories (sorted by updated_date DESC) */
@@ -330,7 +400,8 @@ export class DormitoryService {
 
   /** Get all amenities from the database */
   getAllAmenities(): Observable<Amenity[]> {
-    return this.http.get<Amenity[]>(`${this.backendUrl}/dormitories/amenities/all`).pipe(
+    return this.http.get<{ total: number; amenities: Amenity[] }>(`${this.backendUrl}/dormitories/amenities/all`).pipe(
+      map(response => response.amenities || []),
       catchError(err => {
         console.error('[DormitoryService] Error fetching all amenities:', err);
         return of([]);

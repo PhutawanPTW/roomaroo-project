@@ -131,18 +131,18 @@ export class MainComponent implements OnInit, OnDestroy {
             const maxVal = Number(d.max_price);
             if (!Number.isNaN(minVal) && !Number.isNaN(maxVal)) {
               priceText = minVal === maxVal
-                ? `${minVal.toLocaleString()}-/เดือน.`
-                : `${minVal.toLocaleString()}-${maxVal.toLocaleString()}-/เดือน.`;
+                ? `${minVal.toLocaleString()} บาท/เดือน`
+                : `${minVal.toLocaleString()}-${maxVal.toLocaleString()} บาท/เดือน`;
             }
           } else if ((d as any).monthly_price != null) {
             const single = Number((d as any).monthly_price);
             if (!Number.isNaN(single)) {
-              priceText = `${single.toLocaleString()}-/เดือน.`;
+              priceText = `${single.toLocaleString()} บาท/เดือน`;
             }
           } else if ((d as any).daily_price != null) {
             const daily = Number((d as any).daily_price);
             if (!Number.isNaN(daily)) {
-              priceText = `${daily.toLocaleString()}-/วัน.`;
+              priceText = `${daily.toLocaleString()} บาท/วัน`;
             }
           }
           const slide: BannerSlide = {

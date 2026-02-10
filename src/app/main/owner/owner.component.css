@@ -29,6 +29,14 @@
   transform: translateY(-2px);
 }
 
+/* Tablet and below - reduce hover effect */
+@media (max-width: 1024px) {
+  .card-owner:hover {
+    box-shadow: 0 4px 16px 0 rgba(52, 144, 220, 0.15), 0 1px 4px 0 rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+}
+
 /* Mobile specific styles */
 @media (max-width: 640px) {
   .card-owner {
@@ -38,6 +46,11 @@
   .card-owner:active {
     box-shadow: 0 4px 12px 0 rgba(52, 144, 220, 0.15);
     transform: scale(0.98);
+  }
+  
+  .card-owner:hover {
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.1);
+    transform: none;
   }
 }
 

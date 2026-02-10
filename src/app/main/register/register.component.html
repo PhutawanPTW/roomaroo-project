@@ -11,10 +11,19 @@
   </div>
 
   <!-- Card Container - แสดงเมื่อ initialization เสร็จแล้ว -->
-  <div *ngIf="!isInitializing" class="bg-white shadow-xl overflow-hidden max-w-7xl w-full flex">
+  <div *ngIf="!isInitializing" class="bg-white shadow-xl overflow-hidden max-w-7xl w-full" 
+       [ngClass]="{
+         'flex': isDesktop || isTablet,
+         'flex-col': isMobile
+       }">
 
-    <!-- Left Section 60% -->
-    <div class="w-[60%] relative p-6 flex items-center justify-center border-r border-gray-200">
+    <!-- Left Section 60% - Image Slider (แสดงเฉพาะ iPad และ PC) -->
+    <div *ngIf="!isMobile" 
+         [ngClass]="{
+           'w-[60%]': isDesktop || isTablet,
+           'order-1': isDesktop || isTablet
+         }" 
+         class="relative p-6 flex items-center justify-center border-r border-gray-200">
       <!-- Image Slider จะถูกจัดกลางแล้วใน CSS -->
       <div class="slider-container">
         <!-- Skeleton while loading (fill container) -->
@@ -41,29 +50,41 @@
     </div>
 
     <!-- Right Section - Registration Form -->
-    <div class="w-[40%] p-8 flex flex-col justify-center">
+    <div [ngClass]="{
+           'w-[40%]': isDesktop || isTablet,
+           'w-full': isMobile,
+           'order-2': isDesktop || isTablet,
+           'order-1': isMobile
+         }" 
+         class="p-8 flex flex-col justify-center">
 
       <!-- Header Section -->
       <div class="text-center mb-6">
         <!-- Avatar -->
         <div
-          class="mx-auto w-20 h-20 bg-gradient-to-br from-orange-400 to-purple-600 rounded-full flex items-center justify-center mb-4 relative avatar-container">
+          [ngClass]="{'w-16 h-16': isMobile, 'w-20 h-20': !isMobile}"
+          class="mx-auto bg-gradient-to-br from-orange-400 to-purple-600 rounded-full flex items-center justify-center mb-4 relative avatar-container">
           <img *ngIf="photoURL; else defaultAvatar" [src]="photoURL" alt="Profile Avatar"
             class="w-full h-full rounded-full object-cover" [class.cursor-not-allowed]="isFromGoogle">
           <ng-template #defaultAvatar>
-            <img src="assets/icon/Rectangle 6.png" alt="Profile Avatar" class="w-full h-full rounded-full object-cover"
+            <img [src]="getDefaultAvatarUrl()" alt="Profile Avatar" class="w-full h-full rounded-full object-cover"
               [class.cursor-not-allowed]="isFromGoogle">
           </ng-template>
           <!-- Edit Icon - แสดงเฉพาะเมื่อไม่ใช่ Google OAuth และไม่มีรูปจาก Google -->
           <div *ngIf="!isFromGoogle && !photoURL"
-            class="absolute -bottom-1 -right-1 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
+            [ngClass]="{'w-6 h-6 -bottom-0.5 -right-0.5': isMobile, 'w-8 h-8 -bottom-1 -right-1': !isMobile}"
+            class="absolute bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
             (click)="onEditAvatar()">
-            <img src="assets/icon/editing.png" alt="Edit" class="w-4 h-4 filter invert object-contain" />
+            <img src="assets/icon/editing.png" alt="Edit" 
+                 [ngClass]="{'w-3 h-3': isMobile, 'w-4 h-4': !isMobile}"
+                 class="filter invert object-contain" />
           </div>
           <!-- Google Badge - แสดงเมื่อเป็นรูปจาก Google -->
           <div *ngIf="isFromGoogle && photoURL"
-            class="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
-            <img src="assets/icon/google.png" alt="Google" class="w-3 h-3">
+            [ngClass]="{'w-5 h-5 -bottom-0.5 -right-0.5': isMobile, 'w-6 h-6 -bottom-1 -right-1': !isMobile}"
+            class="absolute bg-white rounded-full flex items-center justify-center border-2 border-gray-200">
+            <img src="assets/icon/google.png" alt="Google" 
+                 [ngClass]="{'w-2.5 h-2.5': isMobile, 'w-3 h-3': !isMobile}">
           </div>
         </div>
 
@@ -174,8 +195,10 @@
         </div>
 
         <!-- Title -->
-        <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ getPageTitle() }}</h1>
-        <p class="text-gray-500 text-base font-normal font-thai mb-2">
+        <h1 [ngClass]="{'text-xl': isMobile, 'text-2xl': !isMobile}" 
+            class="font-bold text-gray-900 mb-1">{{ getPageTitle() }}</h1>
+        <p [ngClass]="{'text-sm': isMobile, 'text-base': !isMobile}" 
+           class="text-gray-500 font-normal font-thai mb-2">
           {{ getPageDescription() }}
         </p>
       </div>
@@ -244,13 +267,42 @@
           <div>
               <div class="relative">
             <input type="password" formControlName="password" placeholder="รหัสผ่าน"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
-              [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength')"
+              class="w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
+              [class.border-red-500]="hasError('password', 'required') || hasError('password', 'minlength') || hasError('password', 'noUppercase') || hasError('password', 'noLowercase') || hasError('password', 'noNumber') || hasError('password', 'noSymbol')"
               >
+                <!-- Password Tooltip Icon -->
+                <div class="absolute right-8 top-1/2 transform -translate-y-1/2 flex items-center">
+                  <button type="button" (click)="togglePasswordTooltip()" (blur)="hidePasswordTooltip()"
+                    class="tooltip-icon text-gray-400 hover:text-gray-600 focus:outline-none"
+                    title="คำแนะนำการตั้งรหัสผ่าน">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <!-- Required indicator -->
                 <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
                   <span class="text-red-500 text-sm">*</span>
                 </div>
               </div>
+            
+            <!-- Password Tooltip -->
+            <div *ngIf="showPasswordTooltip" class="tooltip">
+              <div class="tooltip-content">
+                <p class="tooltip-title">คำแนะนำการตั้งรหัสผ่านที่ปลอดภัย:</p>
+                <ul class="tooltip-list">
+                  <li>• ต้องมีอย่างน้อย 8 ตัวอักษร</li>
+                  <li>• ต้องมีตัวพิมพ์ใหญ่ (A-Z)</li>
+                  <li>• ต้องมีตัวพิมพ์เล็ก (a-z)</li>
+                  <li>• ต้องมีตัวเลข (0-9)</li>
+                  <li>• ต้องมีสัญลักษณ์ (!&#64;#$%^&*)</li>
+                </ul>                
+                <p class="tooltip-tip">
+                  💡 <strong>คำแนะนำ:</strong> ควรจดรหัสผ่านไว้ในที่ปลอดภัย เพื่อป้องกันการลืม
+                </p>
+              </div>
+            </div>
+            
             <p *ngIf="getErrorMessage('password') && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)"
               class="mt-1 text-sm text-red-600">{{ getErrorMessage('password') }}</p>
           </div>
@@ -287,6 +339,7 @@
               <span class="text-red-500 text-sm">*</span>
             </div>
           </div>
+          
           <p *ngIf="getErrorMessage('phoneNumber') && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)"
             class="mt-1 text-sm text-red-600">{{ getErrorMessage('phoneNumber') }}</p>
         </div>
@@ -304,7 +357,7 @@
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-200 bg-gray-50"
               (focus)="showDormList = true" (input)="filterDorms()" [value]="selectedDormName || ''"
               [class.border-red-500]="hasError('dormitory', 'required')">
-            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+            <div class="absolute inset-y-0 right-0 flex items-center justify-center px-3 pointer-events-none">
               <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -436,7 +489,8 @@
 
           <!-- Google Button -->
           <button type="button" (click)="connectWithGoogle()" [disabled]="isGoogleLoading"
-            class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-thai">
+            class="w-full google-button hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center font-thai"
+            [ngClass]="{'space-x-2': isMobile, 'space-x-3': !isMobile}">
             <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
               fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -444,8 +498,12 @@
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
               </path>
             </svg>
-            <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
-            <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วยบัญชี Google' }}</span>
+            <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" 
+                 [ngClass]="{'w-4 h-4': isMobile, 'w-5 h-5': !isMobile}">
+            <span [ngClass]="{'text-sm': isMobile, 'text-base': !isMobile}"
+                  class="truncate max-w-[180px] sm:max-w-none">
+              {{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วยบัญชี Google' }}
+            </span>
           </button>
           <div *ngIf="errorMessageGoogle"
             class="text-red-600 text-sm mt-2 text-center font-thai bg-red-50 p-2 rounded border border-red-200">
@@ -464,12 +522,12 @@
 
       <!-- Footer -->
       <div class="text-center mt-6">
-        <span class="text-gray-600 text-sm font-thai">เป็นสมาชิกอยู่แล้วใช่ไหม? </span>
+        <span class="text-gray-600 text-sm font-thai">เป็นสมาชิกอยู่แล้วใช่ไหม?</span>
         <button (click)="onLogin()"
-          class="text-blue-500 hover:text-blue-600 font-semibold hover:underline transition duration-200 text-sm font-thai">
+          class="text-blue-500 hover:text-blue-600 font-semibold hover:underline transition duration-200 text-sm font-thai ml-1">
           เข้าสู่ระบบ
         </button>
-        <span class="text-gray-600 text-sm font-thai"> เลย!</span>
+        <span class="text-gray-600 text-sm font-thai">เลย!</span>
       </div>
 
     </div>

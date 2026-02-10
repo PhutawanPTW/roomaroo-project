@@ -115,6 +115,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   
   // Review related
   sentimentResult: SentimentType | null = null;
+  selectedRating: number = 5; // คะแนนที่ผู้ใช้เลือก (เริ่มต้น 5 ดาว)
   
   // Reviews data
   overallRating: number = 5.0;
@@ -259,7 +260,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // *** Loading state management - ป้องกัน race conditions ***
-  private loadingState = {
+  public loadingState = {
     detail: false,
     amenities: false,
     similar: false,
@@ -406,18 +407,29 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private async loadSimilarDormitories() {
+    this.loadingState.similar = true;
     try {
+      console.log('[DormDetail] Loading similar dormitories...');
       // ใช้ getRecommended เพื่อดึงหอพักแนะนำมาแสดงเป็นหอพักที่คล้ายกัน
       const dorms = await this.dormService.getRecommended(5).toPromise();
-      if (dorms) {
+      if (dorms && Array.isArray(dorms)) {
+        console.log('[DormDetail] Received dorms:', dorms.length);
         // กรองออกหอพักปัจจุบัน
         const filteredDorms = dorms.filter(d => d.dorm_id !== this.dormId);
+        console.log('[DormDetail] Filtered dorms (excluding current):', filteredDorms.length);
 
         // แปลงข้อมูลให้ตรงกับ interface SimilarProperty
-        this.similarProperties = filteredDorms.map(d => this.mapDormToSimilarProperty(d));
+        this.similarProperties = filteredDorms.slice(0, 4).map(d => this.mapDormToSimilarProperty(d));
+        console.log('[DormDetail] Similar properties loaded:', this.similarProperties.length);
+      } else {
+        console.warn('[DormDetail] No dorms received or invalid format');
+        this.similarProperties = [];
       }
     } catch (error) {
-      console.error('Error loading similar dormitories:', error);
+      console.error('[DormDetail] Error loading similar dormitories:', error);
+      this.similarProperties = [];
+    } finally {
+      this.loadingState.similar = false;
     }
   }
 
@@ -724,13 +736,53 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.dormDetail.electricity_type;
   }
 
+  // Helper methods for avatars
+  getUserAvatarUrl(): string {
+    // ถ้ามีรูปโปรไฟล์ ให้ใช้รูปนั้น
+    if (this.userAvatar && this.userAvatar !== '../../../assets/images/image-removebg-preview.png') {
+      return this.userAvatar;
+    }
+    
+    // ถ้าไม่มีรูป ให้ใช้ cat avatar.jpg เป็นค่าเริ่มต้นสำหรับสมาชิก
+    return 'assets/icon/cat avatar.jpg';
+  }
+
+  getReviewerAvatarUrl(review: Review): string {
+    // ถ้ามีรูปโปรไฟล์ ให้ใช้รูปนั้น
+    if (review.avatar && review.avatar !== '../../../assets/images/image-removebg-preview.png') {
+      return review.avatar;
+    }
+    
+    // ถ้าไม่มีรูป ให้ใช้ cat avatar.jpg เป็นค่าเริ่มต้นสำหรับผู้รีวิว
+    return 'assets/icon/cat avatar.jpg';
+  }
+
+  getOwnerContactAvatarUrl(): string {
+    // ถ้ามีรูปโปรไฟล์เจ้าของหอพัก ให้ใช้รูปนั้น
+    if (this.ownerContact?.image) {
+      return this.ownerContact.image;
+    }
+    
+    // ถ้าไม่มีรูป ให้ใช้ home-owner.png เป็นค่าเริ่มต้นสำหรับเจ้าของหอพัก
+    return 'assets/icon/home-owner.png';
+  }
+
+  // Rating selection methods
+  selectRating(rating: number): void {
+    this.selectedRating = rating;
+  }
+
+  getRatingStars(): number[] {
+    return Array(5).fill(0).map((_, i) => i + 1);
+  }
+
   // Reviews methods
   private checkLoginStatus(): void {
     this.authService.currentUser$.subscribe(user => {
       this.isLoggedIn = !!user;
       
       if (user) {
-        this.userAvatar = user.photoURL || '../../../assets/images/image-removebg-preview.png';
+        this.userAvatar = user.photoURL || '';
         this.currentUserId = user.id;
         
       } else {
@@ -755,8 +807,15 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private checkReviewEligibility(): void {
-    // ตรวจสอบสิทธิ์การรีวิวผ่าน API (ใช้ cache ตาม user)
-    const uid = this.currentUserId ?? 'anon';
+    // ถ้าไม่มี currentUserId แสดงว่าไม่ได้ล็อกอิน ไม่ต้องเช็ค API
+    if (!this.currentUserId) {
+      this.canReview = false;
+      this.reviewEligibilityMessage = 'กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น';
+      return;
+    }
+
+    // ตรวจสอบสิทธิ์การรีวิวผ่าน API (เฉพาะผู้ใช้ที่ล็อกอินแล้ว)
+    const uid = this.currentUserId;
     this.dormitoryService.checkReviewEligibility(this.dormId, uid).subscribe({
       next: (response) => {
         // Debug: แสดง raw response ที่ได้รับ
@@ -844,16 +903,22 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       next: (response) => {
         
         
-        // ใช้ predicted_rating จาก AI แทน manual rating
-        const predictedRating = response.predicted_rating || 5;
+        // ให้ผู้ใช้เลือกคะแนนเอง แต่ใช้ AI เป็นคำแนะนำ
+        const userRating = this.selectedRating || 5; // ใช้คะแนนที่ผู้ใช้เลือก
+        const aiSuggestedRating = response.predicted_rating || userRating; // AI แนะนำ
+        
+        // แสดงการเปรียบเทียบถ้าต่างกันมาก
+        if (Math.abs(userRating - aiSuggestedRating) >= 2) {
+          console.log(`[Review] คะแนนที่เลือก: ${userRating}, AI แนะนำ: ${aiSuggestedRating}`);
+        }
         
         // เพิ่มความคิดเห็นใหม่ในรายการ
         const newReview: Review = {
           username: 'ผู้ใช้งาน',
-          avatar: this.userAvatar,
+          avatar: this.getUserAvatarUrl(),
           comment: trimmedComment,
-          rating: predictedRating, // ใช้ AI predicted rating
-          isPositive: predictedRating >= 3,
+          rating: userRating, // ใช้คะแนนที่ผู้ใช้เลือก
+          isPositive: userRating >= 3,
           date: new Date(),
           isResident: true, // เนื่องจากผ่านการตรวจสอบสิทธิ์แล้ว
           isCurrentUser: true // เป็นรีวิวของผู้ใช้ปัจจุบัน
@@ -921,7 +986,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
         this.reviews = reviews.map(review => ({
           id: review.review_id || review.id, // ID ของรีวิวจาก API
           username: review.username || 'ผู้ใช้งาน',
-          avatar: review.avatar || '../../../assets/images/image-removebg-preview.png',
+          avatar: review.avatar || '',
           comment: review.comment,
           rating: review.predicted_rating || review.rating, // ใช้ predicted_rating จาก AI
           isPositive: (review.predicted_rating || review.rating) >= 3,
@@ -969,7 +1034,7 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   private addCommentToList(comment: string, sentiment: string): void {
     const newReview: Review = {
       username: 'ผู้ใช้งาน',
-      avatar: this.userAvatar,
+      avatar: this.getUserAvatarUrl(),
       comment: comment,
       rating: 5, // ค่าเริ่มต้น หรือให้ผู้ใช้กำหนด
       isPositive: sentiment === 'positive',
@@ -1072,27 +1137,48 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ฟังก์ชันสำหรับแสดงดาวว่าง
   getEmptyStars(rating: number): number[] {
-    return Array(5 - rating).fill(0);
+    // ตรวจสอบและทำให้ rating อยู่ในช่วง 0-5
+    const validRating = Math.max(0, Math.min(5, rating || 0));
+    const emptyCount = 5 - Math.floor(validRating);
+    return Array(Math.max(0, emptyCount)).fill(0);
   }
 
   getStars(rating: number): number[] {
-    const fullStars = Math.floor(rating);
-    return Array(fullStars).fill(0);
+    // ตรวจสอบและทำให้ rating อยู่ในช่วง 0-5
+    const validRating = Math.max(0, Math.min(5, rating || 0));
+    const fullStars = Math.floor(validRating);
+    return Array(Math.max(0, fullStars)).fill(0);
   }
 
   // เพิ่ม method สำหรับปุ่มดูเพิ่มเติม
   viewMoreSimilarDorms() {
-    // นำทางไปยังหน้า dorm-list พร้อม query parameter เพื่อแสดงหอพักแนะนำ
+    // ส่งข้อมูลหอพักปัจจุบันไปยังหน้า dorm-list เพื่อคำนวณความคล้าย
     this.router.navigate(['/dorm-list'], {
       queryParams: {
-        type: 'recommended',
+        type: 'similar',                    // เปลี่ยนเป็น 'similar'
         from: 'dorm-detail',
-        currentDormId: this.dormId
+        currentDormId: this.dormId,
+        similarName: this.dormName,          // ชื่อหอพักปัจจุบัน
+        zone: this.dormDetail?.zone_name,    // โซน
+        minPrice: this.dormDetail?.min_price, // ราคาต่ำสุด
+        maxPrice: this.dormDetail?.max_price, // ราคาสูงสุด
+        amenities: this.getCurrentAmenities() // สิ่งอำนวยความสะดวก
       }
     }).then(() => {
       // Scroll ไปด้านบนของหน้าเมื่อเปลี่ยนหน้าเสร็จ
       window.scrollTo(0, 0);
     });
+  }
+
+  // เพิ่ม method สำหรับดึงสิ่งอำนวยความสะดวกปัจจุบัน
+  private getCurrentAmenities(): string {
+    if (!this.amenities || this.amenities.length === 0) return '';
+    
+    const availableAmenities = this.amenities
+      .filter(amenity => amenity.available)
+      .map(amenity => amenity.name);
+    
+    return availableAmenities.join(',');
   }
 
   // เพิ่ม method สำหรับปุ่มเปรียบเทียบหอพัก
@@ -1208,6 +1294,22 @@ export class DormDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     const baseClasses = 'thumbnail-item';
     const activeClass = index === this.currentImageIndex ? ' active' : '';
     return baseClasses + activeClass;
+  }
+
+  // Open Line chat with owner
+  openLineChat(): void {
+    if (!this.ownerContact.lineId || this.ownerContact.lineId === 'ไม่มี') {
+      return;
+    }
+
+    // Create Line URL for adding friend
+    const lineUrl = `https://line.me/ti/p/${this.ownerContact.lineId}`;
+    
+    // Open in new tab
+    window.open(lineUrl, '_blank');
+    
+    // Optional: Show success message
+    console.log(`Opening Line chat with ${this.ownerContact.lineId}`);
   }
 
 }

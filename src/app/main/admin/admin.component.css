@@ -1,124 +1,89 @@
-/* เน้นความคมของเส้นขอบตาราง/การ์ดให้เหมือนภาพ */
-table th, table td { border-color: rgba(0,0,0,0.06); }
-
-/* ป้องกัน scrollbar แนวนอนใน main admin */
-:host ::ng-deep main {
-  overflow-x: hidden;
+/* ================== Table base ================== */
+/* เส้นขอบอ่อน อ่านง่าย */
+table th,
+table td {
+  border-color: rgba(0, 0, 0, 0.06);
 }
 
-/* ป้องกัน cell เนื้อหาเบียดจนดันความกว้าง */
+/* ป้องกันเนื้อหาเบียดจนดันความกว้างคอลัมน์ */
 table {
   table-layout: fixed;
 }
 
-td, th {
+/* ตัดข้อความล้นเซลล์ให้เรียบร้อย */
+td,
+th {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* ป้องกัน scrollbar แนวนอนใน main (Angular host) */
+:host ::ng-deep main {
+  overflow-x: hidden;
+}
 
-/* Center carousel with faded sides */
-.center-carousel { display: flex; justify-content: center; }
+/* ================== Carousel แบบ Slide ================== */
+.center-carousel {
+  display: flex;
+  justify-content: center;
+}
+
 .carousel-viewport {
-	position: relative;
-	width: 100%;
-	max-width: 48rem; /* 768px */
-	height: 22rem;  /* 352px */
-	margin: 0 auto;
+  position: relative;
+  width: 100%;
+  max-width: 48rem; /* 768px */
+  height: 22rem;    /* 352px */
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 10px;
 }
-.carousel-current,
-.carousel-side {
-	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
-	height: 100%;
-	object-fit: cover;
-	border-radius: 10px;
-	box-shadow: 0 10px 25px rgba(0,0,0,.15);
-	will-change: transform, opacity;
-	backface-visibility: hidden;
+
+/* แทร็กเลื่อนทั้งชุดรูป */
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.4s ease-in-out;
+  will-change: transform;
 }
-.carousel-current {
-	left: 50%;
-	transform: translate(-50%, -50%);
-	width: 72%; /* ขยายภาพกลางเล็กน้อยเพื่อเปิดเผยภาพข้างมากขึ้น */
-	z-index: 2;
-	opacity: 1;
+
+/* สไลด์แต่ละรูป */
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  cursor: pointer;
+  flex-shrink: 0;
 }
-.carousel-side {
-    width: 40%; /* ทำภาพข้างให้เล็กกว่าชัดเจน */
-    opacity: .4; /* จางลงเล็กน้อย */
-	filter: blur(1px);
-	z-index: 1;
-	pointer-events: none; /* ไม่ให้ภาพข้างบังปุ่มเลื่อน */
-}
-.carousel-left { left: 8%; }   /* ระยะจากขอบเพื่อให้มองเห็นขอบภาพข้าง */
-.carousel-right { right: 8%; }
+
+/* ปุ่มเลื่อน */
 .carousel-btn {
-	position: absolute;
-	top: 44%; /* ยกปุ่มขึ้นเหนือภาพเล็กน้อย */
-	transform: translateY(-50%);
-	background: rgba(255,255,255,.8);
-	padding: .5rem;
-	border-radius: .5rem;
-	border: 1px solid rgba(0,0,0,.08);
-	box-shadow: 0 6px 18px rgba(0,0,0,.12);
-	transition: all .2s ease;
-	z-index: 3; /* ให้อยู่เหนือรูปแน่นอน */
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.9);
+  padding: 0.75rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+  z-index: 10;
+  cursor: pointer;
 }
-.carousel-btn.left { left: .75rem; }
-.carousel-btn.right { right: .75rem; }
-.carousel-btn:hover { background: #fff; }
-
-/* Animation for connector */
-@keyframes connector {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(200%);
-  }
+.carousel-btn.left { left: 1rem; }
+.carousel-btn.right { right: 1rem; }
+.carousel-btn:hover { 
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  transform: translateY(-50%) scale(1.1);
+}
+.carousel-btn:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
-.animate-connector {
-  animation: connector 1.5s ease-in-out infinite;
-}
-
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 768px) {
-  .carousel-viewport {
-    @apply h-[300px];
-  }
-  
-  .carousel-side {
-    @apply hidden;
-  }
-  
-  .carousel-current {
-    @apply max-w-full;
-  }
-}
-
-/* Toast Notification Styles */
-.toast-enter {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-.toast-enter-active {
-  transform: translateX(0);
-  opacity: 1;
-  transition: all 300ms ease-in-out;
-}
-
-.toast-exit {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.toast-exit-active {
-  transform: translateX(100%);
-  opacity: 0;
-  transition: all 300ms ease-in-out;
+  .carousel-viewport { height: 18rem; }
+  .carousel-btn { padding: 0.5rem; }
 }

@@ -19,13 +19,14 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { RegisterService, DormitoryOption, ZoneOption } from '../../services/register.service';
 import { GoogleAuthService } from '../../services/google-auth.service';
 import { Location } from '@angular/common';
 import { Auth } from '@angular/fire/auth';
 import { DormitoryService, Dorm } from '../../services/dormitory.service';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 // Add interface for grouped dormitories
 interface ZoneDormitories {
@@ -61,9 +62,45 @@ function phoneNumberValidator(
   // Remove all non-digit characters (including hyphens, spaces, etc.) and check if it's exactly 10 digits
   const digitsOnly = value.replace(/\D/g, '');
 
-  // Check if it's exactly 10 digits
-  if (digitsOnly.length !== 10) {
+  // Check if it's exactly 10 digits and starts with 0
+  if (digitsOnly.length !== 10 || !digitsOnly.startsWith('0')) {
     return { pattern: true };
+  }
+
+  return null;
+}
+
+// เพิ่ม validator สำหรับรหัสผ่านที่ปลอดภัย
+function strongPasswordValidator(
+  control: AbstractControl
+): ValidationErrors | null {
+  if (!control.value) return null;
+
+  const value = control.value.toString();
+  
+  // ตรวจสอบความยาวขั้นต่ำ 8 ตัวอักษร
+  if (value.length < 8) {
+    return { minlength: true };
+  }
+
+  // ตรวจสอบว่ามีตัวพิมพ์ใหญ่
+  if (!/[A-Z]/.test(value)) {
+    return { noUppercase: true };
+  }
+
+  // ตรวจสอบว่ามีตัวพิมพ์เล็ก
+  if (!/[a-z]/.test(value)) {
+    return { noLowercase: true };
+  }
+
+  // ตรวจสอบว่ามีตัวเลข
+  if (!/[0-9]/.test(value)) {
+    return { noNumber: true };
+  }
+
+  // ตรวจสอบว่ามีสัญลักษณ์
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+    return { noSymbol: true };
   }
 
   return null;
@@ -73,7 +110,7 @@ function phoneNumberValidator(
   selector: 'app-register',
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
-  imports: [ReactiveFormsModule, FormsModule, NgIf, NgFor, CommonModule],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule],
   standalone: true,
 })
 export class RegisterComponent implements OnInit, OnDestroy {
@@ -136,6 +173,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
   isImageLoading = false;
   imageError = '';
 
+  // Properties สำหรับ password tooltip
+  showPasswordTooltip = false;
+
+  // Responsive properties
+  isMobile = false;
+  isTablet = false;
+  isDesktop = false;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -145,7 +190,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
     private googleAuthService: GoogleAuthService,
     private location: Location,
     private auth: Auth,
-    private dormSvc: DormitoryService
+    private dormSvc: DormitoryService,
+    private breakpointObserver: BreakpointObserver
   ) {
     this.registerForm = this.fb.group(
       {
@@ -173,6 +219,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
     // เริ่มต้น isFromGoogle เป็น false ค่าเริ่มต้น
     this.isFromGoogle = false;
+
+    // Setup responsive breakpoints
+    this.setupResponsiveBreakpoints();
 
     // อ่าน userType จาก route param (member/owner) หรือ queryParams
     this.subscriptions.add(
@@ -395,6 +444,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
         return;
       }
 
+
       if (userProfile?.provider === 'google' && this.isFromGoogle) {
         if (userProfile.displayName) {
           this.registerForm.patchValue({ fullName: userProfile.displayName });
@@ -438,6 +488,20 @@ export class RegisterComponent implements OnInit, OnDestroy {
       this.isInitializing = false;
     }, 100);
     this.timeouts.push(timeoutId);
+  }
+
+  private setupResponsiveBreakpoints() {
+    // Mobile
+    this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small])
+      .subscribe(result => this.isMobile = result.matches);
+    
+    // Tablet
+    this.breakpointObserver.observe([Breakpoints.Medium])
+      .subscribe(result => this.isTablet = result.matches);
+    
+    // Desktop
+    this.breakpointObserver.observe([Breakpoints.Large, Breakpoints.XLarge])
+      .subscribe(result => this.isDesktop = result.matches);
   }
 
   // เพิ่ม method สำหรับตรวจสอบการเข้าถึงหน้า registration
@@ -778,10 +842,10 @@ export class RegisterComponent implements OnInit, OnDestroy {
       passwordControl?.setValue('');
       confirmPasswordControl?.setValue('');
     } else {
-      // การลงทะเบียนปกติ: ต้องใช้รหัสผ่าน
+      // การลงทะเบียนปกติ: ต้องใช้รหัสผ่านที่ปลอดภัย
       passwordControl?.setValidators([
         Validators.required,
-        Validators.minLength(6),
+        strongPasswordValidator,
       ]);
       passwordControl?.enable();
       confirmPasswordControl?.setValidators([Validators.required]);
@@ -918,8 +982,22 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (controlName === 'email' && control.hasError('emailInUse')) {
       return 'อีเมลนี้ถูกใช้งานแล้ว';
     }
-    if (controlName === 'password' && control.hasError('minlength')) {
-      return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+    if (controlName === 'password') {
+      if (control.hasError('minlength')) {
+        return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+      }
+      if (control.hasError('noUppercase')) {
+        return 'รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว';
+      }
+      if (control.hasError('noLowercase')) {
+        return 'รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว';
+      }
+      if (control.hasError('noNumber')) {
+        return 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว';
+      }
+      if (control.hasError('noSymbol')) {
+        return 'รหัสผ่านต้องมีสัญลักษณ์อย่างน้อย 1 ตัว';
+      }
     }
     if (
       controlName === 'confirmPassword' &&
@@ -929,7 +1007,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     }
     if (controlName === 'phoneNumber' || controlName === 'secondaryPhone') {
       if (control.hasError('pattern')) {
-        return 'กรุณากรอกเบอร์โทรศัพท์เป็นตัวเลข 10 หลักเท่านั้น';
+        return 'กรุณากรอกเบอร์โทรศัพท์เป็นตัวเลข 10 หลักที่ขึ้นต้นด้วย 0';
       }
       if (control.hasError('minlength') || control.hasError('maxlength')) {
         return 'เบอร์โทรศัพท์ต้องมี 10 หลักเท่านั้น';
@@ -1323,6 +1401,17 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.resetImagePopup();
   }
 
+  // Helper method to get default avatar URL based on user type
+  getDefaultAvatarUrl(): string {
+    // ถ้าเป็นเจ้าของหอพักใช้ home-owner.png
+    if (this.userType === 'owner') {
+      return 'assets/icon/home-owner.png';
+    } else {
+      // สมาชิกใช้ cat avatar.jpg
+      return 'assets/icon/cat avatar.jpg';
+    }
+  }
+
   resetImagePopup(): void {
     this.selectedFile = null;
     this.previewImage = null;
@@ -1646,6 +1735,15 @@ export class RegisterComponent implements OnInit, OnDestroy {
       // แม้เกิด error ก็ให้ redirect ไป main
       this.router.navigate(['/main']);
     }
+  }
+
+  // Methods สำหรับจัดการ password tooltip
+  togglePasswordTooltip(): void {
+    this.showPasswordTooltip = !this.showPasswordTooltip;
+  }
+
+  hidePasswordTooltip(): void {
+    this.showPasswordTooltip = false;
   }
 
   // เพิ่ม method สำหรับจัดการ URL changes

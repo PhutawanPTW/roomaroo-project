@@ -115,20 +115,25 @@
 
               <!-- ช่วงราคา -->
               <div>
-                <h4 class="font-medium text-gray-900 mb-3 font-thai">ช่วงราคา (บาท)</h4>
+                <h4 class="font-medium text-gray-900 mb-3 font-thai">ช่วงราคา (บาท/เดือน)</h4>
                 <div class="flex gap-3">
                   <input 
                     type="number" 
                     [(ngModel)]="filterMinPrice" 
                     (change)="applyPriceFilter()"
                     placeholder="ราคาต่ำสุด" 
+                    min="0"
                     class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai text-sm">
                   <input 
                     type="number" 
                     [(ngModel)]="filterMaxPrice" 
                     (change)="applyPriceFilter()"
                     placeholder="ราคาสูงสุด" 
+                    min="0"
                     class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-thai text-sm">
+                </div>
+                <div class="text-xs text-gray-500 mt-1 font-thai">
+                  ตัวอย่าง: 3000 - 8000 (สำหรับหอพักราคา 3,000-8,000 บาท/เดือน)
                 </div>
               </div>
 
@@ -139,7 +144,7 @@
                   <label 
                     *ngFor="let amenity of amenities" 
                     class="flex items-center cursor-pointer"
-                    (click)="toggleAmenity(amenity); applyAmenitiesFilter()">
+                    (click)="toggleAmenity(amenity)">
                     <div 
                       class="w-5 h-5 rounded mr-2 flex items-center justify-center"
                       [ngClass]="amenity.checked ? 'bg-red-500' : 'border border-gray-300'">
@@ -220,8 +225,8 @@
       [(ngModel)]="sortOrder" 
       (change)="applySelectedSort()">
       <option value="" disabled selected>เรียงตามราคา</option>
-      <option value="asc">ราคาต่ำสุด</option>
-      <option value="desc">ราคาสูงสุด</option>
+      <option value="asc">ราคาต่ำสุด (ราคาเฉลี่ย)</option>
+      <option value="desc">ราคาสูงสุด (ราคาเฉลี่ย)</option>
     </select>
   </div>
 </div>

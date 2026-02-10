@@ -28,6 +28,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   menuOpen = false;
   loginDropdownOpen = false;
   profileDropdownOpen = false;
+  notificationDropdownOpen = false;
   currentUser: UserProfile | null = null;
   private authSubscription: Subscription | undefined;
   userType: 'owner' | 'member' | null = null;
@@ -113,7 +114,18 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   toggleProfileDropdown() {
     this.profileDropdownOpen = !this.profileDropdownOpen;
-    if (this.profileDropdownOpen) this.loginDropdownOpen = false;
+    if (this.profileDropdownOpen) {
+      this.loginDropdownOpen = false;
+      this.notificationDropdownOpen = false;
+    }
+  }
+
+  toggleNotificationDropdown() {
+    this.notificationDropdownOpen = !this.notificationDropdownOpen;
+    if (this.notificationDropdownOpen) {
+      this.loginDropdownOpen = false;
+      this.profileDropdownOpen = false;
+    }
   }
 
   closeLoginDropdown() {
@@ -122,6 +134,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   closeProfileDropdown() {
     this.profileDropdownOpen = false;
+  }
+
+  closeNotificationDropdown() {
+    this.notificationDropdownOpen = false;
   }
 
   onLoginTypeSelect(type: 'member' | 'owner') {
@@ -150,6 +166,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
   getUserPhotoURL(): string | null {
     const photoURL = this.currentUser?.photoURL || null;
     return photoURL;
+  }
+
+  // Helper method to get user avatar URL with fallback based on user type
+  getUserAvatarUrl(): string {
+    // ถ้ามีรูปโปรไฟล์จาก photoURL ให้ใช้รูปนั้น
+    if (this.currentUser?.photoURL) {
+      return this.currentUser.photoURL;
+    }
+    
+    // ถ้าไม่มีรูป ให้ใช้อวาตาร์เริ่มต้นตามประเภทผู้ใช้
+    if (this.getUserType() === 'owner') {
+      // เจ้าของหอพักใช้ home-owner.png
+      return 'assets/icon/home-owner.png';
+    } else {
+      // สมาชิก/ผู้รีวิวใช้ cat avatar.jpg
+      return 'assets/icon/cat avatar.jpg';
+    }
   }
 
   shouldShowPostDormButton(): boolean {
@@ -212,5 +245,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   closeMobileMenu() {
     this.mobileMenuOpen = false;
+  }
+
+  // Notification methods
+  hasNotification(): boolean {
+    return this.hasEvictionNotification();
+  }
+
+  hasEvictionNotification(): boolean {
+    // ตรวจสอบว่าผู้ใช้ถูกยกเลิกสิทธิ์การเข้าพัก (needsProfileSetup = true)
+    return this.currentUser?.needsProfileSetup === true && this.currentUser?.memberType === 'member';
+  }
+
+  onEvictionNotificationClick() {
+    this.closeNotificationDropdown();
+    // Redirect ไปหน้า profile เพื่อให้ผู้ใช้เลือกหอใหม่
+    this.router.navigate(['/main/profile']);
   }
 }

@@ -6,6 +6,7 @@ import { routes } from './app.routes'; // ตรวจสอบว่า path �
 import { environment } from '../environments/environment'; // import environment
 // Removed client hydration since SSR is not used
 import { provideAnimations } from '@angular/platform-browser/animations';
+import { LayoutModule } from '@angular/cdk/layout';
 
 // Import the interceptor function
 import { authInterceptor } from './interceptors/auth.interceptor';
@@ -42,6 +43,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes), // สำหรับจัดการ Routing
     provideAnimations(),
+    importProvidersFrom(LayoutModule), // เพิ่ม LayoutModule สำหรับ responsive breakpoints
     provideHttpClient(
       withInterceptors([authInterceptor])
     ), // สำหรับ HttpClient ใน AuthService และเพิ่ม AuthInterceptor

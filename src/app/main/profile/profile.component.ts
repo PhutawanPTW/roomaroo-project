@@ -99,6 +99,23 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Helper method to get user avatar URL with fallback based on user type
+  getUserAvatarUrl(): string {
+    // ถ้ามีรูปโปรไฟล์จาก photoURL ให้ใช้รูปนั้น
+    if (this.currentUser?.photoURL) {
+      return this.currentUser.photoURL;
+    }
+    
+    // ถ้าไม่มีรูป ให้ใช้อวาตาร์เริ่มต้นตามประเภทผู้ใช้
+    if (this.isOwner) {
+      // เจ้าของหอพักใช้ home-owner.png
+      return 'assets/icon/home-owner.png';
+    } else {
+      // สมาชิก/ผู้รีวิวใช้ cat avatar.jpg
+      return 'assets/icon/cat avatar.jpg';
+    }
+  }
+
   get isOwner(): boolean {
     return (
       this.userType === 'owner' || this.currentUser?.memberType === 'owner'

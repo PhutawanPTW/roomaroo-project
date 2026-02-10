@@ -6,6 +6,7 @@ import { AuthService, UserProfile as BaseUserProfile } from '../../services/auth
 import { DormitoryService, Dorm } from '../../services/dormitory.service';
 import { GoogleAuthService } from '../../services/google-auth.service';
 import { Subscription } from 'rxjs';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 interface UserProfile extends BaseUserProfile {
   provider?: 'google' | 'password';
@@ -32,13 +33,17 @@ export class LoginComponent implements OnInit, OnDestroy {
   private authSub: Subscription | undefined;
   isSliderLoading = true;
 
+  // Responsive properties
+  isMobile = false;
+  isTablet = false;
+  isDesktop = false;
+
   // Forgot Password Modal
   showForgotPassword = false;
   forgotPasswordEmail = '';
   forgotPasswordError: string | null = null;
   forgotPasswordSuccess: string | null = null;
   isForgotPasswordLoading = false;
-
 
   sliderImages: Array<{ id?: number; src: string; alt: string; title?: string; subtitle?: string } > = [];
 
@@ -48,12 +53,16 @@ export class LoginComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private authService: AuthService,
     private googleAuthService: GoogleAuthService,
-    private dormSvc: DormitoryService
+    private dormSvc: DormitoryService,
+    private breakpointObserver: BreakpointObserver
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
+
+    // Setup responsive breakpoints
+    this.setupResponsiveBreakpoints();
   }
 
   ngOnInit() {
@@ -87,6 +96,20 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.errorMessage = params['message'];
       }
     });
+  }
+
+  private setupResponsiveBreakpoints() {
+    // Mobile
+    this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small])
+      .subscribe(result => this.isMobile = result.matches);
+    
+    // Tablet
+    this.breakpointObserver.observe([Breakpoints.Medium])
+      .subscribe(result => this.isTablet = result.matches);
+    
+    // Desktop
+    this.breakpointObserver.observe([Breakpoints.Large, Breakpoints.XLarge])
+      .subscribe(result => this.isDesktop = result.matches);
   }
 
   ngOnDestroy() {

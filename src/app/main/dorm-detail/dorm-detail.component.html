@@ -101,6 +101,14 @@
             >
               <span class="font-english">{{ priceRange || dormPrice }}</span>
             </div>
+            <div *ngIf="$any(dormDetail)?.status_dorm || $any(dormDetail)?.statusDorm" 
+                 [ngClass]="{
+                   'bg-green-100 text-green-700': ($any(dormDetail)?.status_dorm || $any(dormDetail)?.statusDorm) === 'ว่าง',
+                   'bg-red-100 text-red-700': ($any(dormDetail)?.status_dorm || $any(dormDetail)?.statusDorm) === 'เต็ม'
+                 }"
+                 class="font-medium inline-block mt-2 px-3 py-1 rounded-lg text-sm">
+              {{ $any(dormDetail)?.status_dorm || $any(dormDetail)?.statusDorm }}
+            </div>
           </div>
         </div>
       </div>
@@ -630,15 +638,39 @@
                 class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 overflow-hidden relative bottom-0.5"
               >
                 <img
-                  [src]="
-                    userAvatar ||
-                    '../../../assets/images/image-removebg-preview.png'
-                  "
+                  [src]="getUserAvatarUrl()"
                   alt="User"
                   class="w-full h-full object-cover"
                 />
               </div>
               <div class="flex-1 relative">
+                <!-- Rating Selection -->
+                <div class="mb-3 p-3 bg-gray-50 rounded-lg">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">ให้คะแนนหอพักนี้:</label>
+                  <div class="flex items-center space-x-1">
+                    <ng-container *ngFor="let star of getRatingStars()">
+                      <button
+                        type="button"
+                        (click)="selectRating(star)"
+                        class="focus:outline-none transition-colors duration-200"
+                        [attr.aria-label]="'ให้คะแนน ' + star + ' ดาว'"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          [attr.fill]="star <= selectedRating ? '#FDD836' : '#E5E7EB'"
+                          viewBox="0 0 20 20"
+                          class="w-6 h-6 hover:scale-110 transition-transform cursor-pointer"
+                        >
+                          <path
+                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                          />
+                        </svg>
+                      </button>
+                    </ng-container>
+                    <span class="ml-2 text-sm text-gray-600">{{ selectedRating }} ดาว</span>
+                  </div>
+                </div>
+                
                 <textarea
                   [(ngModel)]="newComment"
                   placeholder="แสดงความคิดเห็นของคุณ..."
@@ -819,7 +851,7 @@
                 class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 mr-4 overflow-hidden"
               >
                 <img
-                  [src]="review.avatar"
+                  [src]="getReviewerAvatarUrl(review)"
                   alt="User"
                   class="w-full h-full object-cover"
                 />
@@ -980,7 +1012,7 @@
             style="border-color: #fbbf24"
           >
             <img
-              [src]="ownerContact.image"
+              [src]="getOwnerContactAvatarUrl()"
               alt="Owner Profile"
               class="w-full h-full object-cover"
             />
@@ -1038,14 +1070,28 @@
 
           <!-- Line ID Box -->
           <div
-            class="w-60 border border-[#434FAA] text-center text-[14px] py-2.5 rounded-lg flex items-center justify-center font-medium text-[#434FAA]"
+            *ngIf="ownerContact.lineId && ownerContact.lineId !== 'ไม่มี'"
+            class="w-60 border border-[#434FAA] text-center text-[14px] py-2.5 rounded-lg flex items-center justify-center font-medium text-[#434FAA] cursor-pointer hover:border-[#2c3e8a] transition-colors duration-200"
+            (click)="openLineChat()"
+            title="คลิกเพื่อแอดเพื่อนใน Line"
           >
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg"
               alt="Line"
               class="w-5 h-5 mr-2"
             />
-            Line ID : {{ ownerContact.lineId || "ไม่มี" }}
+            Line ID : {{ ownerContact.lineId }}
+          </div>
+          <div
+            *ngIf="!ownerContact.lineId || ownerContact.lineId === 'ไม่มี'"
+            class="w-60 border border-gray-300 text-center text-[14px] py-2.5 rounded-lg flex items-center justify-center font-medium text-gray-500"
+          >
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg"
+              alt="Line"
+              class="w-5 h-5 mr-2 opacity-50"
+            />
+            Line ID : ไม่มี
           </div>
         </div>
       </div>
@@ -1057,7 +1103,24 @@
         >
           หอพักที่คล้ายกัน
         </h3>
-        <div class="p-3 space-y-3">
+        
+        <!-- Loading State -->
+        <div *ngIf="loadingState.similar" class="p-4 text-center">
+          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <p class="text-sm text-gray-600 mt-2">กำลังโหลดหอพักที่คล้ายกัน...</p>
+        </div>
+        
+        <!-- Empty State -->
+        <div *ngIf="!loadingState.similar && similarProperties.length === 0" class="p-4 text-center text-gray-500">
+          <p class="text-sm">ไม่พบหอพักที่คล้ายกัน</p>
+        </div>
+        
+        <!-- Similar Properties List -->
+        <div *ngIf="!loadingState.similar && similarProperties.length > 0" class="p-3 space-y-3">
+          <!-- Debug Info (ลบออกได้เมื่อแก้ไขเสร็จ) -->
+          <div class="text-xs text-gray-400 mb-2">
+            Debug: พบหอพักที่คล้ายกัน {{ similarProperties.length }} รายการ
+          </div>
           <div
             *ngFor="let property of similarProperties"
             (click)="viewSimilarDorm(property.id)"

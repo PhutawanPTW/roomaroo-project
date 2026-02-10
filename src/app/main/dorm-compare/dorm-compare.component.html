@@ -61,7 +61,7 @@
       class="bg-white rounded-lg shadow-lg overflow-hidden"
     >
       <div class="overflow-x-auto">
-        <table class="border-collapse w-full min-w-[600px] sm:min-w-[800px]">
+        <table class="border-collapse w-full" [style.min-width]="getTableMinWidth()">
           <!-- Skeleton Header Row -->
           <tr class="bg-gray-50">
             <td
@@ -298,7 +298,7 @@
     >
       <!-- Table Content -->
       <div class="overflow-x-auto">
-        <table class="border-collapse w-full min-w-[600px] sm:min-w-[800px]">
+        <table class="border-collapse w-full" [style.min-width]="getTableMinWidth()">
           <!-- Header Row with Dorm Info -->
           <tr class="bg-gray-50">
             <td
@@ -306,12 +306,12 @@
             ></td>
             <td
               *ngFor="let dorm of compareDorms"
-              class="w-56 sm:w-64 md:w-70 px-3 sm:px-4 py-3 sm:py-4 text-center border border-gray-200 align-middle"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
             >
               <div class="flex flex-col items-center space-y-2 sm:space-y-3">
-                <!-- Image with Remove Button -->
+                <!-- Image with Remove Button - Fixed Height -->
                 <div
-                  class="relative w-32 h-20 sm:w-40 sm:h-24 md:w-44 md:h-28 overflow-hidden rounded-md bg-gray-100 shadow-sm mx-auto"
+                  class="relative w-24 h-16 sm:w-28 sm:h-18 md:w-32 md:h-20 overflow-hidden rounded-md bg-gray-100 shadow-sm mx-auto"
                 >
                   <img
                     [src]="dorm.image"
@@ -329,76 +329,114 @@
                   </button>
                 </div>
 
-                <!-- Name -->
-                <h3
-                  class="font-semibold text-gray-900 text-xs sm:text-sm text-center px-2"
-                >
-                  {{ dorm.name }}
-                </h3>
-
-                <!-- Star Rating -->
-                <div class="flex items-center justify-center">
-                  <div class="flex">
-                    <svg
-                      *ngFor="let star of getStars(dorm.rating)"
-                      class="w-3 h-3 sm:w-4 sm:h-4"
-                      [class.text-yellow-400]="star.filled"
-                      [class.text-gray-300]="!star.filled"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <!-- แสดงคะแนนตัวเลขและจำนวนรีวิว -->
-                  <div
-                    class="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600 text-center relative top-[0.15rem]"
+                <!-- Name - Fixed Height Container -->
+                <div class="h-8 sm:h-10 flex items-center justify-center">
+                  <h3
+                    class="font-semibold text-gray-900 text-xs sm:text-sm text-center px-2 line-clamp-2"
                   >
-                    <div>
+                    {{ dorm.name }}
+                  </h3>
+                </div>
+
+                <!-- Star Rating - Fixed Height Container -->
+                <div class="h-8 sm:h-10 flex flex-col items-center justify-center">
+                  <div class="flex items-center justify-center">
+                    <div class="flex">
+                      <svg
+                        *ngFor="let star of getStars(dorm.rating)"
+                        class="w-3 h-3 sm:w-4 sm:h-4"
+                        [class.text-yellow-400]="star.filled"
+                        [class.text-gray-300]="!star.filled"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <!-- แสดงคะแนนตัวเลข -->
+                    <div class="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">
                       {{
                         dorm.rating > 0 ? dorm.rating.toFixed(1) : "ไม่มีรีวิว"
                       }}
                     </div>
-                    <div
-                      *ngIf="dorm.reviewCount > 0"
-                      class="text-[10px] sm:text-xs text-gray-500"
-                    >
-                      ({{ dorm.reviewCount }} รีวิว)
-                    </div>
+                  </div>
+                  <!-- แสดงจำนวนรีวิวใต้ดาว -->
+                  <div
+                    *ngIf="dorm.reviewCount > 0"
+                    class="text-[10px] sm:text-xs text-gray-500 mt-1"
+                  >
+                    ({{ dorm.reviewCount }} รีวิว)
                   </div>
                 </div>
               </div>
             </td>
           </tr>
 
-          <!-- Price Row -->
+          <!-- Daily Price Row -->
           <tr class="border-b bg-white">
             <td
-              class="w-32 sm:w-40 px-3 sm:px-4 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
+              class="w-24 sm:w-28 px-2 sm:px-3 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
             >
-              ราคาห้องพัก
+              ราคารายวัน
             </td>
             <td
               *ngFor="let dorm of compareDorms"
-              class="w-56 sm:w-64 md:w-70 px-3 sm:px-4 py-3 sm:py-4 text-center border border-gray-200 align-middle"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
             >
-              <div class="text-xs sm:text-sm space-y-1">
-                <div class="text-gray-600">
-                  <span class="font-semibold">{{
-                    dorm.dailyPrice | number
-                  }}</span>
+              <div class="text-xs sm:text-sm">
+                <div *ngIf="dorm.dailyPrice" class="text-gray-600">
+                  <span class="font-semibold">{{ dorm.dailyPrice | number }}</span>
                   บาท/วัน
                 </div>
-                <div class="font-semibold text-blue-600">
-                  {{ dorm.price }}
+                <div *ngIf="!dorm.dailyPrice" class="text-gray-400">
+                  -
                 </div>
-                <div class="text-gray-500">
-                  <span class="font-semibold">{{
-                    dorm.termPrice | number
-                  }}</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Monthly Price Row -->
+          <tr class="border-b bg-gray-50">
+            <td
+              class="w-24 sm:w-28 px-2 sm:px-3 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
+            >
+              ราคารายเดือน
+            </td>
+            <td
+              *ngFor="let dorm of compareDorms"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
+            >
+              <div class="text-xs sm:text-sm">
+                <div *ngIf="dorm.monthlyPrice" class="font-semibold text-blue-600">
+                  {{ dorm.monthlyPrice | number }} บาท/เดือน
+                </div>
+                <div *ngIf="!dorm.monthlyPrice" class="text-gray-400">
+                  -
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Term Price Row -->
+          <tr class="border-b bg-white">
+            <td
+              class="w-24 sm:w-28 px-2 sm:px-3 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
+            >
+              ราคาตามเทอม
+            </td>
+            <td
+              *ngFor="let dorm of compareDorms"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
+            >
+              <div class="text-xs sm:text-sm">
+                <div *ngIf="dorm.termPrice" class="text-gray-500">
+                  <span class="font-semibold">{{ dorm.termPrice | number }}</span>
                   บาท/เทอม
+                </div>
+                <div *ngIf="!dorm.termPrice" class="text-gray-400">
+                  -
                 </div>
               </div>
             </td>
@@ -407,13 +445,13 @@
           <!-- Location Zone Row -->
           <tr class="border-b bg-gray-50">
             <td
-              class="w-32 sm:w-40 px-3 sm:px-4 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
+              class="w-24 sm:w-28 px-2 sm:px-3 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
             >
               โซนที่ตั้ง
             </td>
             <td
               *ngFor="let dorm of compareDorms"
-              class="w-56 sm:w-64 md:w-70 px-3 sm:px-4 py-3 sm:py-4 text-center border border-gray-200 align-middle"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
             >
               <div class="text-xs sm:text-sm text-gray-900">
                 {{ dorm.zone }}
@@ -424,13 +462,13 @@
           <!-- Electricity Cost Row -->
           <tr class="border-b bg-white">
             <td
-              class="w-32 sm:w-40 px-3 sm:px-4 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
+              class="w-24 sm:w-28 px-2 sm:px-3 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
             >
               ค่าไฟ
             </td>
             <td
               *ngFor="let dorm of compareDorms"
-              class="w-56 sm:w-64 md:w-70 px-3 sm:px-4 py-3 sm:py-4 text-center border border-gray-200 align-middle"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
             >
               <div class="text-xs sm:text-sm text-gray-900">
                 {{ getElectricityCost(dorm) }}
@@ -441,13 +479,13 @@
           <!-- Water Cost Row -->
           <tr class="border-b bg-gray-50">
             <td
-              class="w-32 sm:w-40 px-3 sm:px-4 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
+              class="w-24 sm:w-28 px-2 sm:px-3 py-3 sm:py-4 font-medium text-gray-700 text-xs sm:text-sm border border-gray-200 align-middle"
             >
               ค่าน้ำ
             </td>
             <td
               *ngFor="let dorm of compareDorms"
-              class="w-56 sm:w-64 md:w-70 px-3 sm:px-4 py-3 sm:py-4 text-center border border-gray-200 align-middle"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
             >
               <div class="text-xs sm:text-sm text-gray-900">
                 {{ getWaterCost(dorm) }}
@@ -553,7 +591,7 @@
             </td>
             <td
               *ngFor="let dorm of compareDorms"
-              class="w-56 sm:w-64 md:w-70 px-3 sm:px-4 py-3 sm:py-4 text-center border border-gray-200 align-middle"
+              [class]="getColumnWidth() + ' px-2 sm:px-3 py-3 sm:py-4 text-center border border-gray-200 align-middle'"
             >
               <button
                 (click)="viewDormDetail(dorm.id)"

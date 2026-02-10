@@ -160,47 +160,97 @@ button:disabled {
 /* Responsive Design */
 @media (max-width: 768px) {
   .min-h-screen {
-    padding: 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .max-w-4xl {
     flex-direction: column;
+    margin: 0 auto;
+    max-width: 100%;
   }
 
   .w-\[50\%\] {
     width: 100%;
   }
 
-  /* ซ่อน slider section ในมือถือ */
-  .w-\[50\%\]:last-child {
-    display: none;
-  }
-
-  .slider-container {
-    height: 300px;
-    margin-bottom: 2rem;
-  }
-
   .p-8 {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
   }
 
   .p-6 {
     padding: 1rem;
+  }
+
+  /* ปรับขนาดโลโก้ในมือถือ */
+  .w-20.h-20 {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  /* ปรับขนาดข้อความในมือถือ */
+  .text-lg {
+    font-size: 1rem;
+  }
+
+  /* ปรับ Google button สำหรับมือถือ */
+  .space-x-3 > * + * {
+    margin-left: 0.5rem;
+  }
+
+  /* ปรับ input field ให้ดูดีขึ้นในมือถือ */
+  input {
+    padding: 0.875rem 1rem;
+  }
+
+  /* ปรับ button ให้ดูดีขึ้นในมือถือ */
+  button {
+    padding: 0.875rem 1rem;
+  }
+
+  /* Prevent zoom on iOS */
+  input,
+  select,
+  button {
+    font-size: 16px;
+  }
+
+  /* ปรับ card shadow ในมือถือ */
+  .shadow-xl {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 }
 
 @media (max-width: 480px) {
-  .slider-container {
-    height: 250px;
-  }
-
   .p-6 {
     padding: 1rem;
   }
 
   .p-8 {
-    padding: 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  /* ปรับ margin ของ container ในมือถือขนาดเล็ก */
+  .max-w-4xl {
+    margin: 0.5rem;
+  }
+
+  /* ปรับขนาดข้อความให้เล็กลงในมือถือขนาดเล็ก */
+  .text-base {
+    font-size: 0.875rem;
+  }
+
+  /* ปรับ spacing ระหว่าง elements */
+  .space-y-4 > * + * {
+    margin-top: 0.5rem;
+  }
+
+  /* ปรับ button padding ในมือถือขนาดเล็ก */
+  button {
+    padding: 0.75rem 0.875rem;
+  }
+
+  input {
+    padding: 0.75rem 0.875rem;
   }
 }
 

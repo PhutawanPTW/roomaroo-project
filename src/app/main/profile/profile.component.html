@@ -2,7 +2,7 @@
 
 <!-- Main Background Container -->
 <div
-  class="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-thai pt-20"
+  class="bg-gray-50 flex items-center justify-center p-4 font-thai pt-[60px]"
 >
   <!-- Card Container -->
   <div class="bg-white shadow-lg overflow-hidden max-w-6xl w-full">
@@ -33,17 +33,10 @@
                 class="w-32 h-32 rounded-full overflow-hidden bg-gray-200 border-4 border-white shadow-lg"
               >
                 <img 
-                  *ngIf="currentUser.photoURL" 
-                  [src]="currentUser.photoURL" 
-                  [alt]="currentUser.displayName"
+                  [src]="getUserAvatarUrl()" 
+                  [alt]="currentUser.displayName || 'ผู้ใช้'"
                   class="w-full h-full object-cover"
                 />
-                <div 
-                  *ngIf="!currentUser.photoURL" 
-                  class="w-full h-full flex items-center justify-center text-gray-500"
-                >
-                  <i class="fa-solid fa-user text-4xl"></i>
-                </div>
               </div>
             </div>
           </div>
@@ -267,17 +260,10 @@
                     class="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-4 border-white shadow-lg"
                   >
                     <img 
-                      *ngIf="imagePreviewUrl || currentUser.photoURL"
-                      [src]="imagePreviewUrl || currentUser.photoURL"
-                      [alt]="currentUser.displayName"
+                      [src]="imagePreviewUrl || getUserAvatarUrl()"
+                      [alt]="currentUser.displayName || 'ผู้ใช้'"
                       class="w-full h-full object-cover"
                     />
-                    <div 
-                      *ngIf="!imagePreviewUrl && !currentUser.photoURL"
-                      class="w-full h-full flex items-center justify-center text-gray-500"
-                    >
-                      <i class="fa-solid fa-user text-3xl"></i>
-                    </div>
                   </div>
                   <button 
                     type="button"

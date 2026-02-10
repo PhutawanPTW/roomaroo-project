@@ -23,7 +23,11 @@ export class MapService {
   // Singleton pattern properties
   private isInitialized = false;
   private currentContainerId: string | null = null;
-  private mapInstances = new Map<string, { map: maptilersdk.Map; marker: maptilersdk.Marker | null }>();
+  private mapInstances = new Map<string, { 
+    map: maptilersdk.Map; 
+    marker: maptilersdk.Marker | null;
+    geoControl: maptilersdk.GeolocateControl | null;
+  }>();
 
   constructor() {
     maptilersdk.config.apiKey = environment.mapTilerApiKey;
@@ -105,7 +109,7 @@ export class MapService {
     });
 
     // เก็บ instance ไว้ใน Map
-    this.mapInstances.set(containerId, { map: this.map, marker: null });
+    this.mapInstances.set(containerId, { map: this.map, marker: null, geoControl: null });
     this.isInitialized = true;
   }
 
@@ -153,6 +157,100 @@ export class MapService {
       showAccuracyCircle: true
     });
     this.map.addControl(this.geoControl, 'top-right');
+    
+    // เก็บ geoControl ไว้ใน instance
+    const instance = this.mapInstances.get(this.currentContainerId || '');
+    if (instance) {
+      instance.geoControl = this.geoControl;
+      console.log('[MapService] GeolocateControl stored in instance');
+    }
+  }
+
+  /**
+   * เรียกใช้งาน Geolocate อัตโนมัติ
+   * @param containerId - ID ของ container
+   * @param onSuccess - Callback เมื่อได้ตำแหน่ง
+   * @param onError - Callback เมื่อเกิด error หรือผู้ใช้ปฏิเสธ
+   */
+  triggerGeolocate(
+    containerId: string, 
+    onSuccess?: (lat: number, lng: number) => void,
+    onError?: () => void
+  ): void {
+    const instance = this.mapInstances.get(containerId);
+    if (!instance || !instance.map) {
+      console.error('[MapService] Cannot trigger geolocate: map instance not found');
+      if (onError) onError();
+      return;
+    }
+
+    // ใช้ geoControl จาก instance
+    const geoControl = instance.geoControl;
+    
+    if (!geoControl) {
+      console.error('[MapService] GeolocateControl not initialized for container:', containerId);
+      if (onError) onError();
+      return;
+    }
+
+    console.log('[MapService] Triggering geolocate for container:', containerId);
+
+    // ฟังก์ชัน event listener แบบ one-time
+    const onGeolocate = (e: any) => {
+      console.log('[MapService] Geolocate success:', e.coords);
+      if (onSuccess) {
+        onSuccess(e.coords.latitude, e.coords.longitude);
+      }
+      // ลบ listener หลังจากใช้งานแล้ว
+      geoControl.off('geolocate', onGeolocate);
+    };
+
+    const onGeolocateError = (e: any) => {
+      console.error('[MapService] Geolocate error:', e);
+      if (onError) onError();
+      // ลบ listener หลังจากใช้งานแล้ว
+      geoControl.off('error', onGeolocateError);
+    };
+
+    // เพิ่ม event listeners
+    geoControl.on('geolocate', onGeolocate);
+    geoControl.on('error', onGeolocateError);
+
+    // Trigger geolocate
+    geoControl.trigger();
+  }
+
+  /**
+   * อัปเดตตำแหน่ง marker บนแผนที่
+   * @param containerId - ID ของ container
+   * @param lat - Latitude
+   * @param lng - Longitude
+   */
+  updateMarkerPosition(containerId: string, lat: number, lng: number): void {
+    const instance = this.mapInstances.get(containerId);
+    if (!instance) {
+      console.error('[MapService] Cannot update marker: map instance not found');
+      return;
+    }
+
+    // อัปเดต marker
+    if (instance.marker) {
+      instance.marker.setLngLat([lng, lat]);
+      console.log('[MapService] Marker position updated:', { lat, lng });
+    } else {
+      // สร้าง marker ใหม่ถ้ายังไม่มี
+      instance.marker = new maptilersdk.Marker({ color: '#FF0000' })
+        .setLngLat([lng, lat])
+        .addTo(instance.map);
+      console.log('[MapService] New marker created at:', { lat, lng });
+    }
+
+    // ย้ายแผนที่ไปที่ตำแหน่งใหม่
+    instance.map.flyTo({
+      center: [lng, lat],
+      zoom: 15,
+      duration: 1000
+    });
   }
 
   /** ลบคอนโทรลเดิมทั้งหมดที่อาจจะมี */

@@ -205,8 +205,14 @@ export class DormMapComponent implements OnInit, OnDestroy {
 
     // ถ้ามีหมุด ≥ 1 → ซูมครอบหมุดทั้งหมด
     if (!bounds.isEmpty() && this.map) {
+      // Responsive padding based on screen size
+      const isMobile = window.innerWidth < 640;
+      const padding = isMobile 
+        ? { top: 100, right: 20, bottom: 40, left: 20 }
+        : { top: 80, right: 80, bottom: 80, left: 80 };
+      
       this.map.fitBounds(bounds, {
-        padding: { top: 80, right: 80, bottom: 80, left: 80 },
+        padding: padding,
         maxZoom: 15,
         duration: 800,
       });
@@ -217,7 +223,7 @@ export class DormMapComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** การ์ด Popup (ไม่มี rounded, ใช้ tip เดิมของแผนที่) */
+  /** การ์ด Popup (ไม่มี rounded, ใช้ tip เดิมของแผนที่) - Responsive */
   private createPopupCard(d: Dorm | DormDetail): string {
     const img = (d as any).main_image_url || (d as any).thumbnail_url || '';
     const price = this.getPriceDisplay(d);
@@ -225,30 +231,30 @@ export class DormMapComponent implements OnInit, OnDestroy {
     const dormId = d.dorm_id;
 
     return `
-    <div class="font-thai w-[280px] cursor-pointer" onclick="window.location.href='/dorm-detail/${dormId}'">
-      <div class="m-4 hover:opacity-90 transition-opacity">
+    <div class="font-thai w-[240px] sm:w-[280px] cursor-pointer" onclick="window.location.href='/dorm-detail/${dormId}'">
+      <div class="m-3 sm:m-4 hover:opacity-90 transition-opacity">
         ${img
         ? `
           <img src="${img}" alt="${d.dorm_name || ''}"
-               class="w-full h-[140px] object-cover mb-3">`
+               class="w-full h-[120px] sm:h-[140px] object-cover mb-2 sm:mb-3">`
         : ''
       }
 
-        <div class="text-lg leading-7 font-semibold font-thai text-slate-900">
+        <div class="text-base sm:text-lg leading-6 sm:leading-7 font-semibold font-thai text-slate-900">
           ${price}
         </div>
 
-        <div class="mt-2 text-[15px] leading-6 text-slate-800">
+        <div class="mt-1.5 sm:mt-2 text-sm sm:text-[15px] leading-5 sm:leading-6 text-slate-800">
           ${d.dorm_name || '-'}
         </div>
 
-        <div class="mt-1 text-[13px] leading-5 text-slate-400">
+        <div class="mt-1 text-xs sm:text-[13px] leading-4 sm:leading-5 text-slate-400">
           ${d.zone_name || 'ไม่ระบุโซน'}
         </div>
 
-        <div class="mt-3 flex items-center gap-2">
-  <span class="text-[13px] font-bold text-slate-900 relative top-[1px]">${rating}</span>
-  <div class="flex items-center gap-1">
+        <div class="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2">
+  <span class="text-xs sm:text-[13px] font-bold text-slate-900 relative top-[1px]">${rating}</span>
+  <div class="flex items-center gap-0.5 sm:gap-1">
     ${this.getStarIcons(Number(rating))}
   </div>
 </div>
@@ -265,16 +271,16 @@ export class DormMapComponent implements OnInit, OnDestroy {
     return new Array(count).fill(star).join('');
   }
 
-  /** สร้างดาวแบบ Tailwind (เต็ม/ครึ่ง/ว่าง) */
+  /** สร้างดาวแบบ Tailwind (เต็ม/ครึ่ง/ว่าง) - Responsive */
   private getStarIcons(rating: number): string {
     const full = Math.floor(rating);
     const half = rating % 1 >= 0.5 ? 1 : 0;
     const empty = 5 - full - half;
 
-    const fullStar = '<span class="text-yellow-400 text-xl">★</span>';
+    const fullStar = '<span class="text-yellow-400 text-base sm:text-xl">★</span>';
     const halfStar =
-      '<span class="relative text-xl"><span class="text-yellow-400">★</span><span class="absolute inset-y-0 right-0 w-1/2 bg-white"></span></span>';
-    const emptyStar = '<span class="text-gray-300 text-xl">★</span>';
+      '<span class="relative text-base sm:text-xl"><span class="text-yellow-400">★</span><span class="absolute inset-y-0 right-0 w-1/2 bg-white"></span></span>';
+    const emptyStar = '<span class="text-gray-300 text-base sm:text-xl">★</span>';
 
     return `${fullStar.repeat(full)}${half ? halfStar : ''}${emptyStar.repeat(
       empty
@@ -310,11 +316,15 @@ export class DormMapComponent implements OnInit, OnDestroy {
     // Create popup content
     const popupContent = this.createPopupContent(dormDetail);
 
+    // Responsive max width
+    const isMobile = window.innerWidth < 640;
+    const maxWidth = isMobile ? '280px' : '300px';
+
     // Create and show popup
     this.popup = new maptilersdk.Popup({
       closeButton: true,
       closeOnClick: false,
-      maxWidth: '300px',
+      maxWidth: maxWidth,
     })
       .setLngLat([dormDetail.longitude, dormDetail.latitude])
       .setHTML(popupContent)
@@ -326,10 +336,14 @@ export class DormMapComponent implements OnInit, OnDestroy {
 
     const popupContent = this.createBasicPopupContent(dorm);
 
+    // Responsive max width
+    const isMobile = window.innerWidth < 640;
+    const maxWidth = isMobile ? '280px' : '300px';
+
     this.popup = new maptilersdk.Popup({
       closeButton: true,
       closeOnClick: false,
-      maxWidth: '300px',
+      maxWidth: maxWidth,
     })
       .setLngLat([dorm.longitude, dorm.latitude])
       .setHTML(popupContent)

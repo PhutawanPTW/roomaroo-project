@@ -418,8 +418,8 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
         }),
       }),
       location: this.fb.group({
-        latitude: [null, Validators.required],
-        longitude: [null, Validators.required],
+        latitude: [null],
+        longitude: [null],
       }),
       images: this.fb.array([]),
 
@@ -537,10 +537,10 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       type: ['', Validators.required],
       customType: [''],
         bed_type: ['', Validators.required], // เพิ่มประเภทเตียง
-      pricePerMonth: ['', [Validators.min(1)]],
-      pricePerDay: ['', [Validators.min(1)]],
-      pricePerTerm: ['', [Validators.min(1)]],
-        pricePerSummer: ['', [Validators.min(1)]],
+      pricePerMonth: ['', [Validators.min(1500), Validators.max(50000)]],
+      pricePerDay: ['', [Validators.min(50), Validators.max(2000)]],
+      pricePerTerm: ['', [Validators.min(15000), Validators.max(200000)]],
+      pricePerSummer: ['', [Validators.min(8000), Validators.max(100000)]],
       },
       { validators: this.requireMonthOrDay }
     );
@@ -1136,6 +1136,8 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
       longitude: v.location.longitude,
       // ส่วนสิ่งอำนวยความสะดวก
       amenities: this.buildAmenitiesPayload(),
+      // บังคับให้สถานะเป็น 'รออนุมัติ' เสมอ
+      approval_status: 'รออนุมัติ'
     };
     
     // Log ข้อมูลพิกัดที่ส่งไปยัง API
@@ -1391,21 +1393,26 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     const lat = loc.get('latitude')?.value;
     const lng = loc.get('longitude')?.value;
     
-    // ตรวจสอบว่ามีข้อมูลพิกัดหรือไม่
-    if (!lat || !lng || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
-      console.error('[DormAdd] ไม่สามารถสร้างแผนที่ได้: ข้อมูลพิกัดไม่ถูกต้อง', {
-        latitude: lat,
-        longitude: lng
-      });
-      this.showCustomPopup('กรุณาปักหมุดตำแหน่งหอพักบนแผนที่', 'error');
-      return;
+    // ใช้พิกัดเริ่มต้น (มหาวิทยาลัยราชภัฏเพชรบูรณ์) ถ้ายังไม่มีพิกัด
+    let mapLat = 16.245481834611397;
+    let mapLng = 103.25036808455945;
+    let shouldAutoGeolocate = false;
+    
+    // ถ้ามีพิกัดที่ถูกต้องให้ใช้พิกัดนั้น
+    if (lat && lng && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))) {
+      mapLat = Number(lat);
+      mapLng = Number(lng);
+      console.log('[DormAdd] ใช้พิกัดที่มีอยู่:', { lat: mapLat, lng: mapLng });
+    } else {
+      console.log('[DormAdd] ไม่มีพิกัด จะใช้พิกัดเริ่มต้นและ trigger geolocate อัตโนมัติ');
+      shouldAutoGeolocate = true;
     }
 
-      console.log('[DormAdd] Map coordinates:', { lat, lng });
+      console.log('[DormAdd] Map coordinates:', { lat: mapLat, lng: mapLng });
 
       try {
         console.log('[DormAdd] Calling mapService.initializeMap...');
-    this.mapService.initializeMap('location-map', lat, lng);
+    this.mapService.initializeMap('location-map', mapLat, mapLng);
 
         console.log('[DormAdd] Calling mapService.enablePickLocation...');
     this.mapService.enablePickLocation(({ lat, lng }) => {
@@ -1451,6 +1458,48 @@ export class DormAddComponent implements AfterViewInit, OnDestroy {
     });
 
         console.log('[DormAdd] Map initialized successfully');
+        
+        // ถ้าต้องการ trigger geolocate อัตโนมัติ
+        if (shouldAutoGeolocate) {
+          console.log('[DormAdd] Will trigger auto-geolocate after map loads...');
+          // รอให้แผนที่โหลดเสร็จและ controls ถูกเพิ่มเข้ามา (ประมาณ 2-3 วินาที)
+          setTimeout(() => {
+            console.log('[DormAdd] Triggering auto-geolocate...');
+            this.mapService.triggerGeolocate(
+              'location-map',
+              (lat, lng) => {
+                // Success: อัปเดตพิกัดในฟอร์ม
+                console.log('[DormAdd] Auto-geolocate success:', { lat, lng });
+                loc.get('latitude')?.setValue(lat);
+                loc.get('longitude')?.setValue(lng);
+                loc.get('latitude')?.markAsDirty();
+                loc.get('longitude')?.markAsDirty();
+                loc.get('latitude')?.markAsTouched();
+                loc.get('longitude')?.markAsTouched();
+                
+                // คำนวณระยะทาง
+                this.calculateAndUpdateDistance(lat, lng);
+                
+                // อัปเดต marker ตำแหน่ง
+                this.mapService.updateMarkerPosition('location-map', lat, lng);
+                
+                this.cdr.detectChanges();
+                this.cdr.markForCheck();
+                
+                console.log('[DormAdd] Auto-geolocate อัปเดตพิกัดเสร็จสิ้น:', {
+                  form_latitude: loc.get('latitude')?.value,
+                  form_longitude: loc.get('longitude')?.value,
+                  new_latitude: lat,
+                  new_longitude: lng
+                });
+              },
+              () => {
+                // Error or denied: ใช้พิกัดเริ่มต้น (มหาวิทยาลัยราชภัฏเพชรบูรณ์)
+                console.log('[DormAdd] Auto-geolocate failed or denied, using default coordinates');
+              }
+            );
+          }, 2500); // เพิ่มเวลารอให้มากขึ้น
+        }
       } catch (error) {
         console.error('[DormAdd] Map initialization error:', error);
       }

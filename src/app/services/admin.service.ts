@@ -149,13 +149,17 @@ export class AdminService {
   /**
    * อนุมัติ/ไม่อนุมัติหอพัก
    */
-  updateDormitoryApproval(dormId: string, status: 'อนุมัติ' | 'ไม่อนุมัติ', rejectionReason?: string): Observable<any> {
+  updateDormitoryApproval(dormId: string | number, payload: { status: string; rejectionReason?: string }): Observable<any> {
     const headers = this.getAuthHeaders();
-    const body: any = { status };
-    if (rejectionReason) {
-      body.rejectionReason = rejectionReason;
-    }
-    return this.http.put(`${this.backendUrl}/admin/dormitories/${dormId}/approval`, body, { headers });
+    return this.http.put(`${this.backendUrl}/admin/dormitories/${dormId}/approval`, payload, { headers });
+  }
+
+  /**
+   * แก้ไขหอพักโดยแอดมิน (ข้อมูลทั้งหมด)
+   */
+  updateDormitory(dormId: string | number, payload: any): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.put(`${this.backendUrl}/admin/dormitories/${dormId}`, payload, { headers });
   }
 
   /**
@@ -166,7 +170,7 @@ export class AdminService {
     const params = confirm ? { confirm: 'true' } : {};
     return this.http.delete(`${this.backendUrl}/admin/dormitories/${dormId}`, { 
       headers, 
-      params 
+      params: params
     });
   }
 
@@ -191,4 +195,11 @@ export class AdminService {
       .set('Authorization', `Bearer ${firebaseToken}`)
       .set('Content-Type', 'application/json');
   }
+
+  // ตรวจสอบสมาชิกในหอพักก่อนลบ
+  checkDormitoryMembers(dormId: string | number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.get(`${this.backendUrl}/admin/dormitories/${dormId}/check-members`, { headers });
+  }
+
 }

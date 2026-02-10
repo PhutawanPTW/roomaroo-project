@@ -37,6 +37,20 @@ export class AdminLoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.checkExistingAuth();
+    this.loadRememberedCredentials();
+  }
+
+  /**
+   * โหลดข้อมูลที่จดจำไว้
+   */
+  private loadRememberedCredentials(): void {
+    const rememberedEmail = localStorage.getItem('adminRememberEmail');
+    if (rememberedEmail) {
+      this.form.patchValue({
+        email: rememberedEmail,
+        remember: true
+      });
+    }
   }
 
   /**
@@ -85,7 +99,7 @@ export class AdminLoginComponent implements OnInit {
     this.errorMessage = null;
   
     try {
-      const { email, password } = this.form.value;
+      const { email, password, remember } = this.form.value;
       
       // ใช้ Firebase Auth โดยตรง (ไม่ผ่าน AuthService เพื่อไม่ให้เรียก /api/auth/me)
       const userCredential = await signInWithEmailAndPassword(this.firebaseAuth, email, password);
@@ -102,6 +116,13 @@ export class AdminLoginComponent implements OnInit {
       // บันทึกข้อมูลแอดมินและ Firebase token ใน localStorage
       localStorage.setItem('adminProfile', JSON.stringify(adminProfile));
       localStorage.setItem('firebaseToken', firebaseToken);
+      
+      // จัดการ "จดจำฉัน"
+      if (remember) {
+        localStorage.setItem('adminRememberEmail', email);
+      } else {
+        localStorage.removeItem('adminRememberEmail');
+      }
       
       await this.router.navigate(['/admin']);
     } catch (error: any) {

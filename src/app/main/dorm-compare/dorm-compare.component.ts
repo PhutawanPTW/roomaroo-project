@@ -41,8 +41,27 @@ interface CompareDormData extends CompareDormItem {
 export class DormCompareComponent implements OnInit, OnDestroy {
   compareDorms: CompareDormData[] = [];
   sortBy: string = 'rating';
-  sortOrder: 'asc' | 'desc' = 'desc';
+  sortOrder: 'asc' | 'desc' = 'asc';
   isLoading: boolean = false;
+
+  // Calculate column width based on number of dorms
+  getColumnWidth(): string {
+    const count = this.compareDorms.length;
+    if (count <= 2) return 'w-1/2';
+    if (count <= 3) return 'w-1/3';
+    if (count <= 4) return 'w-1/4';
+    if (count <= 5) return 'w-1/5';
+    return 'w-1/6';
+  }
+
+  // Calculate table minimum width
+  getTableMinWidth(): string {
+    const count = this.compareDorms.length;
+    const baseWidth = 200; // Width for first column (labels)
+    const columnWidth = 150; // Width per dorm column
+    const totalWidth = baseWidth + (count * columnWidth);
+    return `${totalWidth}px`;
+  }
 
   // Amenities lists
   internalAmenities = [

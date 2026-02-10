@@ -16,13 +16,14 @@ import { switchMap, catchError } from 'rxjs/operators';
 export class TenantListComponent implements OnInit, OnDestroy {
   tenants: any[] = [];
   filteredTenants: any[] = [];
-  isLoading = false;
+  isLoading = true; // เริ่มต้นด้วย loading state
   errorMessage = '';
   searchTerm = '';
   sortBy = '';
   processingTenantId: number | null = null; // สำหรับแสดง loading state ของแต่ละ tenant
   processingAction: string | null = null; // สำหรับติดตาม action ที่กำลังประมวลผล (approve, reject, cancel)
   private refreshSub: Subscription | null = null;
+  initialLoadComplete = false; // เพิ่ม flag เพื่อติดตามการโหลดครั้งแรก
 
   // Modal states
   showRejectModal = false;
@@ -38,7 +39,12 @@ export class TenantListComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.startAutoRefresh();
+    // เริ่มต้นด้วยการโหลดข้อมูลครั้งแรก
+    this.loadTenants();
+    // เริ่ม auto refresh หลังจากโหลดครั้งแรกเสร็จ
+    setTimeout(() => {
+      this.startAutoRefresh();
+    }, 2000); // รอ 2 วินาทีก่อนเริ่ม auto refresh
   }
 
   ngOnDestroy() {
@@ -74,17 +80,27 @@ export class TenantListComponent implements OnInit, OnDestroy {
         }
         
         this.filteredTenants = [...this.tenants];
-        this.isLoading = false;
+        
+        // เพิ่ม delay เพื่อให้ผู้ใช้เห็น loading state
+        setTimeout(() => {
+          this.isLoading = false;
+          this.initialLoadComplete = true;
+        }, 1000); // รอ 1 วินาทีเพื่อให้เห็น loading
       },
       error: (error) => {
         console.error('Error loading tenants:', error);
         this.errorMessage = 'ไม่สามารถโหลดข้อมูลผู้เช่าได้';
-        this.isLoading = false;
+        
+        // เพิ่ม delay แม้ในกรณี error
+        setTimeout(() => {
+          this.isLoading = false;
+          this.initialLoadComplete = true;
+        }, 1000);
       }
     });
   }
 
-  // เรียลไทม์แบบง่ายด้วย polling ทุกๆ 10 วินาที (เริ่มทันทีที่เข้าเพจ)
+  // เรียลไทม์แบบง่ายด้วย polling ทุกๆ 10 วินาที (เริ่มหลังจากโหลดครั้งแรกเสร็จ)
   private startAutoRefresh() {
     if (this.refreshSub) {
       this.refreshSub.unsubscribe();
@@ -109,7 +125,7 @@ export class TenantListComponent implements OnInit, OnDestroy {
           this.tenants = [];
         }
         this.filteredTenants = [...this.tenants];
-        this.isLoading = false;
+        // ไม่เปลี่ยน isLoading ใน auto refresh เพื่อไม่ให้รบกวน UI
       });
   }
 
@@ -344,6 +360,17 @@ export class TenantListComponent implements OnInit, OnDestroy {
     this.selectedTenant = null;
     this.cancelReason = '';
     this.isSubmittingReason = false;
+  }
+
+  // Helper method to get tenant avatar URL with fallback
+  getTenantAvatarUrl(tenant: any): string {
+    // ถ้ามีรูปโปรไฟล์ ให้ใช้รูปนั้น
+    if (tenant.profile_image_url) {
+      return tenant.profile_image_url;
+    }
+    
+    // ถ้าไม่มีรูป ให้ใช้ cat avatar.jpg เป็นค่าเริ่มต้นสำหรับสมาชิก/ผู้เช่า
+    return 'assets/icon/cat avatar.jpg';
   }
 
   onImageError(event: any) {

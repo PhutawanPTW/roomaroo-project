@@ -113,6 +113,13 @@ export class AuthRedirectGuard implements CanActivate {
               return true;
             }
             
+            // ถ้าผู้ใช้พยายามไปหน้า profile ให้อนุญาตให้ไปได้ (ไม่ redirect ไป register)
+            const isProfilePage = destPath.includes('profile');
+            if (isProfilePage) {
+              console.log('[AuthRedirectGuard] Google user needs profile setup but accessing profile, allowing access');
+              return true;
+            }
+            
             console.log('[AuthRedirectGuard] Google user needs profile setup, redirecting to register');
             
             // อ่าน userType จาก URL ปัจจุบันหรือ queryParams เพื่อรักษาค่าเดิม

@@ -1,30 +1,40 @@
-<!-- src/app/components/login/login.component.html -->
 <!-- Main Background Container -->
 <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-thai">
   <!-- Card Container -->
-  <div class="bg-white shadow-xl overflow-hidden max-w-4xl w-full flex">
+  <div class="bg-white shadow-xl overflow-hidden max-w-4xl w-full" 
+       [ngClass]="{
+         'flex': isDesktop || isTablet,
+         'flex-col': isMobile
+       }">
 
     <!-- Left Section - Login Form -->
-    <div class="w-[50%] p-8 flex flex-col justify-center">
+    <div [ngClass]="{
+           'w-[50%]': isDesktop || isTablet,
+           'w-full': isMobile,
+           'order-2': isMobile,
+           'order-1': isDesktop || isTablet
+         }" 
+         class="p-8 flex flex-col justify-center">
       <!-- Header Section -->
       <div class="text-center mb-6">
         <!-- Logo -->
         <div class="flex flex-row items-center justify-center">
           <img src="assets/images/fd276adb-7ae8-40b1-9c24-62c7273f0232.png" alt="Roomaroo Logo"
-            class="w-20 h-20 rounded-full object-cover">
-          <h1 class="text-lg text-gray-900 font-thai align-middle mt-1 -ml-1">
+            [ngClass]="{'w-16 h-16': isMobile, 'w-20 h-20': !isMobile}"
+            class="rounded-full object-cover">
+          <h1 [ngClass]="{'text-base': isMobile, 'text-lg': !isMobile}" 
+              class="text-gray-900 font-thai align-middle mt-1 -ml-1">
             <span class="font-bold">Room</span><span class="font-normal">aroo</span>
           </h1>
         </div>
         <!-- User Type Badge -->
         <div class="mt-2">
-          <span class="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+          <span [ngClass]="{'text-xs px-2 py-1': isMobile, 'text-sm px-3 py-1': !isMobile}"
+                class="inline-block bg-blue-100 text-blue-800 font-medium rounded-full">
             เข้าสู่ระบบสำหรับ{{ getUserTypeDisplayText() }}
           </span>
         </div>
       </div>
-
-
 
       <!-- Login Form -->
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
@@ -37,7 +47,6 @@
             class="mt-1 text-sm text-red-600">{{ getErrorMessage('email') }}</p>
         </div>
 
-        <!-- Password -->
         <!-- Password -->
         <div>
           <input type="password" formControlName="password" placeholder="Password"
@@ -68,14 +77,12 @@
             fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
             </path>
           </svg>
 
           <span>{{ isLoginLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}</span>
         </button>
-
-        
 
         <!-- Divider -->
         <div class="relative mt-1 mb-2">
@@ -89,17 +96,21 @@
 
         <!-- Google Button -->
         <button type="button" (click)="connectWithGoogle()" [disabled]="isGoogleLoading"
-          class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-3 font-thai mt-4">
+          class="w-full bg-[#434FAA] hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center font-thai mt-4"
+          [ngClass]="{'space-x-2': isMobile, 'space-x-3': !isMobile}">
           <!-- Loading Spinner for Google Button -->
           <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
             fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
             </path>
           </svg>
-          <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" class="w-5 h-5">
-          <span>{{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วยบัญชี Google' }}</span>
+          <img *ngIf="!isGoogleLoading" src="assets/icon/google.png" alt="Google" 
+               [ngClass]="{'w-4 h-4': isMobile, 'w-5 h-5': !isMobile}">
+          <span [ngClass]="{'text-sm': isMobile, 'text-base': !isMobile}">
+            {{ isGoogleLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วยบัญชี Google' }}
+          </span>
         </button>
         <div *ngIf="errorMessageGoogle" class="text-red-600 text-sm mt-1 text-center">{{ errorMessageGoogle }}</div>
       </form>
@@ -119,8 +130,14 @@
       </div>
     </div>
 
-    <!-- Right Section 50% - Image Slider -->
-    <div class="w-[50%] relative p-6 flex items-center justify-center">
+    <!-- Right Section 50% - Image Slider (แสดงเฉพาะ iPad และ PC) -->
+    <div *ngIf="!isMobile" 
+         [ngClass]="{
+           'w-[50%]': isDesktop || isTablet,
+           'order-1': isMobile,
+           'order-2': isDesktop || isTablet
+         }" 
+         class="relative p-6 flex items-center justify-center">
       <!-- Image Slider -->
       <div class="slider-container">
         <!-- Skeleton while loading (fill container) -->

@@ -635,6 +635,21 @@ export class OwnerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.cdr.markForCheck();
   }
 
+  // Helper method to get owner avatar URL with fallback
+  getOwnerAvatarUrl(): string {
+    // ถ้ามีรูปโปรไฟล์จาก photoURL ให้ใช้รูปนั้น
+    if (this.currentUser?.photoURL) {
+      return this.currentUser.photoURL;
+    }
+    // ถ้าไม่มีรูป ให้ใช้ home-owner.png เป็นค่าเริ่มต้นสำหรับเจ้าของหอพัก
+    return 'assets/icon/home-owner.png';
+  }
+
+  // Helper method to navigate to profile page
+  navigateToProfile(): void {
+    this.router.navigate(['/owner/profile']);
+  }
+
   // Trigger file input click
   triggerFileInput(fileInput: HTMLInputElement) {
     fileInput.click();

@@ -357,12 +357,44 @@ export class DormListComponent implements OnInit {
   }
 
   applySelectedSort() {
-    this.applyFilters();
+    if (this.sortOrder === 'asc') {
+      // เรียงราคาต่ำสุดไปสูงสุด
+      this.filteredDorms.sort((a, b) => this.getDormPrice(a) - this.getDormPrice(b));
+    } else if (this.sortOrder === 'desc') {
+      // เรียงราคาสูงสุดไปต่ำสุด
+      this.filteredDorms.sort((a, b) => this.getDormPrice(b) - this.getDormPrice(a));
+    } else if (this.sortOrder === 'rating-desc') {
+      // เรียงดาวสูงสุดไปต่ำสุด (UX best practice)
+      this.filteredDorms.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (this.sortOrder === 'rating-asc') {
+      // เรียงดาวต่ำสุดไปสูงสุด
+      this.filteredDorms.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+    }
+    this.updateDisplayedDorms();
   }
 
   getDormPrice(dorm: UIDorm): number {
-    const match = dorm.price.match(/([\d,]+)/);
-    return match ? parseInt(match[1].replace(/,/g, '')) : 0;
+    if (!dorm.price) return 0;
+    
+    // หาราคารายเดือนจาก price string
+    // รูปแบบ: "5,000 บาท/เดือน" หรือ "5,000 - 10,000 บาท/เดือน"
+    const monthlyMatch = dorm.price.match(/([\d,]+)(\s*-\s*([\d,]+))?\s*บาท\/เดือน/);
+    
+    if (monthlyMatch) {
+      const minPrice = parseInt(monthlyMatch[1].replace(/,/g, '')) || 0;
+      
+      // ถ้ามีช่วงราคา ให้ใช้ราคาเฉลี่ย (สมเหตุสมผลกว่าการใช้ราคาต่ำสุด)
+      if (monthlyMatch[3]) {
+        const maxPrice = parseInt(monthlyMatch[3].replace(/,/g, '')) || 0;
+        return Math.round((minPrice + maxPrice) / 2);
+      }
+      
+      return minPrice;
+    }
+    
+    // ถ้าไม่เจอราคารายเดือน ให้ลองหาตัวเลขแรก
+    const fallbackMatch = dorm.price.match(/([\d,]+)/);
+    return fallbackMatch ? parseInt(fallbackMatch[1].replace(/,/g, '')) : 0;
   }
 
   isInPriceRange(dorm: UIDorm): boolean {
@@ -392,8 +424,40 @@ export class DormListComponent implements OnInit {
       return;
     }
 
-    // ใช้ API filtering แทน client-side filtering
-    this.applyAPIFilters();
+    // อัปเดต currentFilters จากค่าที่เลือกใน popup
+    // 1. อัปเดต amenities
+    const selectedAmenities = this.amenities
+      .filter(amenity => amenity.checked)
+      .map(amenity => amenity.id);
+    this.currentFilters.amenityIds = selectedAmenities;
+    
+    // 2. อัปเดตราคา
+    this.currentFilters.minPrice = this.filterMinPrice;
+    this.currentFilters.maxPrice = this.filterMaxPrice;
+    
+    // 3. อัปเดต rent type
+    this.currentFilters.daily = this.filters.daily;
+    this.currentFilters.monthly = this.filters.monthly;
+    
+    // 4. อัปเดตดาว
+    const selectedStars: number[] = [];
+    if (this.filters.rating5) selectedStars.push(5);
+    if (this.filters.rating4) selectedStars.push(4);
+    if (this.filters.rating3) selectedStars.push(3);
+    if (this.filters.rating2) selectedStars.push(2);
+    if (this.filters.rating1) selectedStars.push(1);
+    this.currentFilters.stars = selectedStars;
+    
+    // ตั้งค่าการเรียงลำดับตามดาวถ้ามีการกรองดาว
+    if (selectedStars.length > 0) {
+      this.sortOrder = 'rating-desc';
+    }
+
+    // ปิด filter popup
+    this.showFilterPopup = false;
+
+    // ใช้ unified filter ที่รวมทุกเงื่อนไข
+    this.applyUnifiedFilter();
   }
 
   private applyAPIFilters() {
@@ -401,7 +465,25 @@ export class DormListComponent implements OnInit {
     this.dormitoryService.getRecommended(1000).subscribe({
       next: (dorms: APIDorm[]) => {
         this.dorms = dorms.map(d => this.mapDormToUi(d));
-        this.filteredDorms = [...this.dorms];
+        
+        // กรองตามโซนที่เลือก (ถ้ามี)
+        if (this.selectedZone && this.selectedZone !== '') {
+          this.filteredDorms = this.dorms.filter(dorm => dorm.zone === this.selectedZone);
+        } else {
+          this.filteredDorms = [...this.dorms];
+        }
+        
+        // เรียงลำดับตามที่เลือก
+        if (this.sortOrder === 'asc') {
+          this.filteredDorms.sort((a, b) => this.getDormPrice(a) - this.getDormPrice(b));
+        } else if (this.sortOrder === 'desc') {
+          this.filteredDorms.sort((a, b) => this.getDormPrice(b) - this.getDormPrice(a));
+        } else if (this.sortOrder === 'rating-desc') {
+          this.filteredDorms.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (this.sortOrder === 'rating-asc') {
+          this.filteredDorms.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        }
+        
         this.updateDisplayedDorms();
         this.isFiltering = false;
       },
@@ -563,6 +645,12 @@ export class DormListComponent implements OnInit {
     this.filterMinPrice = null;
     this.filterMaxPrice = null;
     
+    // Reset zone selection
+    this.selectedZone = '';
+    
+    // Reset sort order
+    this.sortOrder = '';
+    
     // Reset current filters
     this.currentFilters = {
       zoneIds: [],
@@ -632,11 +720,28 @@ export class DormListComponent implements OnInit {
     }
 
     // กรองหอพักที่มีชื่อตรงกับคำค้นหา
-    const filteredDorms = this.dorms.filter(dorm => 
+    let filteredDorms = this.dorms.filter(dorm => 
       dorm.name.toLowerCase().includes(this.searchQuery.toLowerCase())
     );
 
+    // กรองตามโซนที่เลือก (ถ้ามี)
+    if (this.selectedZone && this.selectedZone !== '') {
+      filteredDorms = filteredDorms.filter(dorm => dorm.zone === this.selectedZone);
+    }
+
     this.filteredDorms = filteredDorms;
+    
+    // เรียงลำดับตามที่เลือก
+    if (this.sortOrder === 'asc') {
+      this.filteredDorms.sort((a, b) => this.getDormPrice(a) - this.getDormPrice(b));
+    } else if (this.sortOrder === 'desc') {
+      this.filteredDorms.sort((a, b) => this.getDormPrice(b) - this.getDormPrice(a));
+    } else if (this.sortOrder === 'rating-desc') {
+      this.filteredDorms.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (this.sortOrder === 'rating-asc') {
+      this.filteredDorms.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+    }
+    
     this.updateDisplayedDorms();
   }
 
@@ -693,11 +798,35 @@ export class DormListComponent implements OnInit {
     // อัปเดต current filters
     this.currentFilters.stars = selectedStars;
     
+    // ถ้ามีการกรองดาว ให้เรียงจากดาวมาก → น้อย (UX best practice)
+    if (selectedStars.length > 0) {
+      this.sortOrder = 'rating-desc';
+    }
+    
     this.applyUnifiedFilter();
   }
 
   /** Apply price filter */
   applyPriceFilter() {
+    // ตรวจสอบความถูกต้องของราคา
+    if (this.filterMinPrice !== null && this.filterMaxPrice !== null) {
+      if (this.filterMinPrice > this.filterMaxPrice) {
+        alert('ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด');
+        return;
+      }
+    }
+    
+    // ตรวจสอบว่าราคาเป็นจำนวนบวก
+    if (this.filterMinPrice !== null && this.filterMinPrice < 0) {
+      alert('ราคาต้องเป็นจำนวนบวก');
+      return;
+    }
+    
+    if (this.filterMaxPrice !== null && this.filterMaxPrice < 0) {
+      alert('ราคาต้องเป็นจำนวนบวก');
+      return;
+    }
+    
     const minPrice = this.filterMinPrice;
     const maxPrice = this.filterMaxPrice;
     
@@ -745,9 +874,10 @@ export class DormListComponent implements OnInit {
     if (this.currentFilters.monthly) {
       filterParams.monthly = true;
     }
-    if (this.currentFilters.stars.length > 0) {
-      filterParams.stars = this.currentFilters.stars;
-    }
+    
+    // ไม่ส่ง stars ไป API เพราะ backend อาจกรองไม่ถูกต้องกับทศนิยม
+    // เราจะกรองเองที่ client-side แทน
+    
     if (this.currentFilters.amenityIds.length > 0) {
       filterParams.amenityIds = this.currentFilters.amenityIds;
       filterParams.amenityMatch = this.currentFilters.amenityMatch;
@@ -756,7 +886,33 @@ export class DormListComponent implements OnInit {
     this.dormitoryService.filterDormitories(filterParams).subscribe({
       next: (response) => {
         this.dorms = response.dormitories.map(d => this.mapDormToUi(d));
-        this.filteredDorms = [...this.dorms];
+        
+        // กรองตามโซนที่เลือก (ถ้ามี)
+        if (this.selectedZone && this.selectedZone !== '') {
+          this.filteredDorms = this.dorms.filter(dorm => dorm.zone === this.selectedZone);
+        } else {
+          this.filteredDorms = [...this.dorms];
+        }
+        
+        // กรองตามดาวที่เลือก (Client-side) - ใช้ Math.floor เพื่อจับคู่ทศนิยม
+        if (this.currentFilters.stars.length > 0) {
+          this.filteredDorms = this.filteredDorms.filter(dorm => {
+            const dormStarLevel = Math.floor(dorm.rating || 0); // 4.5 -> 4, 3.8 -> 3
+            return this.currentFilters.stars.includes(dormStarLevel);
+          });
+        }
+        
+        // เรียงลำดับตามที่เลือก
+        if (this.sortOrder === 'asc') {
+          this.filteredDorms.sort((a, b) => this.getDormPrice(a) - this.getDormPrice(b));
+        } else if (this.sortOrder === 'desc') {
+          this.filteredDorms.sort((a, b) => this.getDormPrice(b) - this.getDormPrice(a));
+        } else if (this.sortOrder === 'rating-desc') {
+          this.filteredDorms.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (this.sortOrder === 'rating-asc') {
+          this.filteredDorms.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        }
+        
         this.updateDisplayedDorms();
         this.isFiltering = false;
       },

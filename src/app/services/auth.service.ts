@@ -440,10 +440,21 @@ export class AuthService {
   /**
    * ยื่นคำขอย้ายหอ (สำหรับสมาชิก)
    * PUT /api/profile/change-dormitory
+   * 
+   * ข้อจำกัด:
+   * - ต้องพักหอปัจจุบันอย่างน้อย 30 วัน
+   * - ย้ายได้ไม่เกิน 3 ครั้งต่อปี
+   * - ไม่มีค่าใช้จ่ายค้างชำระ
    */
   async requestChangeDormitory(newDormId: number): Promise<{ message: string } | any> {
     const token = await this.refreshToken(false);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    
+    // TODO: เพิ่มการตรวจสอบเงื่อนไขก่อนส่งคำขอ
+    // - ตรวจสอบระยะเวลาพักขั้นต่ำ
+    // - ตรวจสอบจำนวนครั้งที่ย้ายในปีนี้
+    // - ตรวจสอบสถานะการชำระเงิน
+    
     return this.http
       .put(`${this.backendUrl}/profile/change-dormitory`, { new_dorm_id: newDormId }, { headers })
       .toPromise();

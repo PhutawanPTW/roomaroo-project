@@ -1,10 +1,10 @@
 <app-navbar></app-navbar>
 
 <!-- แสดงรายการหอพักเฉพาะเมื่อไม่ได้อยู่ในหน้า dorm-add -->
-<div *ngIf="!isDormAddPage" class="w-full max-w-6xl mx-auto px-4 py-6 font-thai font-english pt-[60px]">
-  <h2 class="text-lg font-thai font-medium mb-2 flex items-end gap-2 font-normal">
+<div *ngIf="!isDormAddPage" class="w-full max-w-7xl mx-auto px-3 sm:px-4 pb-8 pt-16 sm:pt-20 font-thai font-english">
+  <h2 class="text-base sm:text-lg font-thai font-medium mb-3 sm:mb-2 flex items-end gap-2 font-normal">
     รายการหอพักของฉัน
-    <span class="text-gray-400 text-sm font-normal mb-1">({{ myDorms.length }})</span>
+    <span class="text-gray-400 text-sm font-normal mb-0.5 sm:mb-1">({{ myDorms.length }})</span>
   </h2>
   
   <!-- Loading state -->
@@ -16,76 +16,80 @@
   </div>
   
   <!-- รายการหอพัก -->
-  <div *ngIf="!isLoadingDorms" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+  <div *ngIf="!isLoadingDorms" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
     <ng-container *ngFor="let dorm of myDorms; let i = index">
-      <div class="bg-white card-owner p-4 flex flex-col h-full border border-black/10 cursor-pointer group relative"
+      <div class="bg-white card-owner p-2.5 sm:p-4 flex flex-col h-full border border-black/10 cursor-pointer group relative"
         (click)="viewDormDetail(dorm)">
-        <img [src]="dorm.main_image_url || dorm.thumbnail_url || dorm.image || 'assets/images/photo led.png'" alt="dorm"
-          class="w-full h-40 object-cover mb-3" />
-        <div class="text-[#6D6D6D] font-bold text-base font-english"
+        <!-- รูปภาพ: aspect ratio 5:3 (60% height) บนมือถือ -->
+        <div class="w-full aspect-[5/3] sm:aspect-[4/3] md:aspect-video overflow-hidden rounded mb-2 sm:mb-3">
+          <img [src]="dorm.main_image_url || dorm.thumbnail_url || dorm.image || 'assets/images/photo led.png'" 
+               alt="dorm"
+               class="w-full h-full object-cover" />
+        </div>
+        <div class="text-[#6D6D6D] font-bold text-xs sm:text-base font-english leading-tight"
           [innerHTML]="getSafePriceHtml(formatPriceString(dorm))"></div>
-        <div #nameEl class="font-semibold text-base mb-1 font-thai line-clamp-2" [class.h-[48px]]="anyNameWrapsTwoLines">{{ dorm.dorm_name }}</div>
-        <div class="flex items-center mb-2 h-[40px]">
+        <div #nameEl class="font-semibold text-xs sm:text-base mb-1 font-thai line-clamp-2 leading-tight" [class.h-[40px]]="anyNameWrapsTwoLines">{{ dorm.dorm_name }}</div>
+        <div class="flex items-center mb-1.5 sm:mb-2 min-h-[30px] sm:min-h-[40px]">
           <button *ngIf="dorm.approval_status === 'อนุมัติ'"
-            class="flex items-center gap-2 bg-[#4CAF50] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
+            class="flex items-center gap-1 sm:gap-2 bg-[#4CAF50] text-white text-[10px] sm:text-sm px-1.5 py-0.5 sm:px-2 sm:py-1.5 rounded font-thai transition select-none">
             <span class="">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sm:w-5 sm:h-5">
                 <circle cx="12" cy="12" r="11" fill="#fff" />
                 <path d="M7.5 12.5L11 16L17 10" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round"
                   stroke-linejoin="round" />
               </svg>
             </span>
-            <span class="font-thai text-sm font-normal">อนุมัติแล้ว</span>
+            <span class="font-thai text-[10px] sm:text-sm font-normal">อนุมัติแล้ว</span>
           </button>
           <button *ngIf="dorm.approval_status === 'รออนุมัติ'"
-            class="flex items-center gap-2 bg-[#FF9800] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
+            class="flex items-center gap-1 sm:gap-2 bg-[#FF9800] text-white text-[10px] sm:text-sm px-1.5 py-0.5 sm:px-2 sm:py-1.5 rounded font-thai transition select-none">
             <span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sm:w-5 sm:h-5">
                 <circle cx="12" cy="12" r="11" fill="#fff" />
                 <path d="M12 6V12L16 14" stroke="#FF9800" stroke-width="2.5" stroke-linecap="round"
                   stroke-linejoin="round" />
               </svg>
             </span>
-            <span class="font-thai text-sm font-normal">รอการอนุมัติ</span>
+            <span class="font-thai text-[10px] sm:text-sm font-normal">รอการอนุมัติ</span>
           </button>
           <button *ngIf="dorm.approval_status === 'ไม่อนุมัติ'"
-            class="flex items-center gap-2 bg-[#F44336] text-white text-sm px-2 py-1.5 rounded-md font-thai font-bold transition select-none">
+            class="flex items-center gap-1 sm:gap-2 bg-[#F44336] text-white text-[10px] sm:text-sm px-1.5 py-0.5 sm:px-2 sm:py-1.5 rounded font-thai transition select-none">
             <span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sm:w-5 sm:h-5">
                 <circle cx="12" cy="12" r="11" fill="#fff" />
                 <path d="M8 8L16 16M16 8L8 16" stroke="#F44336" stroke-width="2.5" stroke-linecap="round"
                   stroke-linejoin="round" />
               </svg>
             </span>
-            <span class="font-thai text-sm font-normal">ยังไม่อนุมัติ</span>
+            <span class="font-thai text-[10px] sm:text-sm font-normal">ยังไม่อนุมัติ</span>
           </button>
         </div>
-        <div class="text-gray-400 text-sm font-thai mb-2 h-[24px]">อัพเดตล่าสุด: {{ formatUpdatedDateThai(dorm.updated_date) }}</div>
+        <div class="text-gray-400 text-[10px] sm:text-sm font-thai mb-1.5 sm:mb-2 min-h-[16px] sm:min-h-[24px] leading-tight">อัพเดตล่าสุด: {{ formatUpdatedDateThai(dorm.updated_date) }}</div>
         <div class="flex items-center justify-between mt-auto w-full">
           <div class="flex items-center">
-            <span class="text-base font-bold text-black font-english mr-2">{{ (dorm.rating || 0.0).toFixed(1) }}</span>
+            <span class="text-xs sm:text-base font-bold text-black font-english mr-1 sm:mr-2">{{ (dorm.rating || 0.0).toFixed(1) }}</span>
             <span class="flex gap-0.5">
               <ng-container *ngFor="let star of getStars(dorm.rating)">
                 <svg xmlns="http://www.w3.org/2000/svg" 
                      [attr.fill]="star.filled ? '#FDD836' : '#E5E7EB'" 
                      viewBox="0 0 20 20" 
-                     class="w-4 h-4">
+                     class="w-3 h-3 sm:w-4 sm:h-4">
                   <path
                     d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
                 </svg>
               </ng-container>
             </span>
           </div>
-          <div class="flex items-center justify-end mt-auto w-full -mr-2">
-            <div class="flex items-center -space-x-1">
+          <div class="flex items-center justify-end mt-auto w-full -mr-0.5 sm:-mr-2">
+            <div class="flex items-center space-x-0 sm:-space-x-1">
               <button (click)="$event.stopPropagation(); onEditDorm(dorm)"
-                class="w-8 h-8 p-0 flex items-center justify-center bg-transparent hover:opacity-80 transition">
-                <img src="assets/svg/Edit.svg" alt="edit" class="w-5 h-5 hover:brightness-110 transition" />
+                class="w-6 h-6 sm:w-8 sm:h-8 p-0 flex items-center justify-center bg-transparent hover:opacity-80 transition">
+                <img src="assets/svg/Edit.svg" alt="edit" class="w-3.5 h-3.5 sm:w-5 sm:h-5 hover:brightness-110 transition" />
               </button>
               <button (click)="$event.stopPropagation(); onDeleteDorm(dorm)"
-                class="w-8 h-8 p-0 flex items-center justify-center bg-transparent hover:opacity-80 transition"
+                class="w-6 h-6 sm:w-8 sm:h-8 p-0 flex items-center justify-center bg-transparent hover:opacity-80 transition"
                 title="ลบหอพัก">
-                <img src="assets/svg/Delete.svg" alt="delete" class="w-5 h-5 hover:brightness-110 transition" />
+                <img src="assets/svg/Delete.svg" alt="delete" class="w-3.5 h-3.5 sm:w-5 sm:h-5 hover:brightness-110 transition" />
               </button>
             </div>
           </div>
@@ -121,25 +125,33 @@
 </style>
 
 <!-- Delete Confirmation Modal -->
-<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6 flex flex-col items-center">
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+  <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-4 sm:p-6 flex flex-col items-center relative">
+    
+    <!-- Loading Overlay -->
+    <div *ngIf="isDeleting" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-xl z-10">
+      <div class="text-center">
+        <i class="fas fa-spinner fa-spin text-xl sm:text-2xl text-blue-600 mb-2"></i>
+        <p class="text-xs sm:text-sm text-gray-600 font-thai">กำลังลบหอพัก...</p>
+      </div>
+    </div>
 
     <!-- Header -->
-    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-      <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+      <svg class="w-5 h-5 sm:w-6 sm:h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
         </path>
       </svg>
     </div>
 
-    <div class="text-xl font-bold text-gray-800 mb-3 font-thai">ยืนยันการลบหอพัก</div>
+    <div class="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3 font-thai">ยืนยันการลบหอพัก</div>
 
     <!-- Success Message -->
     <div *ngIf="deleteSuccessMessage"
-      class="text-base text-green-700 mb-4 text-center font-semibold bg-green-50 p-3 rounded-lg w-full font-thai">
+      class="text-sm sm:text-base text-green-700 mb-3 sm:mb-4 text-center font-semibold bg-green-50 p-2.5 sm:p-3 rounded-lg w-full font-thai">
       <div class="flex items-center justify-center gap-2">
-        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         {{ deleteSuccessMessage }}
@@ -148,9 +160,9 @@
 
     <!-- Error Message -->
     <div *ngIf="deleteErrorMessage"
-      class="text-base text-red-600 mb-4 text-center font-semibold bg-red-50 p-3 rounded-lg w-full font-thai">
+      class="text-sm sm:text-base text-red-600 mb-3 sm:mb-4 text-center font-semibold bg-red-50 p-2.5 sm:p-3 rounded-lg w-full font-thai">
       <div class="flex items-center justify-center gap-2">
-        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
@@ -160,29 +172,23 @@
 
     <!-- Confirmation Message -->
     <div *ngIf="!deleteSuccessMessage && !deleteErrorMessage"
-      class="text-base text-gray-700 mb-6 text-center leading-relaxed font-thai">
+      class="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6 text-center leading-relaxed font-thai">
       <div [innerHTML]="getSafeDeleteWarningMessage()"></div>
     </div>
 
 
 
     <!-- Action Buttons -->
-    <div class="flex gap-3 w-full" *ngIf="!deleteSuccessMessage">
+    <div class="flex gap-2 sm:gap-3 w-full" *ngIf="!deleteSuccessMessage">
       <!-- Confirm Delete Button -->
       <button *ngIf="!deleteErrorMessage" (click)="confirmDeleteDorm()"
-        class="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-6 py-3 rounded-lg font-semibold shadow transition-colors font-thai"
-        [disabled]="isDeleting">
-        <span *ngIf="!isDeleting">ลบหอพัก</span>
-        <span *ngIf="isDeleting" class="flex items-center justify-center gap-2">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-          กำลังลบ...
-        </span>
+        class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold shadow transition-colors font-thai">
+        ลบหอพัก
       </button>
 
       <!-- Cancel Button -->
       <button (click)="cancelDeleteDorm()"
-        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold shadow transition-colors font-thai"
-        [disabled]="isDeleting">
+        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold shadow transition-colors font-thai">
         ยกเลิก
       </button>
     </div>
@@ -190,7 +196,7 @@
     <!-- Close Button (for success/error states) -->
     <div class="flex w-full" *ngIf="deleteSuccessMessage || deleteErrorMessage">
       <button (click)="cancelDeleteDorm()"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow transition-colors font-thai">
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold shadow transition-colors font-thai">
         ปิด
       </button>
     </div>
