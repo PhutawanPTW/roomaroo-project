@@ -9,7 +9,7 @@ export const environment = {
     appId: process.env['NG_APP_FIREBASE_APP_ID'] || '',
     measurementId: process.env['NG_APP_FIREBASE_MEASUREMENT_ID'] || ''
   },
-  backendApiUrl: process.env['NG_APP_BACKEND_API_URL'] || 'https://your-api.com/api',
-  fastApiUrl: process.env['NG_APP_FAST_API_URL'] || 'https://your-fastapi.com',
+  backendApiUrl: process.env['NG_APP_BACKEND_API_URL'] || '',
+  fastApiUrl: process.env['NG_APP_FAST_API_URL'] || '',
   mapTilerApiKey: process.env['NG_APP_MAPTILER_API_KEY'] || ''
 };

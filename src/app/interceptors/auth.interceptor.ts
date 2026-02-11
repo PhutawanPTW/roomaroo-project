@@ -48,12 +48,16 @@ export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn):
           if (error instanceof HttpErrorResponse) {
             if (error.status === 400) {
               // 400 Bad Request ไม่ควร retry และไม่เกี่ยวกับ auth
-              console.log('[AuthInterceptor] 400 Bad Request - not retrying');
+              if (!environment.production) {
+                console.log('[AuthInterceptor] 400 Bad Request - not retrying');
+              }
               return throwError(() => error);
             }
             // Handle 401 Unauthorized or 403 Forbidden responses
             if (error.status === 401 || error.status === 403) {
-              console.log('[AuthInterceptor] Token expired or invalid, redirecting to login');
+              if (!environment.production) {
+                console.log('[AuthInterceptor] Token expired or invalid, redirecting to login');
+              }
               router.navigate(['/login/member']);
             }
           }
@@ -62,7 +66,9 @@ export function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn):
       );
     }
     // ไม่มี currentUser ให้ log ไว้สำหรับ debug
-    console.warn('[AuthInterceptor]', req.method, req.url, '| No current user -> sending without Authorization header');
+    if (!environment.production) {
+      console.warn('[AuthInterceptor]', req.method, req.url, '| No current user -> sending without Authorization header');
+    }
   }
   
   // ถ้าไม่มี user หรือไม่ใช่ request ไป Backend ของเรา
@@ -110,12 +116,16 @@ export class AuthInterceptor implements HttpInterceptor {
               // แยกประเภท error ออกจากกัน - ห้าม retry 400 errors
               if (error.status === 400) {
                 // 400 Bad Request ไม่ควร retry และไม่เกี่ยวกับ auth
-                console.log('[AuthInterceptor] 400 Bad Request - not retrying');
+                if (!environment.production) {
+                  console.log('[AuthInterceptor] 400 Bad Request - not retrying');
+                }
                 return throwError(() => error);
               }
               // Handle 401 Unauthorized or 403 Forbidden responses
               if (error.status === 401 || error.status === 403) {
-                console.log('[AuthInterceptor] Token expired or invalid, redirecting to login');
+                if (!environment.production) {
+                  console.log('[AuthInterceptor] Token expired or invalid, redirecting to login');
+                }
                 this.router.navigate(['/login/member']);
               }
             }
