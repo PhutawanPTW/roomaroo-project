@@ -1,5 +1,3 @@
-// This file will be replaced by Vercel build process with actual environment variables
-// Updated: Fix backend API URL
 export const environment = {
   production: true,
   firebaseConfig: {
@@ -12,6 +10,6 @@ export const environment = {
     measurementId: 'G-X6MZ8F81G1'
   },
   backendApiUrl: 'https://dormroomaroo-backend.onrender.com/api',
-  fastApiUrl: 'https://your-fastapi-url.com',
+  fastApiUrl: 'https://roomaroo-textclassification.onrender.com/api',
   mapTilerApiKey: 'Gpwk2Mpi9cl8hUkVrf6f'
 };
