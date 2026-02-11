@@ -3,6 +3,7 @@ import { CanActivate, Router, ActivatedRouteSnapshot, UrlTree } from '@angular/r
 import { AuthService } from '../services/auth.service';
 import { Observable, of } from 'rxjs';
 import { map, take, filter, catchError, switchMap, tap, first, timeout } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthRedirectGuard implements CanActivate {
@@ -14,7 +15,9 @@ export class AuthRedirectGuard implements CanActivate {
       filter(user => user !== undefined),
       tap(user => {
         const type = user?.memberType || 'none';
-        console.log(`[AuthGuard] userType=${type}`);
+        if (!environment.production) {
+          console.log(`[AuthGuard] userType=${type}`);
+        }
       }),
       // เพิ่ม timeout เพื่อป้องกันการรอนานเกินไป
       timeout(15000),
@@ -31,8 +34,10 @@ export class AuthRedirectGuard implements CanActivate {
         const isAdminDormDetailPage = destPath.startsWith('admin/dorm-detail');
         const queryParams = route.queryParams;
 
-        console.log(`[AuthRedirectGuard] Checking access to ${destPath}, user:`, user ? `${user.memberType}` : 'null');
-        console.log('[AuthRedirectGuard] Query params:', queryParams);
+        if (!environment.production) {
+          console.log(`[AuthRedirectGuard] Checking access to ${destPath}, user:`, user ? `${user.memberType}` : 'null');
+          console.log('[AuthRedirectGuard] Query params:', queryParams);
+        }
 
         // ===== ADMIN LOGIC =====
         const adminProfile = localStorage.getItem('adminProfile');

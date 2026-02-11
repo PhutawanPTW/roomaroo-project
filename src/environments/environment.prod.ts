@@ -10,7 +10,7 @@ export const environment = {
     appId: '1:782979223053:web:0ed401a937a53890158f44',
     measurementId: 'G-X6MZ8F81G1'
   },
-  backendApiUrl: 'https://dormroomaroo-backend-production.up.railway.app/api',
+  backendApiUrl: 'https://dormroomaroo-backend.onrender.com/api',
   fastApiUrl: 'https://your-fastapi-url.com',
   mapTilerApiKey: 'Gpwk2Mpi9cl8hUkVrf6f'
 };
