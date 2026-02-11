@@ -1,15 +1,16 @@
+// This file will be replaced by Vercel build process with actual environment variables
 export const environment = {
   production: true,
   firebaseConfig: {
-    apiKey: process.env['NG_APP_FIREBASE_API_KEY'] || '',
-    authDomain: process.env['NG_APP_FIREBASE_AUTH_DOMAIN'] || '',
-    projectId: process.env['NG_APP_FIREBASE_PROJECT_ID'] || '',
-    storageBucket: process.env['NG_APP_FIREBASE_STORAGE_BUCKET'] || '',
-    messagingSenderId: process.env['NG_APP_FIREBASE_MESSAGING_SENDER_ID'] || '',
-    appId: process.env['NG_APP_FIREBASE_APP_ID'] || '',
-    measurementId: process.env['NG_APP_FIREBASE_MEASUREMENT_ID'] || ''
+    apiKey: 'AIzaSyA8u5HYbzrlFm12sNtGTiyzLxwZ2kcS1_o',
+    authDomain: 'projectroomaroo.firebaseapp.com',
+    projectId: 'projectroomaroo',
+    storageBucket: 'projectroomaroo.firebasestorage.app',
+    messagingSenderId: '782979223053',
+    appId: '1:782979223053:web:0ed401a937a53890158f44',
+    measurementId: 'G-X6MZ8F81G1'
   },
-  backendApiUrl: process.env['NG_APP_BACKEND_API_URL'] || '',
-  fastApiUrl: process.env['NG_APP_FAST_API_URL'] || '',
-  mapTilerApiKey: process.env['NG_APP_MAPTILER_API_KEY'] || ''
+  backendApiUrl: 'https://dormroomaroo-backend-production.up.railway.app/api',
+  fastApiUrl: 'https://your-fastapi-url.com',
+  mapTilerApiKey: 'Gpwk2Mpi9cl8hUkVrf6f'
 };
