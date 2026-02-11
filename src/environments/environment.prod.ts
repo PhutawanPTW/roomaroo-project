@@ -1,4 +1,5 @@
 // This file will be replaced by Vercel build process with actual environment variables
+// Updated: Fix backend API URL
 export const environment = {
   production: true,
   firebaseConfig: {
