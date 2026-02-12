@@ -367,6 +367,37 @@ button:disabled {
   }
 }
 
+/* Google Button Styling - ใช้ได้ทุกขนาดหน้าจอ */
+button.google-button {
+  background-color: #434FAA !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 500 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+button.google-button:hover:not(:disabled) {
+  background-color: #3b4798 !important;
+}
+
+button.google-button:disabled {
+  background-color: #9ca3af !important;
+  cursor: not-allowed !important;
+}
+
+/* เพิ่ม specificity สูงสุดสำหรับ Google button */
+.w-full.google-button.text-white {
+  background-color: #434FAA !important;
+}
+
+.w-full.google-button.text-white:hover:not(:disabled) {
+  background-color: #3b4798 !important;
+}
+
+.w-full.google-button.text-white:disabled {
+  background-color: #9ca3af !important;
+}
+
 /* Animation for smooth transitions */
 @keyframes fadeIn {
   from {
@@ -767,12 +798,6 @@ h6 {
     left: 0;
     right: 0;
     bottom: 0;
-  }
-
-  /* ปรับ Google button ให้ responsive */
-  .google-button {
-    background-color: #434FAA;
-    font-size: 14px;
   }
 
   /* ปรับ error message ให้อ่านง่าย */

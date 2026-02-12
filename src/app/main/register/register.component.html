@@ -489,8 +489,10 @@
 
           <!-- Google Button -->
           <button type="button" (click)="connectWithGoogle()" [disabled]="isGoogleLoading"
-            class="w-full google-button hover:bg-[#3b4798] disabled:bg-gray-400 text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center font-thai"
-            [ngClass]="{'space-x-2': isMobile, 'space-x-3': !isMobile}">
+            class="w-full google-button text-white font-normal py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center font-thai"
+            [ngClass]="{'space-x-2': isMobile, 'space-x-3': !isMobile}"
+            [style.background-color]="isGoogleLoading ? '#9ca3af' : '#434FAA'"
+            [style.border]="'none'">
             <svg *ngIf="isGoogleLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
               fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
